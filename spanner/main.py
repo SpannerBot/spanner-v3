@@ -1,3 +1,5 @@
+import datetime
+
 import toml
 import discord
 import time
@@ -98,7 +100,7 @@ async def on_ready():
 
 
 @bot.listen()
-async def on_application_command(ctx: discord.ApplicationCommand):
+async def on_application_command(ctx: discord.ApplicationContext):
     ctx.start = time.perf_counter()
     log.info(
         "%r (%d) used application command %r (%d) in %r (%d), %r (%d), with interaction ID %d.",
@@ -115,7 +117,7 @@ async def on_application_command(ctx: discord.ApplicationCommand):
 
 
 @bot.listen()
-async def on_application_command_completion(ctx: discord.ApplicationCommand):
+async def on_application_command_completion(ctx: discord.ApplicationContext):
     if not hasattr(ctx, "start"):
         log.warning("Context missing start attribute.")
         ctx.start = time.perf_counter()
@@ -130,16 +132,36 @@ async def on_application_command_completion(ctx: discord.ApplicationCommand):
 
 
 @bot.event
-async def on_application_command_error(ctx: discord.ApplicationCommand, error: discord.DiscordException):
+async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
     if hasattr(error, "original"):
         error = error.original
     
     if not hasattr(ctx, "start"):
         log.warning("Context missing start attribute.")
         ctx.start = time.perf_counter()
+
+    if isinstance(error, discord.NotFound):
+        return
     
     if isinstance(error, commands.CommandOnCooldown):
-        pass
+        time_remaining = error.retry_after
+        expires = discord.utils.utcnow() + datetime.timedelta(seconds=time_remaining)
+        return await ctx.respond(
+            "\N{stopwatch} This command is on cooldown until {}.".format(
+                discord.utils.format_dt(expires, 'R')
+            ),
+            ephemeral=True
+        )
+    elif isinstance(error, (commands.BotMissingPermissions, commands.MissingPermissions)):
+        return await ctx.respond(
+            f"\N{cross mark} {error}",
+            ephemeral=True
+        )
+    elif isinstance(error, commands.MaxConcurrencyReached):
+        return await ctx.respond(
+            "\N{cross mark} This command is overloaded. Please wait a while and try again.",
+            ephemeral=True
+        )
     
     log.error(
         "Command %r (interaction ID %d) from %r failed: %s",
@@ -148,3 +170,22 @@ async def on_application_command_error(ctx: discord.ApplicationCommand, error: d
         ctx.user.name,
         error
     )
+    return await ctx.respond(
+        f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified.",
+        ephemeral=True
+    )
+
+
+@bot.slash_command()
+async def ping(ctx: discord.ApplicationContext):
+    """Checks the latency between the bot and discord."""
+    t = f"WebSocket: `{round(ctx.bot.latency * 1000)}ms`\nHTTP: `pinging`"
+    start_p = time.perf_counter()
+    await ctx.respond(t, ephemeral=True)
+    end_p = time.perf_counter()
+    t = t[:-8] + f"{round((end_p - start_p) * 1000)}ms`"
+    return await ctx.edit(content=t)
+
+
+if __name__ == "__main__":
+    bot.run(CONFIG_SPANNER["token"])
