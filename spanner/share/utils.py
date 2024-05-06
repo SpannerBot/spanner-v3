@@ -1,4 +1,5 @@
 from typing import Any
+
 from .data import boolean_emojis
 
 __all__ = ["get_bool_emoji"]
