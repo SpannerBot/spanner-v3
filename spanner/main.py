@@ -163,6 +163,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
         ctx.interaction.id,
         ctx.user.name,
         error,
+        exc_info=error,
     )
     return await ctx.respond(
         f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified.",
