@@ -9,7 +9,7 @@ from discord.ext import commands
 from spanner.share.utils import get_bool_emoji
 
 
-class UserInfoView(discord.ui.View):
+class GenericLabelledEmbedView(discord.ui.View):
     class EmbedSwitchButton(discord.ui.Button):
         def __init__(self, embed_name: str, embed: discord.Embed):
             super().__init__(
@@ -222,7 +222,7 @@ class UserInfoCog(commands.Cog):
                     colour=user.colour or discord.Colour.blurple(),
                 )
 
-        view = UserInfoView(ctx, **embeds)
+        view = GenericLabelledEmbedView(ctx, **embeds)
         await ctx.respond(embed=embed, view=view)
 
 

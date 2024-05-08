@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import discord
 from discord import Interaction
 from discord.ext import commands
-from .user_info import UserInfoView, UserInfoCog
+from .user_info import GenericLabelledEmbedView, UserInfoCog
 from spanner.share.data import verification_levels, content_filters, content_filter_names, nsfw_levels
 
 from spanner.share.utils import get_bool_emoji
@@ -33,7 +33,7 @@ class ServerInfoCog(commands.Cog):
             bans = await guild.bans().flatten()
             ban_count = len(bans)
         else:
-            bans = ban_count = None
+            ban_count = None
 
         basic_info = [
             f"**Name:** {guild.name!r}",
@@ -127,7 +127,7 @@ class ServerInfoCog(commands.Cog):
             embeds["Icon (Enlarged)"] = discord.Embed().set_image(url=ctx.guild.icon.with_size(4096).url)
         if ctx.guild.banner:
             embeds["Overview"].set_image(url=ctx.guild.banner.url)
-        await ctx.respond(embed=embeds["Overview"], view=UserInfoView(ctx, **embeds))
+        await ctx.respond(embed=embeds["Overview"], view=GenericLabelledEmbedView(ctx, **embeds))
 
 
 def setup(bot):
