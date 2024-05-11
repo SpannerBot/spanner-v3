@@ -71,11 +71,13 @@ class UserInfoCog(commands.Cog):
 
     @staticmethod
     def first_line(text: str, max_length: int = 100, placeholder: str = "...") -> str:
+        """Grabs the first line of a string and shortens it to a given length."""
         line = text.splitlines()[0]
         return textwrap.shorten(line, max_length, placeholder=placeholder)
 
     @staticmethod
     def hyperlink(url: str, text: str = ...):
+        """Generates a hyperlink, by default setting the display text to the URL's domain/host."""
         if text is ...:
             parsed = urlparse(url)
             text = parsed.hostname.lower()
