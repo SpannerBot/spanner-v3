@@ -1,9 +1,4 @@
-import textwrap
-from typing import Annotated
-from urllib.parse import urlparse
-
 import discord
-from discord import Interaction
 from discord.ext import commands
 from .user_info import GenericLabelledEmbedView, UserInfoCog
 from spanner.share.data import verification_levels, content_filters, content_filter_names, nsfw_levels
@@ -42,6 +37,10 @@ class ServerInfoCog(commands.Cog):
             f"**Locale:** {guild.preferred_locale}",
             f"**Features:** {', '.join([x.replace('_', ' ').title() for x in guild.features]) or 'None'}",
         ]
+        if guild.icon:
+            basic_info.append(f"**Icon URL:** {UserInfoCog.hyperlink(guild.icon.url)}")
+        if guild.banner:
+            basic_info.append(f"**Banner URL:** {UserInfoCog.hyperlink(guild.banner.url)}")
         inf = float('inf')
         limits_info = [
             f"**Member Limit:** {guild.max_members or inf:,} total (max {guild.max_presences or inf:,} online)",
