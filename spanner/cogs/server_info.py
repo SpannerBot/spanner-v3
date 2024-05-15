@@ -109,6 +109,7 @@ class ServerInfoCog(commands.Cog):
 
     @commands.slash_command(name="server-info")
     async def server_info(self, ctx: discord.ApplicationContext):
+        """Get information about the server."""
         await ctx.defer(ephemeral=True)
         data = await self.get_server_info(ctx.guild)
 
