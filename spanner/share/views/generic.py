@@ -43,5 +43,5 @@ class GenericLabelledEmbedView(discord.ui.View):
                 if child.disabled:
                     return child.embed
 
-    async def interaction_check(self, interaction: Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user.id == self.ctx.user.id

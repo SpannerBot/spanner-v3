@@ -51,6 +51,10 @@ if "file" in CONFIG_LOGGING:
     )
     logging.getLogger().addHandler(handler)
 
+for logger in CONFIG_LOGGING.get("silence", []):
+    logging.getLogger(logger).setLevel(logging.WARNING)
+    logging.getLogger(logger).warning("Level for this logger set to WARNING via config.toml[logging.silence].")
+
 
 bot = commands.Bot(
     command_prefix=commands.when_mentioned_or("s!", "S!"),
@@ -124,7 +128,7 @@ async def on_application_command_completion(ctx: discord.ApplicationContext):
 
     log.info(
         "Command %r (interaction ID %d) from %r completed in %.2fms.",
-        ctx.command.qualified_name,
+        getattr(ctx.command, "qualified_name", getattr(ctx.command, "name", str(ctx.command))),
         ctx.interaction.id,
         ctx.user.name,
         (time.perf_counter() - ctx.start) * 1000,
@@ -159,7 +163,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
 
     log.error(
         "Command %r (interaction ID %d) from %r failed: %s",
-        ctx.command.qualified_name,
+        getattr(ctx.command, "qualified_name", getattr(ctx.command, "name", str(ctx.command))),
         ctx.interaction.id,
         ctx.user.name,
         error,

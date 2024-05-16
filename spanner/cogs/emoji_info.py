@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from spanner.share.utils import get_bool_emoji, hyperlink
-from spanner.share.views import GenericLabelledEmbedView
+from spanner.share.views import GenericLabelledEmbedView, EditEmojiRolesView
 
 
 class EmojiStealButton(discord.ui.Button):
@@ -125,14 +125,22 @@ class EmojiInfoCog(commands.Cog):
             return {"Overview": emoji_embed, "Allowed roles": emoji_roles_embed}
         return {"Overview": emoji_embed}
 
-    @commands.slash_command(name="emoji-info", description="Get information about an emoji.")
+    emoji_group = discord.SlashCommandGroup(
+        name="emoji",
+        description="Commands for managing emojis.",
+        guild_only=True
+    )
+
+    @emoji_group.command(name="info", description="Get information about an emoji.")
     async def emoji_info(self, ctx: discord.ApplicationContext, emoji: str):
         """Get information about an emoji."""
         await ctx.defer(ephemeral=True)
         try:
+            # noinspection PyTypeChecker
             emoji: discord.Emoji = await commands.EmojiConverter().convert(ctx, emoji)
         except commands.errors.BadArgument:
             try:
+                # noinspection PyTypeChecker
                 emoji: discord.PartialEmoji = await commands.PartialEmojiConverter().convert(ctx, emoji)
             except commands.errors.BadArgument:
                 c = self.bot.get_application_command("character-info")
@@ -154,6 +162,31 @@ class EmojiInfoCog(commands.Cog):
                     view.remove_item(button)
                     embed.remove_footer()
         await ctx.respond(embed=embed, view=view)
+
+    @emoji_group.command(
+        name="set-roles",
+        description="Set the roles that can use an emoji.",
+        default_member_permissions=discord.Permissions(manage_emojis=True),
+    )
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def emoji_set_roles(
+        self,
+        ctx: discord.ApplicationContext,
+        emoji: str,
+    ):
+        """Set the roles that can use an emoji."""
+        await ctx.defer(ephemeral=True)
+        emoji = discord.PartialEmoji.from_str(emoji)
+        emoji = discord.utils.get(ctx.guild.emojis, name=emoji.name)
+        if not emoji:
+            return await ctx.respond("Emoji not found in this server.", ephemeral=True)
+
+        view = EditEmojiRolesView(ctx, emoji=emoji)
+        await ctx.respond(
+            "Select up to 25 roles that can use this emoji. Click apply once you're done.",
+            view=view,
+            ephemeral=True
+        )
 
 
 def setup(bot):
