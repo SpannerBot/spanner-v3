@@ -39,6 +39,13 @@ class GenericLabelledEmbedView(discord.ui.View):
         # noinspection PyUnresolvedReferences
         self.children[0].update_view()
 
+    @property
+    def current_embed(self):
+        for child in self.children:
+            if isinstance(child, self.EmbedSwitchButton):
+                if child.disabled:
+                    return child.embed
+
     async def interaction_check(self, interaction: Interaction) -> bool:
         return interaction.user.id == self.ctx.user.id
 
