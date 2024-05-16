@@ -97,7 +97,7 @@ async def on_ready():
 
     log.info(
         "%d total commands across %d cogs (%d modules) are loaded.",
-        len(bot.commands),
+        len(bot.application_commands) + len(bot.commands),
         len(bot.cogs),
         len(bot.extensions),
     )

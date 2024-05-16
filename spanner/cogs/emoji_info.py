@@ -1,5 +1,5 @@
 import logging
-import typing
+import unicodedata
 
 import discord
 from discord.ext import commands
@@ -187,6 +187,26 @@ class EmojiInfoCog(commands.Cog):
             view=view,
             ephemeral=True
         )
+
+    @commands.slash_command(name="character-info")
+    async def character_info(self, ctx: discord.ApplicationContext, character: str):
+        """Get information about a character."""
+        await ctx.defer(ephemeral=True)
+
+        paginator = commands.Paginator(prefix="", suffix="", max_size=4069)
+
+        def to_string(_chr):
+            digit = f"{ord(_chr):x}"
+            name = unicodedata.name(_chr, "Name not found.").lower()
+            return f"`\\U{digit:>08}`: {name} - {_chr}"
+
+        for char in character.strip():
+            paginator.add_line(to_string(char))
+
+        embeds = []
+        for page in paginator.pages:
+            embeds.append(discord.Embed(description=page))
+        return await ctx.respond(embeds=embeds)
 
 
 def setup(bot):
