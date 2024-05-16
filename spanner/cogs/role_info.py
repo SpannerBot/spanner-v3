@@ -1,11 +1,8 @@
-import typing
-
 import discord
 from discord.ext import commands
-from .user_info import GenericLabelledEmbedView, UserInfoCog
-from spanner.share.data import verification_levels, content_filters, content_filter_names, nsfw_levels
+from .user_info import GenericLabelledEmbedView
 
-from spanner.share.utils import get_bool_emoji
+from spanner.share.utils import get_bool_emoji, hyperlink
 
 
 class RoleInfoCog(commands.Cog):
@@ -43,6 +40,7 @@ class RoleInfoCog(commands.Cog):
         }
         if role.icon:
             overview.set_thumbnail(url=role.icon.url)
+            overview.description += f"\n**Icon URL:** {hyperlink(role.icon.url)}"
             enlarged_icon = discord.Embed(title=f"Role icon: {role.name}").set_image(url=role.icon.with_size(4096).url)
             result["Icon (large)"] = enlarged_icon
 

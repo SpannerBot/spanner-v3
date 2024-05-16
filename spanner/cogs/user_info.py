@@ -1,12 +1,10 @@
-import textwrap
 from typing import Annotated
-from urllib.parse import urlparse
 
 import discord
 from discord import Interaction
 from discord.ext import commands
 
-from spanner.share.utils import get_bool_emoji
+from spanner.share.utils import get_bool_emoji, hyperlink
 
 
 class GenericLabelledEmbedView(discord.ui.View):
@@ -69,21 +67,6 @@ class UserInfoCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @staticmethod
-    def first_line(text: str, max_length: int = 100, placeholder: str = "...") -> str:
-        """Grabs the first line of a string and shortens it to a given length."""
-        line = text.splitlines()[0]
-        return textwrap.shorten(line, max_length, placeholder=placeholder)
-
-    @staticmethod
-    def hyperlink(url: str, text: str = ...):
-        """Generates a hyperlink, by default setting the display text to the URL's domain/host."""
-        if text is ...:
-            parsed = urlparse(url)
-            text = parsed.hostname.lower()
-
-        return f"[{text}]({url})"
-
     def get_user_data(self, user: discord.User | discord.Member) -> tuple[list[str], list[str]]:
         # noinspection PyUnresolvedReferences
         values_user = [
@@ -102,13 +85,13 @@ class UserInfoCog(commands.Cog):
         ]
 
         if user.avatar is not None:
-            values_user.append(f"**Avatar URL**: {self.hyperlink(user.avatar.url)}")
+            values_user.append(f"**Avatar URL**: {hyperlink(user.avatar.url)}")
         else:
-            values_user.append(f"**Default Avatar URL**: {self.hyperlink(user.default_avatar.url)}")
+            values_user.append(f"**Default Avatar URL**: {hyperlink(user.default_avatar.url)}")
         if user.banner is not None:
-            values_user.append(f"**Banner URL**: {self.hyperlink(user.banner.url)}")
+            values_user.append(f"**Banner URL**: {hyperlink(user.banner.url)}")
         if user.avatar_decoration is not None:
-            values_user.append(f"**Avatar Decoration URL**: {self.hyperlink(user.avatar_decoration.url)}")
+            values_user.append(f"**Avatar Decoration URL**: {hyperlink(user.avatar_decoration.url)}")
 
         puf = []
         for flag, value in user.public_flags:
@@ -122,7 +105,7 @@ class UserInfoCog(commands.Cog):
                 user.id,
                 scopes=("bot",),
             )
-            values_user.append(f"**Bot Invite**: {self.hyperlink(link)}")
+            values_user.append(f"**Bot Invite**: {hyperlink(link)}")
 
         values_member = []
 
@@ -134,7 +117,7 @@ class UserInfoCog(commands.Cog):
                 f"**Top Role:** {user.top_role.mention}",
             ]
             if user.display_avatar != user.avatar:
-                values_member.append("**Display Avatar**: %s" % self.hyperlink(user.display_avatar.url))
+                values_member.append("**Display Avatar**: %s" % hyperlink(user.display_avatar.url))
 
             if user.communication_disabled_until and user.communication_disabled_until >= discord.utils.utcnow():
                 values_member.append(

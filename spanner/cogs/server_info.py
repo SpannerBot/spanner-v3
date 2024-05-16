@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
-from .user_info import GenericLabelledEmbedView, UserInfoCog
+from .user_info import GenericLabelledEmbedView
 from spanner.share.data import verification_levels, content_filters, content_filter_names, nsfw_levels
 
-from spanner.share.utils import get_bool_emoji
+from spanner.share.utils import get_bool_emoji, hyperlink
 
 
 class ServerInfoCog(commands.Cog):
@@ -38,9 +38,9 @@ class ServerInfoCog(commands.Cog):
             f"**Features:** {', '.join([x.replace('_', ' ').title() for x in guild.features]) or 'None'}",
         ]
         if guild.icon:
-            basic_info.append(f"**Icon URL:** {UserInfoCog.hyperlink(guild.icon.url)}")
+            basic_info.append(f"**Icon URL:** {hyperlink(guild.icon.url)}")
         if guild.banner:
-            basic_info.append(f"**Banner URL:** {UserInfoCog.hyperlink(guild.banner.url)}")
+            basic_info.append(f"**Banner URL:** {hyperlink(guild.banner.url)}")
         inf = float('inf')
         limits_info = [
             f"**Member Limit:** {guild.max_members or inf:,} total (max {guild.max_presences or inf:,} online)",
