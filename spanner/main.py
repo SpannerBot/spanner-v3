@@ -176,6 +176,13 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
     )
 
 
+@bot.before_invoke
+async def is_chunked(ctx: discord.ApplicationContext):
+    if ctx.guild.chunked is False and bot.intents.members:
+        log.warning("Guild %r is not chunked. Chunking now.", ctx.guild.name)
+        await ctx.guild.chunk()
+
+
 @bot.slash_command()
 async def ping(ctx: discord.ApplicationContext):
     """Checks the latency between the bot and discord."""
