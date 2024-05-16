@@ -64,7 +64,7 @@ class UserInfoCog(commands.Cog):
         "administrator",
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     def get_user_data(self, user: discord.User | discord.Member) -> tuple[list[str], list[str]]:
@@ -209,6 +209,12 @@ class UserInfoCog(commands.Cog):
 
         view = GenericLabelledEmbedView(ctx, **embeds)
         await ctx.respond(embed=embed, view=view)
+
+    @commands.user_command(name="User Info")
+    async def cmd_user_info(self, ctx: discord.ApplicationContext, member: discord.Member):
+        cmd: discord.ApplicationCommand = self.bot.get_application_command("user-info")
+        # noinspection PyTypeChecker
+        await ctx.invoke(cmd, user=member)
 
 
 def setup(bot):
