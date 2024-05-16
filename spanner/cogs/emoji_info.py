@@ -4,8 +4,8 @@ import typing
 import discord
 from discord.ext import commands
 
-from .user_info import GenericLabelledEmbedView
 from spanner.share.utils import get_bool_emoji, hyperlink
+from spanner.share.views import GenericLabelledEmbedView
 
 
 class EmojiStealButton(discord.ui.Button):

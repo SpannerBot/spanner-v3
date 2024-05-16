@@ -1,9 +1,14 @@
 import discord
 from discord.ext import commands
-from .user_info import GenericLabelledEmbedView
-from spanner.share.data import verification_levels, content_filters, content_filter_names, nsfw_levels
 
+from spanner.share.data import (
+    content_filter_names,
+    content_filters,
+    nsfw_levels,
+    verification_levels,
+)
 from spanner.share.utils import get_bool_emoji, hyperlink
+from spanner.share.views import GenericLabelledEmbedView
 
 
 class ServerInfoCog(commands.Cog):
@@ -11,7 +16,8 @@ class ServerInfoCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def get_server_info(self, guild: discord.Guild):
+    @staticmethod
+    async def get_server_info(guild: discord.Guild):
         vanity_url = None
         if guild.me.guild_permissions.manage_guild:
             auto_mod_rules = await guild.fetch_auto_moderation_rules()

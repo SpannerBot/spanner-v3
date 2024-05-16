@@ -2,9 +2,9 @@ import typing
 
 import discord
 from discord.ext import commands
-from .user_info import GenericLabelledEmbedView
 
 from spanner.share.utils import get_bool_emoji
+from spanner.share.views import GenericLabelledEmbedView
 
 
 class ChannelInfoCog(commands.Cog):
