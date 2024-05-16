@@ -96,8 +96,9 @@ async def on_ready():
         log.warning("Slash commands will only be available in the following servers: %r", ", ".join(eligible))
 
     log.info(
-        "%d total commands across %d cogs (%d modules) are loaded.",
-        len(bot.application_commands) + len(bot.commands),
+        "%d+%d total commands across %d cogs (%d modules) are loaded.",
+        len(bot.application_commands),
+        len(bot.commands),
         len(bot.cogs),
         len(bot.extensions),
     )
