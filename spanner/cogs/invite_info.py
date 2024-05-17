@@ -1,16 +1,39 @@
+import asyncio
+import os
+
 import discord
-from yarl import URL
+import copy
 from discord.ext import commands
 from spanner.share.utils import hyperlink, get_bool_emoji, first_line, humanise_bytes
 from spanner.share.data import verification_levels
 from spanner.share.views import GenericLabelledEmbedView
 
 
+class ViewInfoButton(discord.ui.Button):
+    def __init__(self, context: discord.ApplicationContext, command: discord.ApplicationCommand, **kwargs):
+        self.command = command
+        self.one_time = kwargs.pop("one_time", True)
+        self.ctx = copy.copy(context)
+        kwargs["custom_id"] = os.urandom(3).hex()
+        super().__init__(style=discord.ButtonStyle.blurple, **kwargs)
+        self.lock = asyncio.Lock()
+
+    async def callback(self, interaction: discord.Interaction):
+        ctx = copy.copy(self.ctx)
+        ctx.interaction = interaction
+        async with self.lock:
+            try:
+                await ctx.invoke(self.command)
+            finally:
+                self.disabled = True
+                await interaction.edit_original_response(view=self.view)
+
 class InviteInfoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def get_discord_invite_info(self, invite: discord.Invite) -> dict[str, discord.Embed]:
+    @staticmethod
+    async def get_discord_invite_info(invite: discord.Invite) -> dict[str, discord.Embed]:
         approx_member_count = invite.approximate_member_count
         approx_presence_count = invite.approximate_presence_count
         expires_at = invite.expires_at
@@ -115,9 +138,33 @@ class InviteInfoCog(commands.Cog):
             return await ctx.respond("Invalid invite.", ephemeral=True)
 
         embeds = await self.get_discord_invite_info(invite)
+        view = GenericLabelledEmbedView(ctx, **embeds)
+
+        _guild = self.bot.get_guild(invite.guild.id)
+        if _guild:
+            shit_ctx = copy.copy(ctx)
+            shit_ctx.guild = _guild
+            view.add_item(
+                ViewInfoButton(
+                    shit_ctx,
+                    self.bot.get_application_command("server-info"),
+                    label="View Server Info"
+                )
+            )
+        _channel = discord.utils.get(set(self.bot.get_all_channels()), id=invite.channel.id)
+        if _channel:
+            shit_ctx = copy.copy(ctx)
+            shit_ctx.channel = _channel
+            view.add_item(
+                ViewInfoButton(
+                    shit_ctx,
+                    self.bot.get_application_command("channel-info"),
+                    label="View Channel Info"
+                )
+            )
         await ctx.respond(
             embed=embeds["Overview"],
-            view=GenericLabelledEmbedView(ctx, **embeds),
+            view=view,
             ephemeral=True
         )
 
