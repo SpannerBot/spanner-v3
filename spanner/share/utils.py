@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 import textwrap
 
@@ -7,7 +7,9 @@ from .data import boolean_emojis
 __all__ = [
     "get_bool_emoji",
     "first_line",
-    "hyperlink"
+    "hyperlink",
+    "pluralise",
+    "humanise_bytes",
 ]
 
 
@@ -35,3 +37,27 @@ def hyperlink(url: str, text: str = ...):
         text = parsed.hostname.lower()
 
     return f"[{text}]({url})"
+
+
+def pluralise(word: str, value: int | float, *, precision: int | None = None):
+    value = round(value, precision)
+    if value == 1:
+        return f"{value:,} {word}"
+    return f"{value:,} {word}s"
+
+
+def humanise_bytes(size_bytes: int, *, base: Literal[1000, 1024] = 1024) -> str:
+    """Converts a given byte size into a human-readable format."""
+    if size_bytes <= 1:
+        return pluralise("byte", size_bytes)
+
+    size_name = ("bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB")
+    if base == 1000:
+        size_name = ("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = 0
+    size = size_bytes
+    while size >= base:
+        size /= base
+        i += 1
+
+    return f"{size:.2f} {size_name[i]}"
