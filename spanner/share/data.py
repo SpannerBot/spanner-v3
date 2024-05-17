@@ -15,7 +15,7 @@ __all__ = [
 verification_levels: dict[discord.VerificationLevel, str] = {
     discord.VerificationLevel.none: "Unrestricted",
     discord.VerificationLevel.low: "Must have a verified email",
-    discord.VerificationLevel.medium: "Must be registered on Discord for longer than 5 minutes + "
+    discord.VerificationLevel.medium: "Must be registered on Discord for longer than 5 minutes & "
     "must have a verified email",
     discord.VerificationLevel.high: "Must be a member of the server for longer than 10 minutes, "
     "must be registered on discord for longer than 5 minutes, and must have a "
