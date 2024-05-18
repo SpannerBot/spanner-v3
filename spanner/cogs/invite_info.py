@@ -28,6 +28,7 @@ class ViewInfoButton(discord.ui.Button):
                 self.disabled = True
                 await interaction.edit_original_response(view=self.view)
 
+
 class InviteInfoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
