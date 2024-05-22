@@ -27,6 +27,7 @@ class SettingsCog(commands.Cog):
 
     @settings.command(name="set-log-channel")
     async def set_log_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
+        """Sets the channels where logs will go."""
         await ctx.defer(ephemeral=True)
 
         if not channel.can_send(discord.Embed, discord.File):
@@ -100,6 +101,7 @@ class SettingsCog(commands.Cog):
                 )
             ]
     ):
+        """Toggles a feature (enables if disabled, disables if enabled)."""
         await ctx.defer(ephemeral=True)
         feature = feature.lower()
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
@@ -146,6 +148,7 @@ class SettingsCog(commands.Cog):
                 )
             ]
     ):
+        """Enables a feature."""        
         await ctx.defer(ephemeral=True)
         feature = feature.lower()
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
@@ -170,6 +173,7 @@ class SettingsCog(commands.Cog):
                 )
             ]
     ):
+        """Disables a feature."""
         await ctx.defer(ephemeral=True)
         feature = feature.lower()
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:

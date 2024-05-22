@@ -10,6 +10,7 @@ class GuildConfig(Model):
     log_features: fields.ReverseRelation["GuildLogFeatures"]
     audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
     user_history: fields.ReverseRelation["UserHistory"]
+    self_roles: fields.ReverseRelation["SelfRoleMenu"]
 
 
 class GuildLogFeatures(Model):
@@ -54,3 +55,18 @@ class UserHistory(Model):
         "models.GuildConfig",
         related_name="user_history"
     )
+
+
+class SelfRoleMenu(Model):
+    id = fields.UUIDField(pk=True)
+    guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
+        "models.GuildConfig",
+        related_name="self_roles"
+    )
+    name = fields.CharField(min_length=1, max_length=32)
+    channel = fields.BigIntField()
+    message = fields.BigIntField()
+    mode = fields.SmallIntField()
+    roles = fields.JSONField(default=[])
+    # minimum = fields.SmallIntField(default=0)
+    maximum = fields.SmallIntField(default=25)
