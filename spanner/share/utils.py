@@ -1,6 +1,7 @@
 import textwrap
 from typing import Any, Literal
 from urllib.parse import urlparse
+from discord.ext import commands
 
 from .data import boolean_emojis
 
@@ -10,7 +11,18 @@ __all__ = [
     "hyperlink",
     "pluralise",
     "humanise_bytes",
+    "SilentCommandError"
 ]
+
+
+class SilentCommandError(commands.CommandError):
+    """A command error that, when handled will not send a generic error message in the global error handler.
+
+    This should be used to suppress the default error message for a specific command, and instead allow the command
+    to handle error messages itself, while still passing on a traceback to the global error handler."""
+    def __init__(self, message: str, *args: Any, original: Exception | None = None):
+        self.original: Exception = original or self
+        super().__init__(message, *args)
 
 
 def get_bool_emoji(value: Any) -> str:

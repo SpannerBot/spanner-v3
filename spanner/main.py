@@ -10,9 +10,9 @@ import discord
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
 from tortoise import Tortoise
-
-sys.path.append(".")
 sys.path.append("..")
+
+from spanner.share.utils import SilentCommandError
 
 # Load the configuration file
 CONFIG_FILE = Path.cwd() / "config.toml"
@@ -35,7 +35,7 @@ if "token" not in CONFIG_SPANNER:
 CONFIG_LOGGING = CONFIG["logging"]
 logging.basicConfig(
     level=CONFIG_LOGGING.get("level", "INFO"),
-    format=CONFIG_LOGGING.get("format", "%(asctime)s:%(name)s:%(levelname)s: %(message)s"),
+    format=CONFIG_LOGGING.get("format", "%(asctime)s: %(name)s: %(levelname)s: %(message)s"),
     datefmt=CONFIG_LOGGING.get("datefmt", "%Y-%m-%d %H:%M:%S"),
     handlers=[RichHandler(logging.INFO, rich_tracebacks=True, markup=True, show_time=False, show_path=False)],
 )
@@ -48,7 +48,7 @@ if "file" in CONFIG_LOGGING:
     if "level" in CONFIG_LOGGING["file"]:
         handler.setLevel(CONFIG["logging"]["file"]["level"])
     handler.setFormatter(
-        logging.Formatter(CONFIG_LOGGING.get("format", "%(asctime)s:%(name)s:%(levelname)s: %(message)s"))
+        logging.Formatter(CONFIG_LOGGING.get("format", "%(asctime)s:%(name)s %(levelname)s: %(message)s"))
     )
     logging.getLogger().addHandler(handler)
 
@@ -156,6 +156,7 @@ async def on_application_command_completion(ctx: discord.ApplicationContext):
 
 @bot.event
 async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
+    original_error = error
     if hasattr(error, "original"):
         error = error.original
 
@@ -188,10 +189,13 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
         error,
         exc_info=error,
     )
-    return await ctx.respond(
-        f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified.",
-        ephemeral=True,
-    )
+    if not isinstance(original_error, SilentCommandError):
+        support = bot.get_application_command("support")
+        return await ctx.respond(
+            f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified."
+            f" If you want help, try running </support:{support.id}>.",
+            ephemeral=True,
+        )
 
 
 @bot.before_invoke

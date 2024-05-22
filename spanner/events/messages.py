@@ -1,5 +1,8 @@
 import io
+import json
 import logging
+import os
+import textwrap
 
 import discord
 from discord.ext import bridge, commands
@@ -56,6 +59,79 @@ class MessageEvents(commands.Cog):
             for embed in message.embeds[:9]:
                 embeds.append(embed)
         await log_channel.send(embeds=embeds)
+
+    @commands.Cog.listener()
+    async def on_bulk_message_delete(self, messages: list[discord.Message]):
+        now = discord.utils.utcnow()
+        embeds = {}
+        for n, messages_chunk in enumerate(discord.utils.as_chunks(iter(messages), 10), start=1):
+            files = []
+            for message in messages_chunk:
+                message_json = {
+                    "content": message.content,
+                    "embeds": [
+                        embed.to_dict()
+                        for embed in message.embeds
+                    ]
+                }
+                message_json = json.dumps(
+                    message_json,
+                    indent=0,
+                    separators=(",", ":"),
+                    default=str
+                )
+
+                attachments = ("# Attachments:\n"
+                               "Note: attachment URLs are not valid for very long after message deletion.\n")
+                for n2, attachment in enumerate(message.attachments, start=1):
+                    attachments += f"\n{n2}. {attachment.url}"
+                attachments += "\n"
+                content = textwrap.dedent(
+                    f"""# Message Information
+
+* Author: [{message.author.name} (`{message.author.id}`)]({message.author.jump_url})
+* Channel: [#{message.channel.name} (`{message.channel.id}`)]({message.channel.jump_url})
+* Message ID: {message.id}
+* Created at: {message.created_at.isoformat()}
+* Last edit: {message.edited_at.isoformat() if message.edited_at else "N/A"}
+* Pinned: {message.pinned}
+* Sent with TTS: {message.tts}
+
+{attachments if message.attachments else ''}
+# Data
+You can import this data in an
+[embed visualiser, such as this one](https://leovoel.github.io/embed-visualizer/).
+
+```json
+{message_json}
+```"""
+                )
+                file = discord.File(
+                    io.BytesIO(content.encode(errors="replace")),
+                    filename=f"{os.urandom(1).hex()}_{message.author.display_name}"[:29] + ".md"
+                )
+                files.append(file)
+            embed = discord.Embed(
+                title=f"{len(messages):,} messages deleted in {messages[0].channel.name}:",
+                description="Check the files for more details.",
+                color=discord.Color.red(),
+                timestamp=now
+            )
+            embed.set_footer(
+                text=f"Chunk {n}/{len(messages_chunk)}",
+                icon_url=self.bot.user.display_avatar.url
+            )
+            embeds[embed] = files
+
+        log_channel = await self.get_log_channel(messages[0].guild.id, "message.delete")
+        if log_channel is None:
+            return
+
+        first_message = None
+        for embed, files in embeds.items():
+            m = await log_channel.send(embed=embed, files=files, reference=first_message)
+            if not first_message:
+                first_message = m
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -126,6 +202,34 @@ class MessageEvents(commands.Cog):
                     value=after.content
                 )
         await log_channel.send(embed=embed, files=files)
+
+    @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
+        unknown_messages = payload.message_ids.copy()
+        for message in payload.cached_messages:
+            if message.id in unknown_messages:
+                unknown_messages.remove(message.id)
+
+        if not unknown_messages:
+            return
+
+        channel = self.bot.get_channel(payload.channel_id)
+        guild = channel.guild
+        embed = discord.Embed(
+            title=f"{len(unknown_messages):,} unknown messages deleted in #{channel.name}:",
+            description=f"{len(payload.message_ids):,} messages were deleted, "
+                        f"but I did not have {len(unknown_messages):,} of them saved.",
+            color=discord.Color.red(),
+            timestamp=discord.utils.utcnow()
+        )
+        if len(unknown_messages) != len(payload.message_ids):
+            known = len(payload.message_ids) - len(unknown_messages)
+            embed.description += f"\nYou may receive a message containing {known:,} known messages."
+
+        log_channel = await self.get_log_channel(guild.id, "message.delete.bulk")
+        if log_channel is None:
+            return
+        await log_channel.send(embed=embed)
 
 
 def setup(bot: bridge.Bot):
