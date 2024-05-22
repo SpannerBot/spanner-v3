@@ -1,11 +1,12 @@
 import asyncio
+import copy
 import os
 
 import discord
-import copy
 from discord.ext import commands
-from spanner.share.utils import hyperlink, get_bool_emoji, first_line, humanise_bytes
+
 from spanner.share.data import verification_levels
+from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink
 from spanner.share.views import GenericLabelledEmbedView
 
 

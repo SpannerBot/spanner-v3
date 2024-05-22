@@ -3,7 +3,6 @@ import logging
 
 import discord
 
-
 __all__ = ("EditEmojiRolesView",)
 
 

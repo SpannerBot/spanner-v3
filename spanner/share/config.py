@@ -1,7 +1,6 @@
-import tomllib
 import logging
+import tomllib
 from pathlib import Path
-
 
 __all__ = ("load_config",)
 log = logging.getLogger("share.config")
@@ -21,6 +20,7 @@ def load_config():
 
     config.setdefault("logging", {})
     config.setdefault("cogs", {})
+    config.setdefault("database", {"url": "sqlite://./spanner.db"})
     config["cogs"].setdefault("meta", {"support_guild_id": None})
 
     return config

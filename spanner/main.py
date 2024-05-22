@@ -7,8 +7,9 @@ import tomllib
 from pathlib import Path
 
 import discord
-from discord.ext import commands
+from discord.ext import bridge, commands
 from rich.logging import RichHandler
+from tortoise import Tortoise
 
 sys.path.append(".")
 sys.path.append("..")
@@ -16,7 +17,7 @@ sys.path.append("..")
 # Load the configuration file
 CONFIG_FILE = Path.cwd() / "config.toml"
 if not CONFIG_FILE.exists():
-    logging.critical("No config.toml file exists in the current directory.")
+    logging.critical("No config.toml file exists in the current directory (%r).", os.getcwd())
     sys.exit(1)
 
 with CONFIG_FILE.open("rb") as fd:
@@ -56,7 +57,20 @@ for logger in CONFIG_LOGGING.get("silence", []):
     logging.getLogger(logger).warning("Level for this logger set to WARNING via config.toml[logging.silence].")
 
 
-bot = commands.Bot(
+class CustomBridgeBot(bridge.Bot):
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
+        await Tortoise.init(
+            db_url=CONFIG["database"]["uri"],
+            modules={"models": ["spanner.share.database"]},
+        )
+        await Tortoise.generate_schemas()
+        try:
+            await super().start(token, reconnect=reconnect)
+        finally:
+            await Tortoise.close_connections()
+
+
+bot = CustomBridgeBot(
     command_prefix=commands.when_mentioned_or("s!", "S!"),
     strip_after_prefix=True,
     case_insensitive=True,
@@ -69,6 +83,7 @@ log = logging.getLogger("spanner.runtime")
 
 if "cogs" not in CONFIG_SPANNER:
     cogs = ["cogs." + x.name[:-3] for x in (Path.cwd() / "cogs").glob("*.py")]
+    cogs += ["events." + x.name[:-3] for x in (Path.cwd() / "events").glob("**/*.py")]
 else:
     cogs = CONFIG_SPANNER["cogs"]
 
@@ -79,6 +94,9 @@ for cog in ["jishaku", *cogs]:
         s = time.perf_counter()  # redefine it just for this block
         bot.load_extension(cog)
         e = time.perf_counter()
+    except discord.errors.NoEntryPointError:
+        en = time.perf_counter()
+        log.warning("Cog %r has no setup function. Skipped in %.2fms.", cog, (en - s) * 1000)
     except discord.ExtensionFailed as e:
         en = time.perf_counter()
         log.error("Failed to load cog %r in %.2fms: %s", cog, (en - s) * 1000, e, exc_info=True)
@@ -183,8 +201,8 @@ async def is_chunked(ctx: discord.ApplicationContext):
         await ctx.guild.chunk()
 
 
-@bot.slash_command()
-async def ping(ctx: discord.ApplicationContext):
+@bot.bridge_command()
+async def ping(ctx: bridge.Context):
     """Checks the latency between the bot and discord."""
     t = f"WebSocket: `{round(ctx.bot.latency * 1000)}ms`\nHTTP: `pinging`"
     start_p = time.perf_counter()

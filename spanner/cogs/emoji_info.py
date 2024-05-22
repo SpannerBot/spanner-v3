@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from spanner.share.utils import get_bool_emoji, hyperlink
-from spanner.share.views import GenericLabelledEmbedView, EditEmojiRolesView
+from spanner.share.views import EditEmojiRolesView, GenericLabelledEmbedView
 
 
 class EmojiStealButton(discord.ui.Button):

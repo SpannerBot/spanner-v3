@@ -1,6 +1,6 @@
+import textwrap
 from typing import Any, Literal
 from urllib.parse import urlparse
-import textwrap
 
 from .data import boolean_emojis
 

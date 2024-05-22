@@ -311,3 +311,6 @@ pyrightconfig.json
 config.toml
 spanner/config.toml
 !/spanner/share/views/
+*.db
+*.db-wal
+*.db-shm
