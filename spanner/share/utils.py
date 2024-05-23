@@ -1,9 +1,12 @@
 import textwrap
 from typing import Any, Literal
 from urllib.parse import urlparse
-from discord.ext import commands
+
+import discord
+from discord.ext import commands, bridge
 
 from .data import boolean_emojis
+from .database import GuildLogFeatures
 
 __all__ = [
     "get_bool_emoji",
@@ -11,7 +14,8 @@ __all__ = [
     "hyperlink",
     "pluralise",
     "humanise_bytes",
-    "SilentCommandError"
+    "SilentCommandError",
+    "get_log_channel"
 ]
 
 
@@ -73,3 +77,32 @@ def humanise_bytes(size_bytes: int, *, base: Literal[1000, 1024] = 1024) -> str:
         i += 1
 
     return f"{size:.2f} {size_name[i]}"
+
+
+async def get_log_channel(bot: bridge.Bot, guild_id: int, log_feature: str) -> discord.abc.Messageable | None:
+    """
+    Fetches the log channel for a guild, where the given log feature is enabled.
+
+    :param bot: The bot instance
+    :type bot: bridge.Bot
+    :param guild_id: The guild ID
+    :type guild_id: int
+    :param log_feature: The log feature name
+    :type log_feature: str
+    :return: The log channel, if found and available
+    :rtype: discord.abc.Messageable | None
+    """
+    log_feature = await GuildLogFeatures.get_or_none(
+        guild_id=guild_id,
+        name=log_feature
+    )
+    if not log_feature or log_feature.enabled is False:
+        return
+
+    await log_feature.fetch_related("guild")
+
+    log_channel = bot.get_channel(log_feature.guild.log_channel)
+    if not log_channel or not log_channel.can_send(discord.Embed, discord.File):
+        return
+
+    return log_channel

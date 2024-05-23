@@ -3,17 +3,24 @@ import json
 import logging
 import os
 import textwrap
+from pathlib import Path
 
 import discord
 from discord.ext import bridge, commands
+from jinja2 import Template
 
-from spanner.share.database import GuildConfig, GuildLogFeatures
+from spanner.share.database import GuildLogFeatures
 
 
 class MessageEvents(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
         self.log = logging.getLogger("spanner.events.messages")
+
+    def format_bulk_html(self):
+        with open(Path.cwd() / "assets" / "bulk-delete.html") as f:
+            template = Template(f.read())
+        return template.render
 
     async def get_log_channel(self, guild_id: int, log_feature: str) -> discord.abc.Messageable | None:
         log_feature = await GuildLogFeatures.get_or_none(

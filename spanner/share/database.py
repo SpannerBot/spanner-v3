@@ -1,3 +1,5 @@
+import secrets
+
 from tortoise import fields
 from tortoise.models import Model
 
@@ -18,9 +20,15 @@ class GuildLogFeatures(Model):
         "message.edit",
         "message.delete.bulk",
         "message.delete",
-        "message.reactions.add",
-        "message.reactions.remove",
-        "message.reactions.clear",
+        "member.join",
+        "member.leave",
+        "member.kick",
+        "member.ban",
+        "member.timeout",
+        "member.unban",
+        "member.nickname-change",
+        "member.roles.add",
+        "member.roles.remove"
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
@@ -70,3 +78,18 @@ class SelfRoleMenu(Model):
     roles = fields.JSONField(default=[])
     # minimum = fields.SmallIntField(default=0)
     maximum = fields.SmallIntField(default=25)
+
+
+class PremiumKey(Model):
+    id = fields.UUIDField(pk=True)
+    key = fields.CharField(min_length=8, max_length=512, unique=True, default=secrets.token_hex)
+    created_at = fields.DatetimeField(auto_now=True)
+    redeemed_at = fields.DatetimeField(null=True)
+    redeemer = fields.BigIntField(null=True)
+
+
+class PremiumGuild(Model):
+    id = fields.UUIDField(pk=True)
+    guild_id = fields.BigIntField()
+    premium_since = fields.FloatField()
+    premium_until = fields.FloatField(null=True)

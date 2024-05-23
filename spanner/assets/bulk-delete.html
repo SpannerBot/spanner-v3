@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Bulk message deletion information - #{{ message.channel.name }}, {{ message.guild.name }}</title>
+    <style>
+        body {
+            background-color: #282c34;
+            color: #abb2bf;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 10px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #61afef;
+        }
+
+        a {
+            color: #98c379;
+        }
+
+        div.code {
+            color: #eee;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #1D1E21
+        }
+        code.inline {
+            font-family: 'Courier New', Courier, monospace;
+            color: #eee;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-size: 90%;
+        }
+
+        footer {
+            margin-top: 20px;
+            border-top: 1px solid #444;
+            padding-top: 10px;
+            font-size: 0.8em;
+        }
+
+        .attachments-box {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-gap: 20px;
+            text-align: center;
+            align-items: center;
+            background: #1D1E21;
+            border-radius: 5px;
+        }
+
+        img.embedded {
+            max-width: 40vw;
+            max-height: 40vh;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function forceDownload(e) {
+            if(e.preventDefault) {
+                e.preventDefault();
+            }
+            let src = e.target.src || e.target.href;
+            // if there are any <source> Elements in e.target's children, use the first one's src.
+            if(e.target.children.length > 0) {
+                src = e.target.children[0].src || src;
+            }
+            if(!src) {
+                alert("No URI was found to download. Sorry!");
+                return;
+            }
+            let a = document.createElement('a');
+            a.download = true;
+            a.textContent = "click here to download"
+            a.href = src;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.hidden = true;
+            document.appendChild(a);
+            a.click();
+            a.remove();
+        }
+    </script>
+</head>
+<body>
+    <h1>Message Information:</h1>
+    <ul>
+        <li>Author: <a href="{{ message.author.jump_url }}" rel="noopener" target="_blank">{{  message.author.name }} (<code class="inline">{{ message.author.id }}</code>)</a></li>
+        <li>Channel: <a href="{{ message.channel.jump_url }}" rel="noopener" target="_blank">#{{ message.channel.name }} (<code class="inline">{{ message.channel.id }}</code>)</a></li>
+        <li>Message ID: <code class="inline">{{ message.id }}</code></li>
+        <li>Created at: {{ created_at }}</li>
+        <li>Last edit: {{ edited_at }}</li>
+        <li>Was pinned: {{ message.pinned }}</li>
+        <li>Sent with TTS: {{ message.tts }}</li>
+    </ul>
+
+    {% if message.content %}
+        <h2>Content:</h2>
+        <details>
+        <summary>Click to show raw content</summary>
+        <pre>{{ message.content }}</pre>
+        </details>
+        {% if message.clean_content != message.content %}
+            <br/>
+            <details>
+            <summary>Click to see "resolved" content (mention names etc)</summary>
+            <pre>{{ message.clean_content }}</pre>
+            </details>
+        {% endif %}
+    {% else %}
+        <h2>Content:</h2>
+        <p>This message has no content.</p>
+    {% endif %}
+
+    {% if message.attachments %}
+        <h2>Attachments:</h2>
+        <p>
+            Warning! These links utilise discord's "proxy" media endpoints. Sometimes, these URLs are valid for up to a
+            few minutes after the message is deleted. While it is unlikely, you may be able to download the attachments.
+            {% if cached_attachments %}
+                "Stored" attachments are included in the HTML of this document, meaning they can be downloaded regardless
+                of the message's deletion status.
+            {% endif %}
+        </p>
+        <section class="attachments-box">
+            {% for attachment in message.attachments %}
+                <figure>
+                    {% if cached_attachments[attachment.filename] %}
+                        {% if attachment.content_type.startswith("image/") %}
+                                <img
+                                        src="data:{{ attachment.content_type }};base64,{{ cached_attachments[attachment.filename] }}"
+                                        alt="{ attachment.filename }}"
+                                        onclick="forceDownload"
+                                        class="embedded"
+                                />
+                        {% elif attachment.content_type.startswith("video/") %}
+                            <video controls playsinline ondblclick="forceDownload" title="double click to download">
+                                <source id="video-src-{{ attachment.id }}" src="data:{{ attachment.content_type }};base64,{{ cached_attachments[attachment.filename] }}" type="{{ attachment.content_type }}">
+                            </video>
+                        {% elif attachment.content_type.startswith("audio/") %}
+                            <audio controls ondblclick="forceDownload" title="double click to download">
+                                <source id="audio-src-{{ attachment.id }}" src="data:{{ attachment.content_type }};base64,{{ cached_attachments[attachment.filename] }}" type="{{ attachment.content_type }}">
+                            </audio>
+                        {% else %}
+                            <a href="data:{{ attachment.content_type }};base64,{{ cached_attachments[attachment.filename] }}" download>
+                                [download stored - {{ attachment.content_type }}]
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    <figcaption>
+                        <p>
+                            <a href="{{ attachment.proxy_url }}" rel="noopener" download>{{ attachment.filename }}</a> ({{ attachment.size }} bytes)
+                        </p>
+                    </figcaption>
+                </figure>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if message.embeds %}
+        <h2>Embeds:</h2>
+        <p>
+            You can use
+            <a href="http://webcache.googleusercontent.com/search?client=firefox-b-d&q=cache%3Aleovoel.github.io%2Fembed-visualizer%2F">
+                this embed visualizer
+            </a>
+            and paste in the below code to see what the embeds looked like.
+        </p>
+        {% for embed in embeds %}
+            <h3>{{ embed['title'] }}</h3>
+            <div><pre><code class="language-json">{{ embed }}</code></pre></div>
+        {% endfor %}
+
+    {% endif %}
+    <footer>
+        <p>This document was generated automatically for {{ message.guild.name }} at {{ now }}.</p>
+        <p><a href="https://discord.gg/TveBeG7">Get support with Spanner v3 here.</a></p>
+    </footer>
+
+    <div>
+        <!-- Highlight.js - load after page is loaded. -->
+        <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css">
+        <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </div>
+</body>
+</html>
