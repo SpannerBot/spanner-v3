@@ -78,13 +78,14 @@ class SettingsCog(commands.Cog):
         log_feature.enabled = enabled if enabled is not None else not log_feature.enabled
         await log_feature.save()
         if user_id:
-            await GuildAuditLogEntry.create(
+            e = await GuildAuditLogEntry.create(
                 guild=config,
                 author=user_id,
                 namespace=f"settings.logging.features.{feature}",
                 action="toggle",
                 description=f"Toggled the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}."
             )
+            self.bot.dispatch("spanner_audit_log_entry", e)
 
         return log_feature
 

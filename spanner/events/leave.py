@@ -47,7 +47,7 @@ class LeaveEvents(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        self.log.info("%r left %r.", member, member.guild)
+        self.log.debug("%r left %r.", member, member.guild)
         if member.guild is None or member == self.bot.user:
             return
 

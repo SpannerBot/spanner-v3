@@ -179,9 +179,9 @@ class MessageEvents(commands.Cog):
         if not unknown_messages:
             self.log.debug("[raw bulk] There were no unknown messages, event handled entirely by cache.")
             return
+        self.log.debug("[raw bulk] Found %d unknown messages.", len(unknown_messages))
 
         channel = self.bot.get_channel(payload.channel_id)
-        guild = channel.guild
         embed = discord.Embed(
             title=f"{len(unknown_messages):,} unknown messages deleted in #{channel.name}:",
             description=f"{len(payload.message_ids):,} messages were deleted, "
