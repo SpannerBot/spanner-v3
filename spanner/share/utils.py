@@ -1,6 +1,13 @@
+import logging
 import textwrap
 from typing import Any, Literal
 from urllib.parse import urlparse
+import asyncio
+import io
+import json
+from base64 import b64encode
+from pathlib import Path
+from jinja2 import Template
 
 import discord
 from discord.ext import commands, bridge
@@ -15,8 +22,10 @@ __all__ = [
     "pluralise",
     "humanise_bytes",
     "SilentCommandError",
-    "get_log_channel"
+    "get_log_channel",
+    "format_html"
 ]
+log = logging.getLogger(__name__)
 
 
 class SilentCommandError(commands.CommandError):
@@ -92,17 +101,73 @@ async def get_log_channel(bot: bridge.Bot, guild_id: int, log_feature: str) -> d
     :return: The log channel, if found and available
     :rtype: discord.abc.Messageable | None
     """
+    lfn = log_feature
     log_feature = await GuildLogFeatures.get_or_none(
         guild_id=guild_id,
         name=log_feature
     )
     if not log_feature or log_feature.enabled is False:
+        log.debug("%r does not have the feature %r enabled.", guild_id, lfn)
         return
 
     await log_feature.fetch_related("guild")
 
     log_channel = bot.get_channel(log_feature.guild.log_channel)
     if not log_channel or not log_channel.can_send(discord.Embed, discord.File):
+        log.debug("%rs log channel is missing or blocked.", guild_id)
         return
-
+    log.debug("%rs log channel is %r.", log_channel.name, log_channel)
     return log_channel
+
+
+async def format_html(message: discord.Message):
+    with open(Path.cwd() / "assets" / "bulk-delete.html") as f:
+        template = Template(f.read())
+    embeds = [embed.to_dict() for embed in message.embeds]
+    for n, embed in enumerate(embeds, start=1):
+        embed.setdefault("title", "Untitled Embed %d" % n)
+    embeds = [json.dumps(embed, separators=(",", ":"), default=str, ensure_ascii=False) for embed in embeds]
+
+    async def download_attachment(att: discord.Attachment) -> tuple[discord.Attachment, str] | tuple[None, None]:
+        bio = io.BytesIO()
+        try:
+            log.info("Downloading %r", att)
+            await att.save(bio)
+        except discord.HTTPException as e:
+            log.warning("Failed to download %r: %s", att, e, exc_info=e)
+            return None, None
+        else:
+            bio.seek(0)
+            return att, b64encode(bio.getvalue()).decode()
+
+    attachments = {}
+    tasks = []
+    for attachment in message.attachments:
+        if attachment.size <= 1024 * 1024 * 2:
+            log.debug("Adding %r to the download queue.", attachment)
+            tasks.append(download_attachment(attachment))
+    if tasks:
+        log.debug("Waiting for %d downloads", len(tasks))
+        for result in await asyncio.gather(*tasks):
+            _attachment, _data = result
+            if not _attachment:
+                continue
+            attachments[_attachment.filename] = _data
+        log.debug("Downloads finished.")
+
+    kwargs = dict(
+        message=message,
+        created_at=message.created_at.isoformat(),
+        edited_at=message.edited_at.isoformat() if message.edited_at else "N/A",
+        embeds=embeds,
+        cached_attachments=attachments,
+        now=discord.utils.utcnow().isoformat()
+    )
+    r = template.render(
+        **kwargs
+    )
+    if len(r) >= (message.guild.filesize_limit - 8192):
+        log.warning("Rendered template was too big, removing cached attachments.")
+        kwargs["cached_attachments"] = {}
+        return template.render(**kwargs)
+    return r

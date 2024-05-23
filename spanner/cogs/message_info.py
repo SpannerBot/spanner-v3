@@ -1,14 +1,9 @@
-import asyncio
 import io
-import json
-from base64 import b64encode
 
 import discord
 from discord.ext import commands
-from pathlib import Path
-from jinja2 import Template
 
-from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink
+from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink, format_html
 from spanner.share.views import GenericLabelledEmbedView
 
 
@@ -17,50 +12,7 @@ class MessageInfoCog(commands.Cog):
         self.bot = bot
 
     @staticmethod
-    async def format_html(message: discord.Message):
-        with open(Path.cwd() / "assets" / "bulk-delete.html") as f:
-            template = Template(f.read())
-        embeds = [embed.to_dict() for embed in message.embeds]
-        for n, embed in enumerate(embeds, start=1):
-            embed.setdefault("title", "Untitled Embed %d" % n)
-        embeds = [json.dumps(embed, separators=(",", ":"), default=str, ensure_ascii=False) for embed in embeds]
-
-        async def download_attachment(att: discord.Attachment) -> tuple[discord.Attachment, str] | tuple[None, None]:
-            bio = io.BytesIO()
-            try:
-                await att.save(bio)
-            except discord.HTTPException:
-                return None, None
-            else:
-                bio.seek(0)
-                return att, b64encode(bio.getvalue()).decode()
-
-        attachments = {}
-        tasks = []
-        for attachment in message.attachments:
-            if attachment.size <= 1024 * 1024 * 2:
-                tasks.append(download_attachment(attachment))
-        if tasks:
-            for result in await asyncio.gather(*tasks):
-                _attachment, _data = result
-                attachments[_attachment.filename] = _data
-
-        kwargs = dict(
-            message=message,
-            created_at=message.created_at.isoformat(),
-            edited_at=message.edited_at.isoformat() if message.edited_at else "N/A",
-            embeds=embeds,
-            cached_attachments=attachments,
-        )
-        r = template.render(
-            **kwargs
-        )
-        if len(r) >= (message.guild.filesize_limit - 8192):
-            kwargs["cached_attachments"] = {}
-            return template.render(**kwargs)
-        return r
-
-    async def get_message_info(self, message: discord.Message) -> dict[str, discord.Embed]:
+    async def get_message_info(message: discord.Message) -> dict[str, discord.Embed]:
         if message.edited_at:
             le = discord.utils.format_dt(message.edited_at, 'R')
         else:
@@ -211,7 +163,7 @@ class MessageInfoCog(commands.Cog):
             view=GenericLabelledEmbedView(ctx, **embeds),
             ephemeral=True,
             file=discord.File(
-                io.BytesIO((await self.format_html(message)).encode()),
+                io.BytesIO((await format_html(message)).encode()),
                 filename=f"{message.id}.html"
             )
         )

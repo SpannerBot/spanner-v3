@@ -56,6 +56,10 @@ for logger in CONFIG_LOGGING.get("silence", []):
     logging.getLogger(logger).setLevel(logging.WARNING)
     logging.getLogger(logger).warning("Level for this logger set to WARNING via config.toml[logging.silence].")
 
+for logger in CONFIG_LOGGING.get("verbose", []):
+    logging.getLogger(logger).setLevel(logging.DEBUG)
+    logging.getLogger(logger).debug("Level for this logger set to DEBUG via config.toml[logging.verbose].")
+
 
 class CustomBridgeBot(bridge.Bot):
     async def start(self, token: str, *, reconnect: bool = True) -> None:
