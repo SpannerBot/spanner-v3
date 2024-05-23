@@ -37,7 +37,7 @@ class TimeoutEvents(commands.Cog):
                 raise asyncio.TimeoutError
         except asyncio.TimeoutError:
             self.log.debug(
-                "Leave(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a timeout.",
+                "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a timeout.",
                 guild,
                 target
             )
