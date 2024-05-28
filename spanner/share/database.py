@@ -28,12 +28,11 @@ class GuildLogFeatures(Model):
         "member.unban",
         "member.nickname-change",
         "member.roles.add",
-        "member.roles.remove"
+        "member.roles.remove",
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig",
-        related_name="log_features"
+        "models.GuildConfig", related_name="log_features"
     )
 
     name = fields.CharField(min_length=1, max_length=32, index=True)
@@ -44,8 +43,7 @@ class GuildLogFeatures(Model):
 class GuildAuditLogEntry(Model):
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig",
-        related_name="audit_log_entries"
+        "models.GuildConfig", related_name="audit_log_entries"
     )
     author = fields.BigIntField()
     namespace = fields.CharField(min_length=1, max_length=128)
@@ -61,16 +59,14 @@ class UserHistory(Model):
     nickname = fields.CharField(min_length=1, max_length=32, default=None, null=True)
     avatar_hash = fields.CharField(max_length=255, default=None, null=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig",
-        related_name="user_history"
+        "models.GuildConfig", related_name="user_history"
     )
 
 
 class SelfRoleMenu(Model):
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig",
-        related_name="self_roles"
+        "models.GuildConfig", related_name="self_roles"
     )
     name = fields.CharField(min_length=1, max_length=32)
     channel = fields.BigIntField()

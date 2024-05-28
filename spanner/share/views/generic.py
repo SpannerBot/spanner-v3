@@ -50,11 +50,11 @@ class GenericLabelledEmbedView(discord.ui.View):
 
 class GenericConfirmView(discord.ui.View):
     def __init__(
-            self,
-            ctx: discord.ApplicationContext,
-            timeout: int | float = 900,
-            default: typing.Any = None,
-            mapping: dict[bool, typing.Any] = None,
+        self,
+        ctx: discord.ApplicationContext,
+        timeout: int | float = 900,
+        default: typing.Any = None,
+        mapping: dict[bool, typing.Any] = None,
     ):
         super().__init__(timeout=timeout, disable_on_timeout=True)
         self.ctx = ctx

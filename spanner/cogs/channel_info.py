@@ -19,11 +19,7 @@ class ChannelInfoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def get_channel_info(
-            self,
-            channel: typing.Union[*SUPPORTED_CHANNELS]
-    ):
-
+    async def get_channel_info(self, channel: typing.Union[*SUPPORTED_CHANNELS]):
         def humanise(v: int, *, precise: bool = False):
             def pluralise(word: str, value: int | float):
                 value = round(value)
@@ -85,7 +81,7 @@ class ChannelInfoCog(commands.Cog):
                 f"**Is news?** {get_bool_emoji(channel.is_news())}",
                 f"**Pins:** {len(await channel.pins()):,}",
                 f"**Slowmode:** {slowmode}",
-                f"**Members:** {len(channel.members):,}"
+                f"**Members:** {len(channel.members):,}",
             ]
             text_embed = discord.Embed(
                 title=f"Text Channel Info: {channel.name}",
@@ -107,7 +103,7 @@ class ChannelInfoCog(commands.Cog):
                 thread_slowmode = "Disabled"
 
             auto_duration = humanise(channel.default_auto_archive_duration * 60)
-            order = channel.default_sort_order.name if channel.default_sort_order else 'Recent Activity'
+            order = channel.default_sort_order.name if channel.default_sort_order else "Recent Activity"
             order = order.replace("_", " ").title()
             forum_info = [
                 f"**Is NSFW?** {get_bool_emoji(channel.is_nsfw())}",
@@ -136,8 +132,8 @@ class ChannelInfoCog(commands.Cog):
                 tags_embed.add_field(
                     name=tag.name,
                     value=f"**ID:** `{tag.id}`\n"
-                          f"**Moderator Only?** {get_bool_emoji(tag.moderated)}\n"
-                          f"**Emoji:** {tag.emoji if tag.emoji.name != '_' else None!s}\n",
+                    f"**Moderator Only?** {get_bool_emoji(tag.moderated)}\n"
+                    f"**Emoji:** {tag.emoji if tag.emoji.name != '_' else None!s}\n",
                 )
             if tags_embed.fields:
                 results["Available tags"] = tags_embed
@@ -185,12 +181,13 @@ class ChannelInfoCog(commands.Cog):
                         colour=channel.guild.me.colour or discord.Colour.blurple(),
                     )
                     if channel.instance.scheduled_event:
-                        start = discord.utils.format_dt(channel.instance.scheduled_event.start_time, 'R')
-                        end = discord.utils.format_dt(channel.instance.scheduled_event.end_time, 'R')
+                        start = discord.utils.format_dt(channel.instance.scheduled_event.start_time, "R")
+                        end = discord.utils.format_dt(channel.instance.scheduled_event.end_time, "R")
                         duration = humanise(
-                            (channel.instance.scheduled_event.end_time - channel.instance.scheduled_event.start_time)
-                            .total_seconds(),
-                            precise=True
+                            (
+                                channel.instance.scheduled_event.end_time - channel.instance.scheduled_event.start_time
+                            ).total_seconds(),
+                            precise=True,
                         )
                         subscribers = channel.instance.scheduled_event.subscriber_count
                         creator = channel.instance.scheduled_event.creator
@@ -199,10 +196,10 @@ class ChannelInfoCog(commands.Cog):
                         event_embed.add_field(
                             name="Scheduled Event",
                             value=f"**Starts:** {start}\n"
-                                  f"**Ends:** {end} (total duration: {duration})\n"
-                                  f"**Creator:** {creator.mention}\n"
-                                  f"**Name:** {channel.instance.scheduled_event.name!r}\n"
-                                  f"**Interested:** {subscribers:,}",
+                            f"**Ends:** {end} (total duration: {duration})\n"
+                            f"**Creator:** {creator.mention}\n"
+                            f"**Name:** {channel.instance.scheduled_event.name!r}\n"
+                            f"**Interested:** {subscribers:,}",
                         )
                     results["Event-specific info"] = event_embed
         elif isinstance(channel, discord.CategoryChannel):
@@ -223,9 +220,7 @@ class ChannelInfoCog(commands.Cog):
 
     @commands.slash_command(name="channel-info")
     async def channel_info(
-            self,
-            ctx: discord.ApplicationContext,
-            channel: discord.SlashCommandOptionType.channel = None
+        self, ctx: discord.ApplicationContext, channel: discord.SlashCommandOptionType.channel = None
     ):
         """Displays information about a channel."""
         await ctx.defer(ephemeral=True)

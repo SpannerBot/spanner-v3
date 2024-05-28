@@ -1,8 +1,6 @@
 import asyncio
-import collections
 import datetime
 import logging
-import typing
 
 import discord
 from discord.ext import bridge, commands
@@ -29,18 +27,14 @@ class NicknameChangeEvents(commands.Cog):
                 return entry
 
         try:
-            entry = await self.bot.wait_for(
-                "audit_log_entry",
-                check=the_check,
-                timeout=600
-            )
+            entry = await self.bot.wait_for("audit_log_entry", check=the_check, timeout=600)
             if not entry:
                 raise asyncio.TimeoutError
         except asyncio.TimeoutError:
             self.log.debug(
                 "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a nick change.",
                 guild,
-                target
+                target,
             )
         else:
             return entry
@@ -60,17 +54,14 @@ class NicknameChangeEvents(commands.Cog):
                 title="Member changed nickname!",
                 colour=discord.Colour.blue(),
                 description=f"* Before: {discord.utils.escape_markdown(before.nick or 'N/A')}\n"
-                            f"* After: {discord.utils.escape_markdown(after.nick or 'N/A')}\n",
-                timestamp=discord.utils.utcnow()
+                f"* After: {discord.utils.escape_markdown(after.nick or 'N/A')}\n",
+                timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=after.display_avatar.url)
             msg = await log_channel.send(embed=embed)
             entry = await self.wait_for_audit_log(before.guild, after, after.nick)
             if entry:
-                embed.set_author(
-                    name=f"Moderator: {entry.user}",
-                    icon_url=entry.user.display_avatar.url
-                )
+                embed.set_author(name=f"Moderator: {entry.user}", icon_url=entry.user.display_avatar.url)
                 embed.set_footer(text="Nickname change details fetched from audit log.")
                 await msg.edit(embed=embed)
 

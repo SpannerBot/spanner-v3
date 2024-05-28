@@ -43,7 +43,7 @@ class EditEmojiRolesView(discord.ui.View):
                 self.log.error(f"Failed to update roles for {self.emoji}.", exc_info=e)
                 button.label = "Error while applying"
                 button.style = discord.ButtonStyle.danger
-                button.emoji = discord.PartialEmoji.from_str("\N{crying face}")
+                button.emoji = discord.PartialEmoji.from_str("\N{CRYING FACE}")
                 await interaction.edit_original_response(view=self)
             else:
                 button.label = "Applied"

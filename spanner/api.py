@@ -1,11 +1,13 @@
+from urllib.parse import urlparse
+
 import fastapi
-from fastapi.templating import Jinja2Templates
+from bot import bot
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from spanner.share.database import GuildAuditLogEntry
+from fastapi.templating import Jinja2Templates
+
 from spanner.share.config import load_config
-from urllib.parse import urlparse
-from bot import bot
+from spanner.share.database import GuildAuditLogEntry
 
 
 def _get_root_path():
@@ -15,7 +17,7 @@ def _get_root_path():
         raise ValueError("Invalid base URL scheme.")
     if not parsed.netloc:
         raise ValueError("Invalid base URL netloc.")
-    path = parsed.path.rstrip("/") or '/'
+    path = parsed.path.rstrip("/") or "/"
     return path
 
 
@@ -39,9 +41,7 @@ async def get_audit_logs(req: fastapi.Request, guild_id: int):
     for entry in audit_log:
         await entry.fetch_related("guild")
     return templates.TemplateResponse(
-        req,
-        "guild-audit-log.html",
-        {"guild": bot.get_guild(guild_id), "events": audit_log}
+        req, "guild-audit-log.html", {"guild": bot.get_guild(guild_id), "events": audit_log}
     )
 
 

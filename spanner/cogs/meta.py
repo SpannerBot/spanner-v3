@@ -2,7 +2,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.config import load_config
-from spanner.share.database import GuildConfig, GuildLogFeatures
+from spanner.share.database import GuildLogFeatures
 
 
 class MetaCog(commands.Cog):
@@ -22,7 +22,7 @@ class MetaCog(commands.Cog):
             owner = (await self.bot.application_info()).owner
             return await ctx.respond(
                 f"This instance has not configured a support server. Try contacting the owner, {owner.mention}.",
-                ephemeral=True
+                ephemeral=True,
             )
 
         guild = self.bot.get_guild(self.config["support_guild_id"])
@@ -31,8 +31,8 @@ class MetaCog(commands.Cog):
 
         invite = await guild.text_channels[0].create_invite(max_age=60 * 15, max_uses=1)
         await ctx.respond(
-            "%s (expires after you use it, or %s)" % (invite.url, discord.utils.format_dt(invite.expires_at, 'R')),
-            ephemeral=True
+            "%s (expires after you use it, or %s)" % (invite.url, discord.utils.format_dt(invite.expires_at, "R")),
+            ephemeral=True,
         )
 
     @commands.command()

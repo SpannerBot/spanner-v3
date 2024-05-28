@@ -7,9 +7,9 @@ import tomllib
 from pathlib import Path
 
 import discord
+from bot import bot
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
-from bot import bot
 
 sys.path.append("..")
 
@@ -153,14 +153,14 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
         time_remaining = error.retry_after
         expires = discord.utils.utcnow() + datetime.timedelta(seconds=time_remaining)
         return await ctx.respond(
-            "\N{stopwatch} This command is on cooldown until {}.".format(discord.utils.format_dt(expires, "R")),
+            "\N{STOPWATCH} This command is on cooldown until {}.".format(discord.utils.format_dt(expires, "R")),
             ephemeral=True,
         )
     elif isinstance(error, (commands.BotMissingPermissions, commands.MissingPermissions)):
-        return await ctx.respond(f"\N{cross mark} {error}", ephemeral=True)
+        return await ctx.respond(f"\N{CROSS MARK} {error}", ephemeral=True)
     elif isinstance(error, commands.MaxConcurrencyReached):
         return await ctx.respond(
-            "\N{cross mark} This command is overloaded. Please wait a while and try again.", ephemeral=True
+            "\N{CROSS MARK} This command is overloaded. Please wait a while and try again.", ephemeral=True
         )
 
     log.error(

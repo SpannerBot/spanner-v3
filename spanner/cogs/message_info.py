@@ -3,7 +3,13 @@ import io
 import discord
 from discord.ext import commands
 
-from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink, format_html
+from spanner.share.utils import (
+    first_line,
+    format_html,
+    get_bool_emoji,
+    humanise_bytes,
+    hyperlink,
+)
 from spanner.share.views import GenericLabelledEmbedView
 
 
@@ -14,9 +20,9 @@ class MessageInfoCog(commands.Cog):
     @staticmethod
     async def get_message_info(message: discord.Message) -> dict[str, discord.Embed]:
         if message.edited_at:
-            le = discord.utils.format_dt(message.edited_at, 'R')
+            le = discord.utils.format_dt(message.edited_at, "R")
         else:
-            le = 'Unedited.'
+            le = "Unedited."
         overview_text = [
             f"**ID:** `{message.id}`",
             f"**Author:** {message.author.mention}",
@@ -30,13 +36,9 @@ class MessageInfoCog(commands.Cog):
             f"**System Message?** {get_bool_emoji(message.is_system())}",
         ]
         overview = discord.Embed(
-            title=f"Message Overview - {message.id}",
-            description="\n".join(overview_text),
-            color=message.author.colour
+            title=f"Message Overview - {message.id}", description="\n".join(overview_text), color=message.author.colour
         )
-        result = {
-            "Overview": overview
-        }
+        result = {"Overview": overview}
 
         if message.flags.value:
             flags_text = [
@@ -52,9 +54,7 @@ class MessageInfoCog(commands.Cog):
                 f"**Is a voice message?** {get_bool_emoji(message.flags.is_voice_message)}",
             ]
             flags = discord.Embed(
-                title=f"Message Flags - {message.id}",
-                description="\n".join(flags_text),
-                color=message.author.colour
+                title=f"Message Flags - {message.id}", description="\n".join(flags_text), color=message.author.colour
             )
             result["Flags"] = flags
 
@@ -70,7 +70,7 @@ class MessageInfoCog(commands.Cog):
             mentions = discord.Embed(
                 title=f"Message Mentions - {message.id}",
                 description="\n".join(mentions_text)[:4096],  # lazy, will make better later
-                color=message.author.colour
+                color=message.author.colour,
             )
             result["Mentions"] = mentions
 
@@ -87,35 +87,32 @@ class MessageInfoCog(commands.Cog):
             application = discord.Embed(
                 title=f"Message Application - {message.id}",
                 description="\n".join(application_text),
-                color=message.author.colour
+                color=message.author.colour,
             )
             result["Application Info"] = application
 
         if message.attachments:
             attachments = discord.Embed(
                 title=f"Message Attachments - {message.id}",
-                description=f"Direct takes you to the CDN, which is faster, or "
-                            f"proxy takes you to the alternative URL, which hangs around a bit after an attachment is"
-                            f" deleted.",
-                color=message.author.colour
+                description="Direct takes you to the CDN, which is faster, or "
+                "proxy takes you to the alternative URL, which hangs around a bit after an attachment is"
+                " deleted.",
+                color=message.author.colour,
             )
             for attachment in message.attachments[:25]:
                 attachments.add_field(
                     name=attachment.filename,
                     value=f"{hyperlink(attachment.url, '**[Direct]**')} | "
-                          f"{hyperlink(attachment.proxy_url, '**[Proxy]**')}\n"
-                          f"**Size:** {humanise_bytes(attachment.size)}\n"
-                          f"**Height:** {attachment.height or 'N/A'}\n"
-                          f"**Width:** {attachment.width or 'N/A'}\n"
-                          f"**Content type:** {attachment.content_type}\n"
+                    f"{hyperlink(attachment.proxy_url, '**[Proxy]**')}\n"
+                    f"**Size:** {humanise_bytes(attachment.size)}\n"
+                    f"**Height:** {attachment.height or 'N/A'}\n"
+                    f"**Width:** {attachment.width or 'N/A'}\n"
+                    f"**Content type:** {attachment.content_type}\n",
                 )
             result["Attachments"] = attachments
 
         if message.embeds:
-            embeds = discord.Embed(
-                title=f"Message Embeds - {message.id}",
-                colour=message.author.colour
-            )
+            embeds = discord.Embed(title=f"Message Embeds - {message.id}", colour=message.author.colour)
             for embed in message.embeds[:25]:
                 embed_lines = [
                     f"**Type:** {embed.type}",
@@ -162,10 +159,7 @@ class MessageInfoCog(commands.Cog):
             embed=embeds["Overview"],
             view=GenericLabelledEmbedView(ctx, **embeds),
             ephemeral=True,
-            file=discord.File(
-                io.BytesIO((await format_html(message)).encode()),
-                filename=f"{message.id}.html"
-            )
+            file=discord.File(io.BytesIO((await format_html(message)).encode()), filename=f"{message.id}.html"),
         )
 
 

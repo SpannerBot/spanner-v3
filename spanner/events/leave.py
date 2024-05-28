@@ -29,18 +29,12 @@ class LeaveEvents(commands.Cog):
             return e.target == target and e.action == discord.AuditLogAction.kick
 
         try:
-            entry = await self.bot.wait_for(
-                "audit_log_entry",
-                check=the_check,
-                timeout=600
-            )
+            entry = await self.bot.wait_for("audit_log_entry", check=the_check, timeout=600)
             if not entry:
                 raise asyncio.TimeoutError
         except asyncio.TimeoutError:
             self.log.debug(
-                "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a kick.",
-                guild,
-                target
+                "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a kick.", guild, target
             )
         else:
             return entry
@@ -59,9 +53,9 @@ class LeaveEvents(commands.Cog):
             title="Member left!",
             colour=discord.Colour.blue(),
             description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)\n"
-                        f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
-                        f"* Joined: {discord.utils.format_dt(member.joined_at, 'R')}\n",
-            timestamp=discord.utils.utcnow()
+            f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
+            f"* Joined: {discord.utils.format_dt(member.joined_at, 'R')}\n",
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         message = await log_channel.send(embed=embed)
@@ -70,10 +64,7 @@ class LeaveEvents(commands.Cog):
         if entry:
             embed.title = "Member kicked!"
             embed.colour = discord.Colour.gold()
-            embed.set_author(
-                name="Moderator: " + entry.user.display_name,
-                icon_url=entry.user.display_avatar.url
-            )
+            embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
             embed.set_footer(text="Kick details fetched from audit log.")
             if entry.reason:
                 embed.add_field(name="Reason", value=entry.reason, inline=False)
@@ -95,9 +86,9 @@ class LeaveEvents(commands.Cog):
                         message.embeds[0],
                         discord.Embed(
                             description="This user was actually banned. If you have the `member.ban` feature enabled,"
-                                        " a ban log will be sent shortly."
-                        )
-                    ]
+                            " a ban log will be sent shortly."
+                        ),
+                    ],
                 )
                 self.leave_messages.remove(item)
 

@@ -12,12 +12,7 @@ class EmojiStealButton(discord.ui.Button):
     view: GenericLabelledEmbedView
 
     def __init__(self, emoji: discord.Emoji | discord.PartialEmoji):
-        super().__init__(
-            style=discord.ButtonStyle.green,
-            label="Steal",
-            custom_id="steal",
-            emoji=emoji
-        )
+        super().__init__(style=discord.ButtonStyle.green, label="Steal", custom_id="steal", emoji=emoji)
         self._emoji = emoji
         self.log = logging.getLogger("cogs.emoji_info.EmojiStealView")
 
@@ -37,13 +32,13 @@ class EmojiStealButton(discord.ui.Button):
                 exc_info=e,
             )
             self.label = "Error while downloading"
-            self.emoji = discord.PartialEmoji.from_str("\N{crying face}")
+            self.emoji = discord.PartialEmoji.from_str("\N{CRYING FACE}")
             self.style = discord.ButtonStyle.red
             return await interaction.edit_original_response(view=self.view)
         else:
             if len(body) > 500 * 1024:
                 self.label = "Emoji too big"
-                self.emoji = discord.PartialEmoji.from_str("\N{no entry}")
+                self.emoji = discord.PartialEmoji.from_str("\N{NO ENTRY}")
                 self.style = discord.ButtonStyle.red
                 return await interaction.edit_original_response(view=self.view)
             else:
@@ -61,12 +56,12 @@ class EmojiStealButton(discord.ui.Button):
                         exc_info=e,
                     )
                     self.label = "Error while creating"
-                    self.emoji = discord.PartialEmoji.from_str("\N{crying face}")
+                    self.emoji = discord.PartialEmoji.from_str("\N{CRYING FACE}")
                     self.style = discord.ButtonStyle.red
                     return await interaction.edit_original_response(view=self.view)
                 else:
                     self.label = "Emoji stolen!"
-                    self.emoji = discord.PartialEmoji.from_str("\N{white heavy check mark}")
+                    self.emoji = discord.PartialEmoji.from_str("\N{WHITE HEAVY CHECK MARK}")
                     self.style = discord.ButtonStyle.green
                     return await interaction.edit_original_response(view=self.view)
 
@@ -125,11 +120,7 @@ class EmojiInfoCog(commands.Cog):
             return {"Overview": emoji_embed, "Allowed roles": emoji_roles_embed}
         return {"Overview": emoji_embed}
 
-    emoji_group = discord.SlashCommandGroup(
-        name="emoji",
-        description="Commands for managing emojis.",
-        guild_only=True
-    )
+    emoji_group = discord.SlashCommandGroup(name="emoji", description="Commands for managing emojis.", guild_only=True)
 
     @emoji_group.command(name="info", description="Get information about an emoji.")
     async def emoji_info(self, ctx: discord.ApplicationContext, emoji: str):
@@ -183,9 +174,7 @@ class EmojiInfoCog(commands.Cog):
 
         view = EditEmojiRolesView(ctx, emoji=emoji)
         await ctx.respond(
-            "Select up to 25 roles that can use this emoji. Click apply once you're done.",
-            view=view,
-            ephemeral=True
+            "Select up to 25 roles that can use this emoji. Click apply once you're done.", view=view, ephemeral=True
         )
 
     @commands.slash_command(name="character-info")

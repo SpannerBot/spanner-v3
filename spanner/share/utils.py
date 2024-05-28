@@ -1,17 +1,17 @@
-import logging
-import re
-import textwrap
-from typing import Any, Literal
-from urllib.parse import urlparse
 import asyncio
 import io
 import json
+import logging
+import re
+import textwrap
 from base64 import b64encode
 from pathlib import Path
-from jinja2 import Template
+from typing import Any, Literal
+from urllib.parse import urlparse
 
 import discord
-from discord.ext import commands, bridge
+from discord.ext import bridge, commands
+from jinja2 import Template
 
 from .data import boolean_emojis
 from .database import GuildLogFeatures
@@ -35,6 +35,7 @@ class SilentCommandError(commands.CommandError):
 
     This should be used to suppress the default error message for a specific command, and instead allow the command
     to handle error messages itself, while still passing on a traceback to the global error handler."""
+
     def __init__(self, message: str, *args: Any, original: Exception | None = None):
         self.original: Exception = original or self
         super().__init__(message, *args)
@@ -104,10 +105,7 @@ async def get_log_channel(bot: bridge.Bot, guild_id: int, log_feature: str) -> d
     :rtype: discord.abc.Messageable | None
     """
     lfn = log_feature
-    log_feature = await GuildLogFeatures.get_or_none(
-        guild_id=guild_id,
-        name=log_feature
-    )
+    log_feature = await GuildLogFeatures.get_or_none(guild_id=guild_id, name=log_feature)
     if not log_feature or log_feature.enabled is False:
         log.debug("%r does not have the feature %r enabled.", guild_id, lfn)
         return
@@ -173,11 +171,9 @@ async def format_html(message: discord.Message):
         embeds=embeds,
         cached_attachments=attachments,
         now=discord.utils.utcnow().isoformat(),
-        css=_get_css(True)
+        css=_get_css(True),
     )
-    r = template.render(
-        **kwargs
-    )
+    r = template.render(**kwargs)
     if len(r) >= (message.guild.filesize_limit - 8192):
         log.warning("Rendered template was too big, removing cached attachments.")
         kwargs["cached_attachments"] = {}

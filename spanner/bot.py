@@ -3,8 +3,8 @@ import asyncio
 import discord
 import uvicorn
 from discord.ext import bridge, commands
-from tortoise import Tortoise
 from share.config import load_config
+from tortoise import Tortoise
 
 
 class CustomBridgeBot(bridge.Bot):
@@ -23,16 +23,13 @@ class CustomBridgeBot(bridge.Bot):
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         from api import app
+
         await Tortoise.init(
             db_url=load_config()["database"]["uri"],
             modules={"models": ["spanner.share.database"]},
         )
         await Tortoise.generate_schemas()
-        config = uvicorn.Config(
-            app,
-            host="0.0.0.0",
-            port=1237
-        )
+        config = uvicorn.Config(app, host="0.0.0.0", port=1237)
         config.setup_event_loop()
         server = uvicorn.Server(config)
         self.web = asyncio.create_task(server.serve())

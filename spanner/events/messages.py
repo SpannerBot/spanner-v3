@@ -1,15 +1,10 @@
 import io
-import json
 import logging
-import os
-import textwrap
-from pathlib import Path
 
 import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import format_html, get_log_channel
-from spanner.share.database import GuildLogFeatures
 
 
 class MessageEvents(commands.Cog):
@@ -32,20 +27,18 @@ class MessageEvents(commands.Cog):
 
         embed = discord.Embed(
             title=f"Message deleted in #{message.channel.name}:",
-            description=message.content or '*No content.*',
+            description=message.content or "*No content.*",
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
         )
         embed.set_author(
-            name=message.author.display_name,
-            icon_url=message.author.display_avatar.url,
-            url=message.author.jump_url
+            name=message.author.display_name, icon_url=message.author.display_avatar.url, url=message.author.jump_url
         )
         embed.add_field(
             name="Info:",
             value=f"Author: {message.author.mention} (`{message.author.id}`)\n"
-                  f"Created: {discord.utils.format_dt(message.created_at, 'R')}\n"
-                  f"Was pinned: {message.pinned}",
+            f"Created: {discord.utils.format_dt(message.created_at, 'R')}\n"
+            f"Was pinned: {message.pinned}",
         )
         embeds = [embed]
         if message.embeds:
@@ -71,19 +64,16 @@ class MessageEvents(commands.Cog):
                         discord.File(
                             io.BytesIO(html.encode()),
                             filename=f"{message.author.display_name}-{message.id}"[:27] + ".html",
-                            description="The message content in HTML format."
+                            description="The message content in HTML format.",
                         )
                     )
             embed = discord.Embed(
                 title=f"{len(messages):,} messages deleted in {messages[0].channel.name}:",
                 description="Check the files for more details.",
                 color=discord.Color.red(),
-                timestamp=now
+                timestamp=now,
             )
-            embed.set_footer(
-                text=f"Chunk {n}/{len(messages_chunk)}",
-                icon_url=self.bot.user.display_avatar.url
-            )
+            embed.set_footer(text=f"Chunk {n}/{len(messages_chunk)}", icon_url=self.bot.user.display_avatar.url)
             embeds[embed] = files
 
         first_message = None
@@ -107,19 +97,17 @@ class MessageEvents(commands.Cog):
             title=f"[click to jump] Message edited in #{after.channel.name}:",
             color=discord.Color.red(),
             timestamp=after.edited_at or discord.utils.utcnow(),
-            url=after.jump_url
+            url=after.jump_url,
         )
         embed.set_author(
-            name=after.author.display_name,
-            icon_url=after.author.display_avatar.url,
-            url=after.author.jump_url
+            name=after.author.display_name, icon_url=after.author.display_avatar.url, url=after.author.jump_url
         )
         embed.add_field(
             name="Info:",
             value=f"Author: {after.author.mention} (`{after.author.id}`)\n"
-                  f"Created: {discord.utils.format_dt(after.created_at, 'R')}\n"
-                  f"Edited: {discord.utils.format_dt(after.edited_at, 'R')}\n"
-                  f"Tip: You can right-click on [this message]({after.jump_url}) and click 'message info' to see more.",
+            f"Created: {discord.utils.format_dt(after.created_at, 'R')}\n"
+            f"Edited: {discord.utils.format_dt(after.edited_at, 'R')}\n"
+            f"Tip: You can right-click on [this message]({after.jump_url}) and click 'message info' to see more.",
         )
         files = []
         if before.content != after.content:
@@ -128,39 +116,32 @@ class MessageEvents(commands.Cog):
                     discord.File(
                         io.BytesIO(before.content.encode(errors="replace")),
                         filename="before.txt",
-                        description="The content of the message before it was edited."
+                        description="The content of the message before it was edited.",
                     )
                 )
                 embed.add_field(
                     name="Before:",
                     value="The content of the message before it was edited is too long to display here. "
-                          "Please see the attached file: `before.txt`.",
-                    inline=False
+                    "Please see the attached file: `before.txt`.",
+                    inline=False,
                 )
             else:
-                embed.add_field(
-                    name="Before:",
-                    value=before.content,
-                    inline=False
-                )
+                embed.add_field(name="Before:", value=before.content, inline=False)
             if len(after.content) > 1024:
                 files.append(
                     discord.File(
                         io.BytesIO(after.content.encode(errors="replace")),
                         filename="after.txt",
-                        description="The content of the message after it was edited."
+                        description="The content of the message after it was edited.",
                     )
                 )
                 embed.add_field(
                     name="After:",
                     value="The content of the message after it was edited is too long to display here. "
-                          "Please see the attached file: `after.txt`."
+                    "Please see the attached file: `after.txt`.",
                 )
             else:
-                embed.add_field(
-                    name="After:",
-                    value=after.content
-                )
+                embed.add_field(name="After:", value=after.content)
         await log_channel.send(embed=embed, files=files)
 
     @commands.Cog.listener()
@@ -185,9 +166,9 @@ class MessageEvents(commands.Cog):
         embed = discord.Embed(
             title=f"{len(unknown_messages):,} unknown messages deleted in #{channel.name}:",
             description=f"{len(payload.message_ids):,} messages were deleted, "
-                        f"but I did not have {len(unknown_messages):,} of them saved.",
+            f"but I did not have {len(unknown_messages):,} of them saved.",
             color=discord.Color.red(),
-            timestamp=discord.utils.utcnow()
+            timestamp=discord.utils.utcnow(),
         )
         if len(unknown_messages) != len(payload.message_ids):
             known = len(payload.message_ids) - len(unknown_messages)

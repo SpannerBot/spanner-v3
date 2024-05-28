@@ -1,4 +1,3 @@
-from enum import Enum
 
 import discord
 
@@ -45,15 +44,15 @@ nsfw_levels: dict[discord.NSFWLevel, str] = {
 }
 
 boolean_emojis: dict[bool, str] = {
-    True: "\N{white heavy check mark}",
-    False: "\N{cross mark}",
+    True: "\N{WHITE HEAVY CHECK MARK}",
+    False: "\N{CROSS MARK}",
 }
 
 status_circles: dict[str, str] = {
     "success": "\U0001f7e2",
     "warning": "\U0001f7e1",
     "error": "\U0001f534",
-    "disabled": "\u26AB",
+    "disabled": "\u26ab",
 }
 
 public_flag_emojis = {
@@ -69,7 +68,7 @@ public_flag_emojis = {
     "verified_bot": "<:verifiedbot:729382007511187526>",
     "verified_bot_developer": "<:verifieddev:729383160021909574>",
     "early_verified_bot_developer": "<:verifieddev:729383160021909574>",
-    "active_developer": "<:active_dev:1245059716904648837>"
+    "active_developer": "<:active_dev:1245059716904648837>",
 }
 
 platform_emojis = {

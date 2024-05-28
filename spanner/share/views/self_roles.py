@@ -1,8 +1,8 @@
 import asyncio
 import os
+from enum import IntEnum
 
 import discord
-from enum import IntEnum
 
 from spanner.share.database import SelfRoleMenu
 
@@ -29,13 +29,13 @@ class SelfRoleMenuType(IntEnum):
 
 class SelectRolesDropDown(discord.ui.Select):
     def __init__(
-            self,
-            roles: list[discord.Role],
-            menu_type: SelfRoleMenuType,
-            user: discord.Member,
-            *,
-            minimum: int = 0,
-            maximum: int = 25
+        self,
+        roles: list[discord.Role],
+        menu_type: SelfRoleMenuType,
+        user: discord.Member,
+        *,
+        minimum: int = 0,
+        maximum: int = 25,
     ):
         match menu_type:
             case SelfRoleMenuType.NORMAL:
@@ -56,10 +56,7 @@ class SelectRolesDropDown(discord.ui.Select):
                 pass
 
         super().__init__(
-            custom_id="dd_%s" % user.id,
-            placeholder="Select your roles",
-            min_values=minimum,
-            max_values=maximum
+            custom_id="dd_%s" % user.id, placeholder="Select your roles", min_values=minimum, max_values=maximum
         )
         self.roles = roles
         self.menu_type = menu_type
@@ -68,11 +65,7 @@ class SelectRolesDropDown(discord.ui.Select):
     def add_roles(self):
         self._underlying.options.clear()
         for role in self.roles:
-            self.add_option(
-                label=role.name,
-                value=str(role.id),
-                default=role in self.user.roles
-            )
+            self.add_option(label=role.name, value=str(role.id), default=role in self.user.roles)
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -81,20 +74,13 @@ class SelectRolesDropDown(discord.ui.Select):
             return
 
         if self.menu_type == SelfRoleMenuType.UNIQUE:
-            await member.remove_roles(
-                *self.roles,
-                reason="Self-role selection - unique (removal)"
-            )
+            await member.remove_roles(*self.roles, reason="Self-role selection - unique (removal)")
 
-        selected_roles = [
-            role for role in self.roles if str(role.id) in self.values
-        ]
+        selected_roles = [role for role in self.roles if str(role.id) in self.values]
         if selected_roles:
             await member.add_roles(*selected_roles, reason="Self-role selection")
 
-        await interaction.followup.send_message(
-            "\N{white heavy check mark} Roles updated", ephemeral=True
-        )
+        await interaction.followup.send_message("\N{WHITE HEAVY CHECK MARK} Roles updated", ephemeral=True)
         self.add_roles()
         await interaction.edit_original_response(view=self.view)
 
@@ -107,35 +93,22 @@ class SelectSelfRolesView(discord.ui.View):
         self.db = db
 
     @discord.ui.button(
-        label="Select Roles",
-        custom_id="select_roles",
-        style=discord.ButtonStyle.primary,
-        emoji="\U00002935\U0000fe0f"
+        label="Select Roles", custom_id="select_roles", style=discord.ButtonStyle.primary, emoji="\U00002935\U0000fe0f"
     )
     async def select_roles(self, _, interaction: discord.Interaction):
         select = SelectRolesDropDown(
-            roles=self.roles,
-            menu_type=self.menu_type,
-            user=interaction.user,
-            maximum=self.db.maximum
+            roles=self.roles, menu_type=self.menu_type, user=interaction.user, maximum=self.db.maximum
         )
-        await interaction.response.send_message(
-            "Select your roles", view=select, ephemeral=True
-        )
+        await interaction.response.send_message("Select your roles", view=select, ephemeral=True)
 
-    async def on_error(
-        self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction
-    ) -> None:
+    async def on_error(self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction) -> None:
         if interaction.response.is_done():
             meth = interaction.followup.send
         else:
             await interaction.response.defer(ephemeral=True)
             meth = interaction.response.send_message
 
-        await meth(
-            f"An error occurred while processing your request: {error}",
-            ephemeral=True
-        )
+        await meth(f"An error occurred while processing your request: {error}", ephemeral=True)
         raise error
 
 
@@ -148,7 +121,7 @@ class CreateSelfRolesRoleSelect(discord.ui.Select):
             select_type=discord.ComponentType.role_select,
             placeholder="Select a role to add",
             min_values=0 if mode != 2 else 1,
-            max_values=25 if mode != 2 else 1
+            max_values=25 if mode != 2 else 1,
         )
         self.me = me
         self.user = user
@@ -164,20 +137,20 @@ class CreateSelfRolesRoleSelect(discord.ui.Select):
                     await interaction.followup.send(
                         f"You cannot add roles ({role.mention}) higher than your top role "
                         f"({self.user.top_role}). Try again.",
-                        ephemeral=True
+                        ephemeral=True,
                     )
                     return
                 if role >= self.user.top_role:
                     await interaction.followup.send(
                         f"You cannot add roles ({role.mention}) higher than the user's top role "
                         f"({self.user.top_role}). Try again.",
-                        ephemeral=True
+                        ephemeral=True,
                     )
                     return
                 if role.permissions.administrator:
                     await interaction.followup.send(
                         f"You cannot add an administrator role ({role.mention}) for security reasons. Try again.",
-                        ephemeral=True
+                        ephemeral=True,
                     )
                     return
             if role.managed:
@@ -193,7 +166,7 @@ class CreateSelfRolesRoleSelect(discord.ui.Select):
                 word = "removed"
             case 2:
                 word = "selected"
-        await interaction.followup.send(f"\N{white heavy check mark} Roles {word}:\n" + "\n".join(ra), ephemeral=True)
+        await interaction.followup.send(f"\N{WHITE HEAVY CHECK MARK} Roles {word}:\n" + "\n".join(ra), ephemeral=True)
         self.view.stop()
 
 
@@ -212,8 +185,8 @@ class CreateSelfRolesMasterView(discord.ui.View):
     def embed(self):
         return discord.Embed(
             title=f"Manage: {self.name}",
-            description="Roles to hand out:\n" + ", ".join(role.mention for role in self.sorted_roles()) or 'N/A',
-            color=discord.Color.blurple()
+            description="Roles to hand out:\n" + ", ".join(role.mention for role in self.sorted_roles()) or "N/A",
+            color=discord.Color.blurple(),
         )
 
     def update_ui(self):
@@ -226,7 +199,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         custom_id="change_name",
         style=discord.ButtonStyle.primary,
         emoji="\U0000270f\U0000fe0f",
-        row=0
+        row=0,
     )
     async def change_name(self, _, interaction: discord.Interaction):
         # TODO: implement name change modal
@@ -235,11 +208,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         await interaction.edit_original_response(embed=self.embed(), view=self)
 
     @discord.ui.button(
-        label="Add role",
-        custom_id="add_role",
-        style=discord.ButtonStyle.green,
-        emoji="\U00002795",
-        row=1
+        label="Add role", custom_id="add_role", style=discord.ButtonStyle.green, emoji="\U00002795", row=1
     )
     async def create_self_role_menu(self, _, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -252,12 +221,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         self.update_ui()
         await interaction.edit_original_response(embed=self.embed(), view=self)
 
-    @discord.ui.button(
-        label="Edit role",
-        custom_id="edit_role",
-        emoji="\U0001f501",
-        row=1
-    )
+    @discord.ui.button(label="Edit role", custom_id="edit_role", emoji="\U0001f501", row=1)
     async def edit_role(self, _, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         select = CreateSelfRolesRoleSelect(interaction.guild.me, interaction.user, 2)
@@ -267,11 +231,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         await interaction.edit_original_response(embed=self.embed(), view=self)
 
     @discord.ui.button(
-        label="Remove role",
-        custom_id="remove_role",
-        style=discord.ButtonStyle.red,
-        emoji="\U00002796",
-        row=1
+        label="Remove role", custom_id="remove_role", style=discord.ButtonStyle.red, emoji="\U00002796", row=1
     )
     async def remove_role(self, _, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -285,13 +245,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         self.update_ui()
         await interaction.edit_original_response(embed=self.embed(), view=self)
 
-    @discord.ui.button(
-        label="Save",
-        custom_id="save",
-        style=discord.ButtonStyle.green,
-        emoji="\U0001f4be",
-        row=2
-    )
+    @discord.ui.button(label="Save", custom_id="save", style=discord.ButtonStyle.green, emoji="\U0001f4be", row=2)
     async def save(self, _, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         await interaction.followup.send("Saving is not yet implemented, sorry!")
@@ -300,12 +254,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         await interaction.edit_original_response(embed=self.embed(), view=self)
         self.stop()
 
-    @discord.ui.button(
-        label="Cancel",
-        custom_id="cancel",
-        style=discord.ButtonStyle.red,
-        row=2
-    )
+    @discord.ui.button(label="Cancel", custom_id="cancel", style=discord.ButtonStyle.red, row=2)
     async def cancel(self, _, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         self.update_ui()
@@ -313,17 +262,12 @@ class CreateSelfRolesMasterView(discord.ui.View):
         await interaction.edit_original_response(embed=self.embed(), view=self)
         self.stop()
 
-    async def on_error(
-        self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction
-    ) -> None:
+    async def on_error(self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction) -> None:
         if interaction.response.is_done():
             meth = interaction.followup.send
         else:
             await interaction.response.defer(ephemeral=True)
             meth = interaction.response.send_message
 
-        await meth(
-            f"An error occurred while processing your request: {error}",
-            ephemeral=True
-        )
+        await meth(f"An error occurred while processing your request: {error}", ephemeral=True)
         raise error

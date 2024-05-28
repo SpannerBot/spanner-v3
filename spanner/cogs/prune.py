@@ -1,10 +1,10 @@
 import typing
 
 import discord
-from discord.ext import commands, bridge
+from discord.ext import bridge, commands
 
-from spanner.share.views.prune import PruneFilterView
 from spanner.share.utils import SilentCommandError
+from spanner.share.views.prune import PruneFilterView
 
 
 class PruneCog(commands.Cog):
@@ -12,34 +12,29 @@ class PruneCog(commands.Cog):
         self.bot = bot
 
     @commands.slash_command()
-    @discord.commands.default_permissions(
-        manage_messages=True
-    )
+    @discord.commands.default_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, read_message_history=True)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     @commands.cooldown(1, 30, commands.BucketType.channel)
     async def prune(
-            self,
-            ctx: discord.ApplicationContext,
-            limit: typing.Annotated[
-                int,
-                discord.Option(
-                    discord.SlashCommandOptionType.integer,
-                    description="The number of messages to delete.",
-                    required=True,
-                    min_value=1,
-                    max_value=1000
-                )
-            ],
-            enable_filters: typing.Annotated[
-                bool,
-                discord.Option(
-                    name="filters",
-                    description="Shows the message filter selector.",
-                    required=False,
-                    default=False
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        limit: typing.Annotated[
+            int,
+            discord.Option(
+                discord.SlashCommandOptionType.integer,
+                description="The number of messages to delete.",
+                required=True,
+                min_value=1,
+                max_value=1000,
+            ),
+        ],
+        enable_filters: typing.Annotated[
+            bool,
+            discord.Option(
+                name="filters", description="Shows the message filter selector.", required=False, default=False
+            ),
+        ],
     ):
         """Prunes a number of messages from the channel, optionally filtering them."""
         await ctx.defer(ephemeral=True)
@@ -56,7 +51,7 @@ class PruneCog(commands.Cog):
             n = await ctx.channel.purge(
                 limit=limit,
                 check=filters.check,
-                reason=f"{ctx.user} requested a prune of {limit} messages with filters {filters.v!r}"
+                reason=f"{ctx.user} requested a prune of {limit} messages with filters {filters.v!r}",
             )
         except discord.HTTPException as e:
             await ctx.edit(
@@ -64,16 +59,13 @@ class PruneCog(commands.Cog):
                 embed=discord.Embed(
                     title="Sorry, there was an error while pruning messages.",
                     description=f"Messages may or not have been deleted. Error: {e}\n"
-                                f"The developer has been notified.",
-                    color=discord.Color.red()
-                )
+                    f"The developer has been notified.",
+                    color=discord.Color.red(),
+                ),
             )
             raise SilentCommandError from e
         else:
-            await ctx.edit(
-                content=f"Successfully pruned {len(n):,} messages.",
-                embed=None
-            )
+            await ctx.edit(content=f"Successfully pruned {len(n):,} messages.", embed=None)
 
 
 def setup(bot: bridge.Bot):

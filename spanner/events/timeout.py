@@ -3,7 +3,6 @@ import datetime
 import logging
 
 import discord
-
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
@@ -28,18 +27,12 @@ class TimeoutEvents(commands.Cog):
                 return entry
 
         try:
-            entry = await self.bot.wait_for(
-                "audit_log_entry",
-                check=the_check,
-                timeout=600
-            )
+            entry = await self.bot.wait_for("audit_log_entry", check=the_check, timeout=600)
             if not entry:
                 raise asyncio.TimeoutError
         except asyncio.TimeoutError:
             self.log.debug(
-                "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a timeout.",
-                guild,
-                target
+                "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a timeout.", guild, target
             )
         else:
             return entry
@@ -57,8 +50,8 @@ class TimeoutEvents(commands.Cog):
             title="Member timed out!",
             colour=discord.Colour.red(),
             description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)\n"
-                        f"* Timed out until: {discord.utils.format_dt(member.communication_disabled_until, 'R')}",
-            timestamp=discord.utils.utcnow()
+            f"* Timed out until: {discord.utils.format_dt(member.communication_disabled_until, 'R')}",
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         msg = await log_channel.send(embed=embed)
@@ -66,14 +59,8 @@ class TimeoutEvents(commands.Cog):
         if entry is None:
             return
 
-        embed.add_field(
-            name="Reason",
-            value=entry.reason or 'No reason.'
-        )
-        embed.set_author(
-            name="Moderator: " + entry.user.display_name,
-            icon_url=entry.user.display_avatar.url
-        )
+        embed.add_field(name="Reason", value=entry.reason or "No reason.")
+        embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Timeout details fetched from audit log.")
         await msg.edit(embed=embed)
 
@@ -90,7 +77,7 @@ class TimeoutEvents(commands.Cog):
             title="Member timeout expired!",
             colour=discord.Colour.red(),
             description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)",
-            timestamp=discord.utils.utcnow()
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         msg = await log_channel.send(embed=embed)
@@ -98,14 +85,8 @@ class TimeoutEvents(commands.Cog):
         if entry is None:
             return
 
-        embed.add_field(
-            name="Reason",
-            value=entry.reason or 'No reason.'
-        )
-        embed.set_author(
-            name="Moderator: " + entry.user.display_name,
-            icon_url=entry.user.display_avatar.url
-        )
+        embed.add_field(name="Reason", value=entry.reason or "No reason.")
+        embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Timeout details fetched from audit log.")
         await msg.edit(embed=embed)
 

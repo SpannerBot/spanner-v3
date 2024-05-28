@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 from spanner.share.data import verification_levels
-from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink
+from spanner.share.utils import get_bool_emoji
 from spanner.share.views import GenericLabelledEmbedView
 
 
@@ -42,15 +42,9 @@ class InviteInfoCog(commands.Cog):
 
         if isinstance(invite.channel, discord.abc.GuildChannel):
             if invite.channel.permissions_for(invite.channel.guild.me).manage_guild:
-                invite: discord.Invite = discord.utils.get(
-                    await invite.channel.guild.invites(),
-                    id=invite.id
-                ) or invite
+                invite: discord.Invite = discord.utils.get(await invite.channel.guild.invites(), id=invite.id) or invite
             elif invite.channel.guild.me.guild_permissions.manage_guild:
-                invite: discord.Invite = discord.utils.get(
-                    await invite.channel.guild.invites(),
-                    id=invite.id
-                ) or invite
+                invite: discord.Invite = discord.utils.get(await invite.channel.guild.invites(), id=invite.id) or invite
 
         invite_lines = [
             f"**ID:** `{invite.id}`",
@@ -79,11 +73,9 @@ class InviteInfoCog(commands.Cog):
             title=f"Invite Information - {invite.code}",
             description="\n".join(invite_lines),
             color=discord.Color.blurple(),
-            url=invite.url
+            url=invite.url,
         )
-        result = {
-            "Overview": invite_embed
-        }
+        result = {"Overview": invite_embed}
 
         if invite.scheduled_event:
             event = invite.scheduled_event
@@ -101,7 +93,7 @@ class InviteInfoCog(commands.Cog):
                 title=f"Event Information - {event.name}",
                 description="\n".join(event_text),
                 color=discord.Color.blurple(),
-                url=invite.url
+                url=invite.url,
             )
             result["Event"] = event_embed
 
@@ -122,9 +114,7 @@ class InviteInfoCog(commands.Cog):
             ]
         if destination_text:
             destination_embed = discord.Embed(
-                title="Destination Information",
-                description="\n".join(destination_text),
-                color=discord.Color.blurple()
+                title="Destination Information", description="\n".join(destination_text), color=discord.Color.blurple()
             )
             result["Destination"] = destination_embed
 
@@ -147,28 +137,16 @@ class InviteInfoCog(commands.Cog):
             shit_ctx = copy.copy(ctx)
             shit_ctx.guild = _guild
             view.add_item(
-                ViewInfoButton(
-                    shit_ctx,
-                    self.bot.get_application_command("server-info"),
-                    label="View Server Info"
-                )
+                ViewInfoButton(shit_ctx, self.bot.get_application_command("server-info"), label="View Server Info")
             )
         _channel = discord.utils.get(set(self.bot.get_all_channels()), id=invite.channel.id)
         if _channel:
             shit_ctx = copy.copy(ctx)
             shit_ctx.channel = _channel
             view.add_item(
-                ViewInfoButton(
-                    shit_ctx,
-                    self.bot.get_application_command("channel-info"),
-                    label="View Channel Info"
-                )
+                ViewInfoButton(shit_ctx, self.bot.get_application_command("channel-info"), label="View Channel Info")
             )
-        await ctx.respond(
-            embed=embeds["Overview"],
-            view=view,
-            ephemeral=True
-        )
+        await ctx.respond(embed=embeds["Overview"], view=view, ephemeral=True)
 
 
 def setup(bot: commands.Bot):

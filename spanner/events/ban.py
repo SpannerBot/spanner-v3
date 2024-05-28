@@ -19,8 +19,7 @@ class BanEvents(commands.Cog):
                 if values["guild"] == entry["guild"]:
                     if values["type"] == "ban" and entry.action == discord.AuditLogAction.ban:
                         values["embed"].set_author(
-                            name="Moderator: %s" % entry.user.display_name,
-                            icon_url=entry.user.display_avatar.url
+                            name="Moderator: %s" % entry.user.display_name, icon_url=entry.user.display_avatar.url
                         )
                         values["embed"].set_footer(text="Ban details fetched from audit log.")
                         if entry.reason:
@@ -32,8 +31,7 @@ class BanEvents(commands.Cog):
                         self.awaiting_audit_log.pop(values["message"].id)
                     elif values["type"] == "unban" and entry.action == discord.AuditLogAction.unban:
                         values["embed"].set_author(
-                            name="Moderator: %s" % entry.user.display_name,
-                            icon_url=entry.user.display_avatar.url
+                            name="Moderator: %s" % entry.user.display_name, icon_url=entry.user.display_avatar.url
                         )
                         values["embed"].set_footer(text="Unban details fetched from audit log.")
                         if entry.reason:
@@ -59,9 +57,9 @@ class BanEvents(commands.Cog):
                 title="Member Banned",
                 colour=discord.Colour.red(),
                 description=f"* Info: {user.mention} ({user.display_name}, `{user.id}`)\n"
-                            f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n"
-                            f"* Joined: {discord.utils.format_dt(user.joined_at, 'R')}\n",
-                timestamp=discord.utils.utcnow()
+                f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n"
+                f"* Joined: {discord.utils.format_dt(user.joined_at, 'R')}\n",
+                timestamp=discord.utils.utcnow(),
             )
             roles = user.roles
             for role in roles.copy():
@@ -74,18 +72,15 @@ class BanEvents(commands.Cog):
                 if len(joined) > 1024:
                     joined = ", ".join([role.mention for role in roles[:10]])
                     joined += f"... and {len(roles) - 10} more."
-                embed.add_field(
-                    name="Roles",
-                    value=joined
-                )
+                embed.add_field(name="Roles", value=joined)
         else:
             embed = discord.Embed(
                 title="User Banned",
                 colour=discord.Colour.red(),
                 description=f"* Info: {user.mention} (`{user.id}`)\n"
-                            f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n"
-                            f"*User was not in the server when they were banned.*",
-                timestamp=discord.utils.utcnow()
+                f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n"
+                f"*User was not in the server when they were banned.*",
+                timestamp=discord.utils.utcnow(),
             )
 
         found_reason = False
@@ -95,8 +90,7 @@ class BanEvents(commands.Cog):
                     if audit_log.reason:
                         embed.add_field(name="Reason", value=audit_log.reason[:1024])
                     embed.set_author(
-                        name="Moderator: %s" % audit_log.user.display_name,
-                        icon_url=audit_log.user.display_avatar.url
+                        name="Moderator: %s" % audit_log.user.display_name, icon_url=audit_log.user.display_avatar.url
                     )
                     embed.set_footer(text="Ban details fetched from audit log.")
                     found_reason = False
@@ -111,7 +105,7 @@ class BanEvents(commands.Cog):
                 "guild": guild,
                 "message": msg,
                 "embed": embed,
-                "type": "ban"
+                "type": "ban",
             }
 
     @commands.Cog.listener()
@@ -128,8 +122,8 @@ class BanEvents(commands.Cog):
             title="User Unbanned",
             colour=discord.Colour.green(),
             description=f"* Info: {user.mention} (`{user.id}`)\n"
-                        f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n",
-            timestamp=discord.utils.utcnow()
+            f"* Created: {discord.utils.format_dt(user.created_at, 'R')}\n",
+            timestamp=discord.utils.utcnow(),
         )
 
         found_reason = False
@@ -139,8 +133,7 @@ class BanEvents(commands.Cog):
                     if audit_log.reason:
                         embed.add_field(name="Reason", value=audit_log.reason[:1024])
                     embed.set_author(
-                        name="Moderator: %s" % audit_log.user.display_name,
-                        icon_url=audit_log.user.display_avatar.url
+                        name="Moderator: %s" % audit_log.user.display_name, icon_url=audit_log.user.display_avatar.url
                     )
                     embed.set_footer(text="Unban details fetched from audit log.")
                     found_reason = False
@@ -156,7 +149,7 @@ class BanEvents(commands.Cog):
                 "guild": guild,
                 "message": msg,
                 "embed": embed,
-                "type": "unban"
+                "type": "unban",
             }
 
 

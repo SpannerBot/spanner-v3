@@ -34,7 +34,7 @@ class PruneFilterView(discord.ui.View):
         for child in self.children:
             if isinstance(child, discord.Button):
                 try:
-                    enabled = getattr(self, 'prune_%s' % child.label.lower())
+                    enabled = getattr(self, "prune_%s" % child.label.lower())
                 except AttributeError:
                     enabled = getattr(self, child.custom_id, None)
                     if enabled is None:

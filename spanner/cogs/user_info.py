@@ -1,11 +1,13 @@
-import io
 
 import discord
 from discord.ext import commands
 
-from spanner.share.utils import first_line, get_bool_emoji, humanise_bytes, hyperlink, format_html
+from spanner.share.data import platform_emojis, public_flag_emojis
+from spanner.share.utils import (
+    get_bool_emoji,
+    hyperlink,
+)
 from spanner.share.views import GenericLabelledEmbedView
-from spanner.share.data import public_flag_emojis, platform_emojis
 
 
 class UserInfo(commands.Cog):
@@ -41,7 +43,7 @@ class UserInfo(commands.Cog):
             title=f"{user.display_name}'s information:",
             description="\n".join(filter(None, lines)),
             colour=user.accent_colour or user.colour or discord.Colour.blurple(),
-            url=user.display_avatar.url
+            url=user.display_avatar.url,
         )
         avatar_embed = discord.Embed(
             title=f"{user.display_name}'s avatars:",
@@ -79,15 +81,15 @@ class UserInfo(commands.Cog):
                     current_activity.name,
                     current_activity.game,
                     discord.utils.format_dt(current_activity.created_at, "R"),
-                    current_activity.url
+                    current_activity.url,
                 )
             elif isinstance(current_activity, discord.Spotify):
-                activity = "[Listening to %s by %s since %s (ends %s)](%s)" %(
+                activity = "[Listening to %s by %s since %s (ends %s)](%s)" % (
                     current_activity.title,
                     " & ".join(current_activity.artists),
                     discord.utils.format_dt(current_activity.start, "R"),
                     discord.utils.format_dt(current_activity.end, "R"),
-                    current_activity.track_url
+                    current_activity.track_url,
                 )
             if activity:
                 activities.append(activity)
@@ -110,13 +112,15 @@ class UserInfo(commands.Cog):
             f"**Platform:** {platform}" if platform else None,
             f"**Passed screening:** {get_bool_emoji(not member.pending)}",
             f"**Started boosting:** {discord.utils.format_dt(member.premium_since, 'R')}"
-            if member.premium_since else None,
+            if member.premium_since
+            else None,
             f"**Accent Colour:** {member.accent_colour}",
             f"**Bot:** {get_bool_emoji(member.bot)}",
             f"**System:** {get_bool_emoji(member.system)}",
             f"**Mutual Servers** (with bot)**:** {len(member.mutual_guilds)}",
             f"**Timed out until:** {discord.utils.format_dt(member.communication_disabled_until, 'F')}"
-            if member.communication_disabled_until else None,
+            if member.communication_disabled_until
+            else None,
             f"**Roles:** {len(member.roles)}",
         ]
 
@@ -136,7 +140,7 @@ class UserInfo(commands.Cog):
             title=f"{member.display_name}'s information:",
             description="\n".join(filter(None, lines)),
             colour=member.accent_colour or member.colour or discord.Colour.blurple(),
-            url=member.display_avatar.url
+            url=member.display_avatar.url,
         )
         avatar_embed = discord.Embed(
             title=f"{member.display_name}'s avatars:",
@@ -184,11 +188,7 @@ class UserInfo(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         embeds = await self.get_info(user)
-        await ctx.respond(
-            embed=embeds["Overview"],
-            view=GenericLabelledEmbedView(ctx, **embeds),
-            ephemeral=True
-        )
+        await ctx.respond(embed=embeds["Overview"], view=GenericLabelledEmbedView(ctx, **embeds), ephemeral=True)
 
     @commands.slash_command(name="user-info")
     async def user_info_slash(self, ctx: discord.ApplicationContext, user: discord.User):

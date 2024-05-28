@@ -1,8 +1,4 @@
-import asyncio
-import collections
-import datetime
 import logging
-import typing
 
 import discord
 from discord.ext import bridge, commands
@@ -29,10 +25,10 @@ class JoinEvents(commands.Cog):
             title="Member joined!",
             colour=discord.Colour.blue(),
             description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)\n"
-                        f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
-                        f"\n"
-                        f"* Total members: {member.guild.member_count:,}",
-            timestamp=discord.utils.utcnow()
+            f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
+            f"\n"
+            f"* Total members: {member.guild.member_count:,}",
+            timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         await log_channel.send(embed=embed)

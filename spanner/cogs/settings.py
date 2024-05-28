@@ -1,12 +1,11 @@
-import io
-import typing
 import fnmatch
+import typing
 
 import discord
 from discord.ext import bridge, commands
 
-from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures
 from spanner.share.config import load_config
+from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures
 from spanner.share.utils import hyperlink
 
 
@@ -18,7 +17,7 @@ class SettingsCog(commands.Cog):
         name="settings",
         description="Manages settings for the server.",
         default_member_permissions=discord.Permissions(manage_guild=True),
-        guild_only=True
+        guild_only=True,
     )
 
     @staticmethod
@@ -37,7 +36,7 @@ class SettingsCog(commands.Cog):
 
         if not channel.can_send(discord.Embed, discord.File):
             return await ctx.respond(
-                f"\N{cross mark} I need to be able to send messages, embeds, and files in {channel.mention}."
+                f"\N{CROSS MARK} I need to be able to send messages, embeds, and files in {channel.mention}."
             )
 
         config = await self._ensure_guild_config(ctx.guild_id)
@@ -48,36 +47,21 @@ class SettingsCog(commands.Cog):
             author=ctx.user.id,
             namespace="settings.logging.channels.main",
             action="set",
-            description=f"Set the log channel to {channel.id} ({channel.name})."
+            description=f"Set the log channel to {channel.id} ({channel.name}).",
         )
 
-        await ctx.respond(f"\N{white heavy check mark} Set the log channel to {channel.mention}.")
+        await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Set the log channel to {channel.mention}.")
 
-    log_feature = settings.create_subgroup(
-        name="log-features",
-        description="Manages logging features for the server."
-    )
+    log_feature = settings.create_subgroup(name="log-features", description="Manages logging features for the server.")
 
     async def _set_log_feature(
-            self,
-            guild_id: int,
-            feature: str,
-            enabled: bool = None,
-            *,
-            user_id: int = None
+        self, guild_id: int, feature: str, enabled: bool = None, *, user_id: int = None
     ) -> GuildLogFeatures | None:
         config = await self._ensure_guild_config(guild_id)
-        log_feature = await GuildLogFeatures.get_or_none(
-            guild_id=guild_id,
-            name=feature
-        )
+        log_feature = await GuildLogFeatures.get_or_none(guild_id=guild_id, name=feature)
 
         if log_feature is None:
-            log_feature = await GuildLogFeatures.create(
-                guild=config,
-                name=feature,
-                enabled=enabled
-            )
+            log_feature = await GuildLogFeatures.create(guild=config, name=feature, enabled=enabled)
 
         log_feature.enabled = enabled if enabled is not None else not log_feature.enabled
         await log_feature.save()
@@ -85,9 +69,9 @@ class SettingsCog(commands.Cog):
             e = await GuildAuditLogEntry.create(
                 guild=config,
                 author=user_id,
-                namespace=f"settings.logging.features",
+                namespace="settings.logging.features",
                 action="toggle",
-                description=f"Toggled the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}."
+                description=f"Toggled the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}.",
             )
             self.bot.dispatch("spanner_audit_log_entry", e)
 
@@ -95,17 +79,17 @@ class SettingsCog(commands.Cog):
 
     @log_feature.command(name="toggle")
     async def toggle_log_feature(
-            self,
-            ctx: discord.ApplicationContext,
-            feature: typing.Annotated[
-                str,
-                discord.Option(
-                    name="feature",
-                    description="The feature to toggle.",
-                    required=True,
-                    autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES)
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        feature: typing.Annotated[
+            str,
+            discord.Option(
+                name="feature",
+                description="The feature to toggle.",
+                required=True,
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+            ),
+        ],
     ):
         """Toggles a feature (enables if disabled, disables if enabled)."""
         await ctx.defer(ephemeral=True)
@@ -118,33 +102,33 @@ class SettingsCog(commands.Cog):
                     await self._set_log_feature(ctx.guild_id, log_feature, user_id=ctx.user.id)
                     toggled.append(log_feature)
             return await ctx.respond(
-                f"\N{white heavy check mark} Toggled the following features: {', '.join(toggled)}."
+                f"\N{WHITE HEAVY CHECK MARK} Toggled the following features: {', '.join(toggled)}."
             )
 
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
-            return await ctx.respond(f"\N{cross mark} The feature `{feature}` does not exist.")
+            return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         log_feature = await self._set_log_feature(ctx.guild_id, feature, user_id=ctx.user.id)
 
         await ctx.respond(
-            f"\N{white heavy check mark} {'Enabled' if log_feature.enabled else 'Disabled'} the feature `{feature}`."
+            f"\N{WHITE HEAVY CHECK MARK} {'Enabled' if log_feature.enabled else 'Disabled'} the feature `{feature}`."
         )
 
     @log_feature.command(name="enable")
     async def enable_log_feature(
-            self,
-            ctx: discord.ApplicationContext,
-            feature: typing.Annotated[
-                str,
-                discord.Option(
-                    name="feature",
-                    description="The feature to enable.",
-                    required=True,
-                    autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES)
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        feature: typing.Annotated[
+            str,
+            discord.Option(
+                name="feature",
+                description="The feature to enable.",
+                required=True,
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+            ),
+        ],
     ):
-        """Enables a feature."""        
+        """Enables a feature."""
         await ctx.defer(ephemeral=True)
         feature = feature.lower()
         if "*" in feature:
@@ -154,30 +138,28 @@ class SettingsCog(commands.Cog):
                     await self._set_log_feature(ctx.guild_id, log_feature, True, user_id=ctx.user.id)
                     toggled.append(log_feature)
             return await ctx.respond(
-                f"\N{white heavy check mark} Enabled the following features: {', '.join(toggled)}."
+                f"\N{WHITE HEAVY CHECK MARK} Enabled the following features: {', '.join(toggled)}."
             )
 
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
-            return await ctx.respond(f"\N{cross mark} The feature `{feature}` does not exist.")
+            return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         await self._set_log_feature(ctx.guild_id, feature, True, user_id=ctx.user.id)
-        await ctx.respond(
-            f"\N{white heavy check mark} Enabled the feature `{feature}`."
-        )
+        await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Enabled the feature `{feature}`.")
 
     @log_feature.command(name="disable")
     async def disable_log_feature(
-            self,
-            ctx: discord.ApplicationContext,
-            feature: typing.Annotated[
-                str,
-                discord.Option(
-                    name="feature",
-                    description="The feature to enable.",
-                    required=True,
-                    autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES)
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        feature: typing.Annotated[
+            str,
+            discord.Option(
+                name="feature",
+                description="The feature to enable.",
+                required=True,
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+            ),
+        ],
     ):
         """Disables a feature."""
         await ctx.defer(ephemeral=True)
@@ -189,16 +171,14 @@ class SettingsCog(commands.Cog):
                     await self._set_log_feature(ctx.guild_id, log_feature, False, user_id=ctx.user.id)
                     toggled.append(log_feature)
             return await ctx.respond(
-                f"\N{white heavy check mark} Disabled the following features: {', '.join(toggled)}."
+                f"\N{WHITE HEAVY CHECK MARK} Disabled the following features: {', '.join(toggled)}."
             )
 
         if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
-            return await ctx.respond(f"\N{cross mark} The feature `{feature}` does not exist.")
+            return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         await self._set_log_feature(ctx.guild_id, feature, False, user_id=ctx.user.id)
-        await ctx.respond(
-            f"\N{white heavy check mark} Disabled the feature `{feature}`."
-        )
+        await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Disabled the feature `{feature}`.")
 
     @settings.command(name="audit-log")
     async def get_audit_log(self, ctx: discord.ApplicationContext):
@@ -207,7 +187,7 @@ class SettingsCog(commands.Cog):
         base_url = cfg["web"].get("base_url", "http://%s:%s" % (cfg["web"]["host"], cfg["web"]["port"]))
         await ctx.respond(
             f"Visit {hyperlink('%s/guilds/%s/audit-logs' % (base_url, ctx.guild.id))} to see this server's audit log.",
-            ephemeral=True
+            ephemeral=True,
         )
 
 

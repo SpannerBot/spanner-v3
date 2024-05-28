@@ -12,7 +12,6 @@ from spanner.share.views import GenericLabelledEmbedView
 
 
 class ServerInfoCog(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
 
@@ -47,7 +46,7 @@ class ServerInfoCog(commands.Cog):
             basic_info.append(f"**Icon URL:** {hyperlink(guild.icon.url)}")
         if guild.banner:
             basic_info.append(f"**Banner URL:** {hyperlink(guild.banner.url)}")
-        inf = float('inf')
+        inf = float("inf")
         limits_info = [
             f"**Member Limit:** {guild.max_members or inf:,} total (max {guild.max_presences or inf:,} online)",
             f"**VC Bitrate Limit:** {round(guild.bitrate_limit / 1000)} kbps",
@@ -59,12 +58,14 @@ class ServerInfoCog(commands.Cog):
             f"**Max Channels:** 500 ({len(guild.channels)} used)",
             f"**Max Categories:** 50 ({len(guild.categories)} used)",
             f"**Max Integrations:** 50 ({len(guild_integration_count)} used)"
-            if guild.me.guild_permissions.manage_guild else
-            "**Max Integrations:** 50 (*missing manage server permission*)",
-            f"**Max Invites:** 1,000 ({len(invites)} used)" if guild.me.guild_permissions.manage_guild else
-            "**Max Invites:** 1,000 (*missing manage server permission*)",
-            f"**Max Auto Mod Rules:** 10 ({len(auto_mod_rules)} used)" if guild.me.guild_permissions.manage_guild else
-            "**Max Auto Mod Rules:** 10 (*missing manage server permission*)",
+            if guild.me.guild_permissions.manage_guild
+            else "**Max Integrations:** 50 (*missing manage server permission*)",
+            f"**Max Invites:** 1,000 ({len(invites)} used)"
+            if guild.me.guild_permissions.manage_guild
+            else "**Max Invites:** 1,000 (*missing manage server permission*)",
+            f"**Max Auto Mod Rules:** 10 ({len(auto_mod_rules)} used)"
+            if guild.me.guild_permissions.manage_guild
+            else "**Max Auto Mod Rules:** 10 (*missing manage server permission*)",
         ]
         invites_info = [
             f"**Invite Count:** {len(invites):,}",
@@ -80,7 +81,8 @@ class ServerInfoCog(commands.Cog):
             f"**System Channel:** {guild.system_channel or 'None'}",
             f"**Rules Channel:** {guild.rules_channel or 'None'}",
             f"**Auto Mod Rules:** {len(auto_mod_rules):,} ({', '.join([repr(x.name) for x in auto_mod_rules])})"
-            if guild.me.guild_permissions.manage_guild else '**Auto Mod Rules:** *missing manage server permission*',
+            if guild.me.guild_permissions.manage_guild
+            else "**Auto Mod Rules:** *missing manage server permission*",
             f"**Bans:** {ban_count:,}" + "+" if ban_count and ban_count >= 1000 else "",
         ]
         if guild_integration_count:
@@ -94,9 +96,7 @@ class ServerInfoCog(commands.Cog):
                 if integration.account:
                     _user = guild.get_member(int(integration.account.id))
                     if _user:
-                        url = discord.utils.oauth_url(
-                            _user.id, scopes=["bot"]
-                        )
+                        url = discord.utils.oauth_url(_user.id, scopes=["bot"])
                         extra_info.append(f"[Bot: {_user.name}]({url})")
                 if integration.user:
                     extra_info.append(f"Added by: {integration.user.mention}")

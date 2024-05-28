@@ -1,8 +1,8 @@
 import logging
 
 import discord
+from discord.ext import bridge, commands
 
-from discord.ext import commands, bridge
 from spanner.share.views.self_roles import CreateSelfRolesMasterView
 
 
@@ -11,10 +11,7 @@ class SelfRolesCog(commands.Cog):
         self.bot = bot
         self.log = logging.getLogger("spanner.cogs.self_roles")
 
-    self_roles = discord.SlashCommandGroup(
-        name="self-roles",
-        description="Commands for self-assignable roles"
-    )
+    self_roles = discord.SlashCommandGroup(name="self-roles", description="Commands for self-assignable roles")
 
     @self_roles.command()
     @commands.has_permissions(manage_roles=True)
