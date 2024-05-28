@@ -26,7 +26,6 @@ def _get_root_path():
 log = logging.getLogger("spanner.api")
 log.info("Base path is set to %r", _get_root_path())
 app = fastapi.FastAPI(debug=True, root_path=_get_root_path())
-router = fastapi.APIRouter(prefix=_get_root_path())
 templates = Jinja2Templates(directory="assets")
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
 
@@ -38,7 +37,7 @@ async def is_ready_middleware(req, call_next):
     return await call_next(req)
 
 
-@router.get("/guilds/{guild_id}/audit-logs")
+@app.get("/guilds/{guild_id}/audit-logs")
 async def get_audit_logs(req: fastapi.Request, guild_id: int):
     audit_log = await GuildAuditLogEntry.filter(guild_id=guild_id).order_by("-created_at").all()
     if not audit_log:
@@ -50,5 +49,4 @@ async def get_audit_logs(req: fastapi.Request, guild_id: int):
     )
 
 
-app.include_router(router)
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
