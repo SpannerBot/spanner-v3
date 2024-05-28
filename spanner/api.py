@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlparse
 
 import fastapi
@@ -22,6 +23,8 @@ def _get_root_path():
     return path
 
 
+log = logging.getLogger("spanner.api")
+log.info("Base path is set to %r", _get_root_path())
 app = fastapi.FastAPI(debug=True, root_path=_get_root_path())
 templates = Jinja2Templates(directory="assets")
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
