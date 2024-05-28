@@ -48,5 +48,5 @@ async def get_audit_logs(req: fastapi.Request, guild_id: int):
     for entry in audit_log:
         await entry.fetch_related("guild")
     return templates.TemplateResponse(
-        req, "guild-audit-log.html", {"guild": bot.get_guild(guild_id), "events": audit_log}
+        "guild-audit-log.html", {"request": req, "guild": bot.get_guild(guild_id), "events": audit_log}
     )
