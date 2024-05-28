@@ -1,6 +1,7 @@
 from urllib.parse import urlparse
 
 import fastapi
+from fastapi import HTTPException
 from bot import bot
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +18,7 @@ def _get_root_path():
         raise ValueError("Invalid base URL scheme.")
     if not parsed.netloc:
         raise ValueError("Invalid base URL netloc.")
-    path = parsed.path.rstrip("/") or "/"
+    path = parsed.path.rstrip("/") or ""
     return path
 
 
@@ -37,7 +38,7 @@ async def is_ready_middleware(req, call_next):
 async def get_audit_logs(req: fastapi.Request, guild_id: int):
     audit_log = await GuildAuditLogEntry.filter(guild_id=guild_id).order_by("-created_at").all()
     if not audit_log:
-        return fastapi.Response(status_code=404)
+        raise HTTPException(404, "No audit logs found.")
     for entry in audit_log:
         await entry.fetch_related("guild")
     return templates.TemplateResponse(
