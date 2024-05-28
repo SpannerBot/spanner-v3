@@ -27,7 +27,7 @@ log = logging.getLogger("spanner.api")
 log.info("Base path is set to %r", _get_root_path())
 
 app = fastapi.FastAPI(debug=True, root_path=_get_root_path())
-app.mount("/assets", StaticFiles(directory="assets", html=True), name="assets")
+app.mount("assets", StaticFiles(directory="assets", html=True), name="assets")
 templates = Jinja2Templates(directory="assets")
 
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
