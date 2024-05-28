@@ -3,3 +3,5 @@ jishaku~=2.5
 rich~=13.7
 tortoise-orm[accel]~=0.20
 jinja2~=3.1
+fastapi~=0.111
+uvicorn[standard]~=0.30

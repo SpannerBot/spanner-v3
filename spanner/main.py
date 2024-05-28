@@ -9,10 +9,9 @@ from pathlib import Path
 import discord
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
-from tortoise import Tortoise
-sys.path.append("..")
+from bot import bot
 
-from spanner.share.utils import SilentCommandError
+sys.path.append("..")
 
 # Load the configuration file
 CONFIG_FILE = Path.cwd() / "config.toml"
@@ -60,29 +59,6 @@ for logger in CONFIG_LOGGING.get("verbose", []):
     logging.getLogger(logger).setLevel(logging.DEBUG)
     logging.getLogger(logger).debug("Level for this logger set to DEBUG via config.toml[logging.verbose].")
 
-
-class CustomBridgeBot(bridge.Bot):
-    async def start(self, token: str, *, reconnect: bool = True) -> None:
-        await Tortoise.init(
-            db_url=CONFIG["database"]["uri"],
-            modules={"models": ["spanner.share.database"]},
-        )
-        await Tortoise.generate_schemas()
-        try:
-            await super().start(token, reconnect=reconnect)
-        finally:
-            await Tortoise.close_connections()
-
-
-bot = CustomBridgeBot(
-    command_prefix=commands.when_mentioned_or("s!", "S!"),
-    strip_after_prefix=True,
-    case_insensitive=True,
-    debug_guilds=CONFIG_SPANNER.get("debug_guilds", None),
-    intents=discord.Intents.all(),
-    status=discord.Status.idle,
-    allowed_mentions=discord.AllowedMentions(everyone=False, roles=False, users=True),
-)
 log = logging.getLogger("spanner.runtime")
 
 if "cogs" not in CONFIG_SPANNER:
@@ -135,9 +111,9 @@ async def on_application_command(ctx: discord.ApplicationContext):
         ctx.user.id,
         ctx.command.qualified_name,
         ctx.command.qualified_id,
-        ctx.channel.name,
+        getattr(ctx.channel, "name", f"@{ctx.user.name}"),
         ctx.channel.id,
-        (ctx.guild or ctx.channel).name,
+        getattr((ctx.guild or ctx.channel), "name", "DM"),
         (ctx.guild or ctx.channel).id,
         ctx.interaction.id,
     )
@@ -160,6 +136,8 @@ async def on_application_command_completion(ctx: discord.ApplicationContext):
 
 @bot.event
 async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
+    from spanner.share.utils import SilentCommandError
+
     original_error = error
     if hasattr(error, "original"):
         error = error.original

@@ -1,0 +1,37 @@
+{
+    "foo": [
+        "member.join",
+        "member.leave",
+        "member.kick",
+        "member.ban",
+        "member.timeout",
+        "member.unban",
+        "member.nickname-change",
+        "member.roles.add",
+        "member.roles.remove"
+    ],
+    "message": [
+        {
+            "name": "edit",
+            "description": "Log message edits",
+            "details": "When a message is edited, a log containing the original message content, and new message content, will be created, including details such as a jump link, the timestamp, and author"
+        },
+        {
+            "name": "delete",
+            "description": "Log message deletions",
+            "details": "When a message is deleted, a log containing the message content, author, and timestamp will be created. If the message was not known to the bot, no log will be created"
+        },
+        {
+            "name": "bulk delete",
+            "description": "Log bulk message deletions",
+            "details": "When multiple messages are deleted at once, a log containing the number of messages deleted, and the timestamp will be created"
+        }
+    ],
+    "membership": [
+        {
+            "name": "join",
+            "description": "Log member joins",
+            "details": "When a member joins the server, a log containing basic membership information will be sent."
+        }
+    ]
+}

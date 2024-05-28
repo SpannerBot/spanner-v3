@@ -9,6 +9,8 @@ __all__ = [
     "nsfw_levels",
     "boolean_emojis",
     "status_circles",
+    "public_flag_emojis",
+    "platform_emojis",
 ]
 
 
@@ -52,4 +54,26 @@ status_circles: dict[str, str] = {
     "warning": "\U0001f7e1",
     "error": "\U0001f534",
     "disabled": "\u26AB",
+}
+
+public_flag_emojis = {
+    "staff": "<:staff:729381672977432587>",
+    "partner": "<:partner:729381698625863724>",
+    "hypesquad": "<:HypeSquad:780079025032527903>",
+    "bug_hunter": "<:bughunter:729381930113564712>",
+    "bug_hunter_level_2": "<:bughunter:729381930113564712>",
+    "hypesquad_bravery": "<:bravery:729381829056135209>",
+    "hypesquad_brilliance": "<:brilliance:729381808269033739>",
+    "hypesquad_balance": "<:balance:729381848639340544>",
+    "early_supporter": "<:supporter:729381881543524364>",
+    "verified_bot": "<:verifiedbot:729382007511187526>",
+    "verified_bot_developer": "<:verifieddev:729383160021909574>",
+    "early_verified_bot_developer": "<:verifieddev:729383160021909574>",
+    "active_developer": "<:active_dev:1245059716904648837>"
+}
+
+platform_emojis = {
+    "web": "<:browser:1245065854022844568>",
+    "mobile": "\U0001f4f1",
+    "desktop": "\U0001f5a5\U0000fe0f",
 }

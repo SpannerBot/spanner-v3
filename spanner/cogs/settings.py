@@ -1,3 +1,4 @@
+import io
 import typing
 import fnmatch
 
@@ -5,6 +6,8 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures
+from spanner.share.config import load_config
+from spanner.share.utils import hyperlink
 
 
 class SettingsCog(commands.Cog):
@@ -14,7 +17,8 @@ class SettingsCog(commands.Cog):
     settings = discord.SlashCommandGroup(
         name="settings",
         description="Manages settings for the server.",
-        default_member_permissions=discord.Permissions(manage_guild=True)
+        default_member_permissions=discord.Permissions(manage_guild=True),
+        guild_only=True
     )
 
     @staticmethod
@@ -81,7 +85,7 @@ class SettingsCog(commands.Cog):
             e = await GuildAuditLogEntry.create(
                 guild=config,
                 author=user_id,
-                namespace=f"settings.logging.features.{feature}",
+                namespace=f"settings.logging.features",
                 action="toggle",
                 description=f"Toggled the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}."
             )
@@ -194,6 +198,16 @@ class SettingsCog(commands.Cog):
         await self._set_log_feature(ctx.guild_id, feature, False, user_id=ctx.user.id)
         await ctx.respond(
             f"\N{white heavy check mark} Disabled the feature `{feature}`."
+        )
+
+    @settings.command(name="audit-log")
+    async def get_audit_log(self, ctx: discord.ApplicationContext):
+        """Fetches the spanner audit log for this server."""
+        cfg = load_config()
+        base_url = cfg["web"].get("base_url", "http://%s:%s" % (cfg["web"]["host"], cfg["web"]["port"]))
+        await ctx.respond(
+            f"Visit {hyperlink('%s/guilds/%s/audit-logs' % (base_url, ctx.guild.id))} to see this server's audit log.",
+            ephemeral=True
         )
 
 

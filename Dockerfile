@@ -1,5 +1,6 @@
 FROM python:3-alpine
 
+EXPOSE 1237
 LABEL org.opencontainers.image.source=https://github.com/nexy7574/spanner-v3
 LABEL org.opencontainers.image.url=https://github.com/nexy7574/spanner-v3
 LABEL org.opencontainers.image.license=AGPL-3

@@ -51,6 +51,7 @@ class GuildAuditLogEntry(Model):
     namespace = fields.CharField(min_length=1, max_length=128)
     action = fields.CharField(min_length=1, max_length=128)
     description = fields.TextField()
+    created_at = fields.DatetimeField(auto_now=True)
 
 
 class UserHistory(Model):

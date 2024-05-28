@@ -1,4 +1,5 @@
 import logging
+import re
 import textwrap
 from typing import Any, Literal
 from urllib.parse import urlparse
@@ -23,7 +24,8 @@ __all__ = [
     "humanise_bytes",
     "SilentCommandError",
     "get_log_channel",
-    "format_html"
+    "format_html",
+    "format_template",
 ]
 log = logging.getLogger(__name__)
 
@@ -120,6 +122,15 @@ async def get_log_channel(bot: bridge.Bot, guild_id: int, log_feature: str) -> d
     return log_channel
 
 
+def _get_css(minify: bool = False) -> str:
+    with open("assets/style.css") as f:
+        t = f.read()
+    if not minify:
+        return t
+    t = re.sub(r"\s+", "", t)
+    return t
+
+
 async def format_html(message: discord.Message):
     with open(Path.cwd() / "assets" / "bulk-delete.html") as f:
         template = Template(f.read())
@@ -161,7 +172,8 @@ async def format_html(message: discord.Message):
         edited_at=message.edited_at.isoformat() if message.edited_at else "N/A",
         embeds=embeds,
         cached_attachments=attachments,
-        now=discord.utils.utcnow().isoformat()
+        now=discord.utils.utcnow().isoformat(),
+        css=_get_css(True)
     )
     r = template.render(
         **kwargs
@@ -171,3 +183,11 @@ async def format_html(message: discord.Message):
         kwargs["cached_attachments"] = {}
         return template.render(**kwargs)
     return r
+
+
+def format_template(template: str, **kwargs) -> str:
+    p = Path("assets") / template
+    if p.exists():
+        template = p.read_text()
+    kwargs.setdefault("css", _get_css(True))
+    return Template(template).render(**kwargs)

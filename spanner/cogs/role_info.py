@@ -20,7 +20,7 @@ class RoleInfoCog(commands.Cog):
                         f"**Name:** {role.name}\n"
                         f"**Created:** {discord.utils.format_dt(role.created_at, 'R')}\n"
                         f"**Position:** {role.position:,}\n"
-                        f"**Colour:** {(role.colour or discord.Colour.default()).value:#06x}\n"
+                        f"**Colour:** {role.colour or discord.Colour.default()}\n"
                         f"**Mentionable:** {get_bool_emoji(role.mentionable)}\n"
                         f"**Hoisted:** {get_bool_emoji(role.hoist)}\n"
                         f"**Members:** {len(role.members):,}\n"
