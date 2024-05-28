@@ -1,0 +1,9 @@
+http://:8081 {
+	reverse_proxy localhost:1237
+}
+
+http://:8080 {
+	handle_path /spanner/v3/* {
+		reverse_proxy localhost:1237
+	}
+}

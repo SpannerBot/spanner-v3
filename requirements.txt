@@ -3,5 +3,7 @@ jishaku~=2.5
 rich~=13.7
 tortoise-orm[accel]~=0.20
 jinja2~=3.1
-fastapi~=0.111
+fastapi~=0.104
+# Pinned at 104 until: https://github.com/tiangolo/fastapi/pull/11160 is merged
+# Otherwise, the web's staticfiles breaks.
 uvicorn[standard]~=0.30
