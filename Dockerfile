@@ -1,4 +1,4 @@
-FROM python:3-alpine
+FROM python:3-slim
 
 EXPOSE 1237
 LABEL org.opencontainers.image.source=https://github.com/nexy7574/spanner-v3
