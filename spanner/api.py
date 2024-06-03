@@ -122,17 +122,21 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
             headers={"Authorization": f"Bearer {response_data['access_token']}"}
         ) as response:
             response_data["user"] = await response.json()
-            user_data = await discord.utils.get_or_fetch(bot, "user", int(response_data["user"]["id"]))
+            user_data: discord.Member | None = await discord.utils.get_or_fetch(
+                bot,
+                "user",
+                int(response_data["user"]["id"])
+            )
             if not user_data:
                 raise HTTPException(404, "User not found.")
             user = await DiscordOauthUser.get_or_none(id=user_data.id)
             token = jwt.encode(
-                {"sub": user.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, user.expires_at)},
+                {"sub": user_data.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, user.expires_at)},
                 SECRET_KEY,
                 algorithm=ALGORITHM,
             )
             if not user:
-                user = await DiscordOauthUser.create(
+                user = DiscordOauthUser(
                     id=user_data.id,
                     access_token=response_data["access_token"],
                     refresh_token=response_data["refresh_token"],
@@ -144,7 +148,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
                 user.refresh_token = response_data["refresh_token"]
                 user.expires_at = response_data["expires_in"]
                 user.session = token.decode("utf-8")
-                await user.save()
+            await user.save()
             response = fastapi.responses.RedirectResponse(
                 url=f"{str(req.base_url)}?token={user.session}",
                 status_code=303
