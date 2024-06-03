@@ -2,17 +2,20 @@ import collections
 import logging
 import os
 import secrets
+from typing import Annotated
 from urllib.parse import urlparse
 
+import aiohttp
+import discord.utils
 import fastapi
 import jwt
-from fastapi import HTTPException, Depends, Security
+from fastapi import HTTPException, Depends, Cookie
 from bot import bot
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from spanner.share.config import load_config
-from spanner.share.database import GuildAuditLogEntry, DiscordOauthUser
+from spanner.share.database import GuildAuditLogEntry, DiscordOauthUser, GuildAuditLogEntryPydantic
 
 
 def _get_root_path():
@@ -59,6 +62,19 @@ if CLIENT_SECRET:
     )
 
 
+async def logged_in_user(token: str = Cookie(None)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user = await DiscordOauthUser.get_or_none(id=int(payload["sub"]))
+        if not user:
+            raise HTTPException(404, "User not found.")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(401, "Token expired.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Invalid token.")
+
+
 @app.middleware("http")
 async def is_ready_middleware(req, call_next):
     if not bot.is_ready():
@@ -84,20 +100,84 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
         raise HTTPException(403, "Invalid state.")
     authorise_sessions.remove(state)
     data = {
-        "client_id": bot.user.id,
-        "client_secret": CLIENT_SECRET,
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": str(req.base_url) + "oauth/callback/discord",
         "scope": "identify guilds",
     }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://discord.com/api/oauth2/token",
+            data=data,
+            auth=aiohttp.BasicAuth(str(bot.user.id), CLIENT_SECRET)
+        ) as response:
+            response_data = await response.json()
+            if response.status != 200:
+                raise HTTPException(response.status, response_data)
+            elif response_data["scope"] != "identify guilds":
+                return fastapi.responses.RedirectResponse(req.url_for("discord_authorise"))
+        async with session.get(
+            "https://discord.com/api/v10/users/@me",
+            headers={"Authorization": f"Bearer {response_data['access_token']}"}
+        ) as response:
+            response_data["user"] = await response.json()
+            user_data = await discord.utils.get_or_fetch(bot, "user", int(response_data["user"]["id"]))
+            if not user_data:
+                raise HTTPException(404, "User not found.")
+            user = await DiscordOauthUser.get_or_none(user_id=user_data.id)
+            token = jwt.encode(
+                {"sub": user.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, user.expires_at)},
+                SECRET_KEY,
+                algorithm=ALGORITHM,
+            )
+            if not user:
+                user = await DiscordOauthUser.create(
+                    id=user_data.id,
+                    access_token=response_data["access_token"],
+                    refresh_token=response_data["refresh_token"],
+                    expires_at=response_data["expires_in"],
+                    session=token.decode("utf-8"),
+                )
+            else:
+                user.access_token = response_data["access_token"]
+                user.refresh_token = response_data["refresh_token"]
+                user.expires_at = response_data["expires_in"]
+                user.session = token.decode("utf-8")
+                await user.save()
+            response = fastapi.responses.RedirectResponse(
+                url=f"{str(req.base_url)}?token={user.session}",
+                status_code=303
+            )
+            response.set_cookie("token", user.session, max_age=ACCESS_TOKEN_EXPIRE_SECONDS)
+            return response
 
 
 @app.get("/guilds/{guild_id}/audit-logs")
-async def get_audit_logs(req: fastapi.Request, guild_id: int):
+async def get_audit_logs(
+        req: fastapi.Request,
+        guild_id: int,
+        user: Annotated[DiscordOauthUser, Depends(logged_in_user)]
+):
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        raise HTTPException(404, "Guild not found.")
+    try:
+        member = await guild.fetch_member(user.id)
+    except discord.NotFound:
+        raise HTTPException(404, f"You are not in {guild.name!r}.")
+    except discord.HTTPException:
+        raise HTTPException(403, "Forbidden (unable to check membership)")
+    else:
+        if not member.guild_permissions.view_audit_log:
+            raise HTTPException(403, "Forbidden (you need 'view audit log' permissions.)")
+
     audit_log = await GuildAuditLogEntry.filter(guild_id=guild_id).order_by("-created_at").all()
     if not audit_log:
         raise HTTPException(404, "No audit logs found.")
+
+    if "Mozilla" not in req.headers.get("User-Agent", ""):
+        return await GuildAuditLogEntryPydantic.from_queryset(audit_log)
+
     for entry in audit_log:
         await entry.fetch_related("guild")
     return templates.TemplateResponse(
