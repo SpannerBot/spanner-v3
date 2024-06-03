@@ -55,7 +55,7 @@ OAUTH_URL = ("https://discord.com/oauth2/authorize?"
              "&scope=identify+guilds"
              "&state={state}")
 CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", load_config()["web"].get("discord_client_secret"))
-if CLIENT_SECRET:
+if not CLIENT_SECRET:
     log.critical(
         "No client secret passed to API (either $DISCORD_CLIENT_SECRET or config.toml[web.discord_client_secret])."
         " Authorised endpoints will be unavailable."
