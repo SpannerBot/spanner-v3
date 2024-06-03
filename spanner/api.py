@@ -115,6 +115,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
             if response.status != 200:
                 raise HTTPException(response.status, response_data)
             elif response_data["scope"] != "identify guilds":
+                log.warning(f"User authenticated with {response_data['scope']!r} scopes, not 'identify guilds'..")
                 return fastapi.responses.RedirectResponse(req.url_for("discord_authorise"))
         async with session.get(
             "https://discord.com/api/v10/users/@me",
@@ -124,7 +125,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
             user_data = await discord.utils.get_or_fetch(bot, "user", int(response_data["user"]["id"]))
             if not user_data:
                 raise HTTPException(404, "User not found.")
-            user = await DiscordOauthUser.get_or_none(user_id=user_data.id)
+            user = await DiscordOauthUser.get_or_none(id=user_data.id)
             token = jwt.encode(
                 {"sub": user.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, user.expires_at)},
                 SECRET_KEY,
