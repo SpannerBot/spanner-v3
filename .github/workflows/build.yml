@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Build and publish container
 
 on: [push]
 
@@ -7,8 +7,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  build:
+    name: Build and publish container
     runs-on: ubuntu-latest
     permissions:
       packages: write
