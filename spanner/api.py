@@ -131,7 +131,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
                 raise HTTPException(404, "User not found.")
             user = await DiscordOauthUser.get_or_none(id=user_data.id)
             token = jwt.encode(
-                {"sub": user_data.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, user.expires_at)},
+                {"sub": user_data.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, response_data["expires_in"])},
                 SECRET_KEY,
                 algorithm=ALGORITHM,
             )
