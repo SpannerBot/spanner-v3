@@ -141,13 +141,13 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
                     access_token=response_data["access_token"],
                     refresh_token=response_data["refresh_token"],
                     expires_at=response_data["expires_in"],
-                    session=token.decode("utf-8"),
+                    session=token,
                 )
             else:
                 user.access_token = response_data["access_token"]
                 user.refresh_token = response_data["refresh_token"]
                 user.expires_at = response_data["expires_in"]
-                user.session = token.decode("utf-8")
+                user.session = token
             await user.save()
             response = fastapi.responses.RedirectResponse(
                 url=f"{str(req.base_url)}?token={user.session}",
