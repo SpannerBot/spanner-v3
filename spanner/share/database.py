@@ -90,3 +90,11 @@ class PremiumGuild(Model):
     guild_id = fields.BigIntField()
     premium_since = fields.FloatField()
     premium_until = fields.FloatField(null=True)
+
+
+class DiscordOauthUser(Model):
+    id = fields.BigIntField(pk=True, generated=False)
+    access_token = fields.CharField(max_length=255)
+    refresh_token = fields.CharField(max_length=255)
+    expires_at = fields.FloatField()
+    session = fields.CharField(max_length=1024, default=None, null=True)
