@@ -1,4 +1,5 @@
 import collections
+import datetime
 import logging
 import os
 import secrets
@@ -130,8 +131,9 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
             if not user_data:
                 raise HTTPException(404, "User not found.")
             user = await DiscordOauthUser.get_or_none(id=user_data.id)
+            exp = discord.utils.utcnow() + datetime.timedelta(seconds=response_data["expires_in"])
             token = jwt.encode(
-                {"sub": user_data.id, "exp": max(ACCESS_TOKEN_EXPIRE_SECONDS, response_data["expires_in"])},
+                {"sub": user_data.id, "exp": exp},
                 SECRET_KEY,
                 algorithm=ALGORITHM,
             )
