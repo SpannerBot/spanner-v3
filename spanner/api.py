@@ -10,7 +10,7 @@ import aiohttp
 import discord.utils
 import fastapi
 import jwt
-from fastapi import HTTPException, Depends, Cookie, status, Request
+from fastapi import HTTPException, Depends, Cookie, status, Request, Header
 from bot import bot
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -64,10 +64,11 @@ if not CLIENT_SECRET:
     )
 
 
-async def logged_in_user(req: Request, token: str = Cookie(None)):
+async def logged_in_user(req: Request, token: str = Cookie(None), x_session: str = Header(None, alias="X-Session")):
     url = req.url_for("discord_authorise")
     url.include_query_params(from_url=req.url.path)
     reauth = HTTPException(status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": str(url)})
+    token = token or x_session
     if not token:
         reauth.detail = "Please log in with discord: %s" % str(url)
         raise reauth
@@ -195,7 +196,7 @@ async def get_audit_logs(
         raise HTTPException(404, "No audit logs found.")
 
     if "Mozilla" not in req.headers.get("User-Agent", ""):
-        return await GuildAuditLogEntryPydantic.from_queryset(audit_log)
+        return [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
 
     for entry in audit_log:
         await entry.fetch_related("guild")
