@@ -65,10 +65,13 @@ if not CLIENT_SECRET:
 
 
 async def logged_in_user(req: Request, token: str = Cookie(None)):
+    url = req.url_for("discord_authorise")
+    url.include_query_params(from_url=req.url.path)
+    reauth = HTTPException(status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": str(url)})
     if not token:
-        url = req.url_for("discord_authorise")
-        url.include_query_params(from_url=req.url.path)
-        return RedirectResponse(url, status.HTTP_307_TEMPORARY_REDIRECT)
+        reauth.detail = "Please log in with discord: %s" % str(url)
+        raise reauth
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user = await DiscordOauthUser.get_or_none(id=int(payload["sub"]))
@@ -76,9 +79,11 @@ async def logged_in_user(req: Request, token: str = Cookie(None)):
             raise HTTPException(404, "User not found.")
         return user
     except jwt.ExpiredSignatureError:
-        raise HTTPException(401, "Token expired.")
+        reauth.detail = "Token expired. %s" % str(url)
+        raise reauth
     except jwt.InvalidTokenError:
-        raise HTTPException(401, "Invalid token.")
+        reauth.detail = "Invalid token. %s" % str(url)
+        raise reauth
 
 
 @app.middleware("http")
