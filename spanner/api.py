@@ -10,11 +10,12 @@ import aiohttp
 import discord.utils
 import fastapi
 import jwt
-from fastapi import HTTPException, Depends, Cookie
+from fastapi import HTTPException, Depends, Cookie, status, Request
 from bot import bot
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from spanner.share.config import load_config
 from spanner.share.database import GuildAuditLogEntry, DiscordOauthUser, GuildAuditLogEntryPydantic
 
@@ -37,7 +38,7 @@ app = fastapi.FastAPI(debug=True, root_path=_get_root_path())
 app.mount("/assets", StaticFiles(directory="./assets", html=True), name="assets")
 templates = Jinja2Templates(directory="assets")
 
-authorise_sessions = collections.deque(maxlen=10240)
+authorise_sessions = {}
 
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
 
@@ -63,7 +64,11 @@ if not CLIENT_SECRET:
     )
 
 
-async def logged_in_user(token: str = Cookie(None)):
+async def logged_in_user(req: Request, token: str = Cookie(None)):
+    if not token:
+        url = req.url_for("discord_authorise")
+        url.include_query_params(from_url=req.url.path)
+        return RedirectResponse(url, status.HTTP_307_TEMPORARY_REDIRECT)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user = await DiscordOauthUser.get_or_none(id=int(payload["sub"]))
@@ -84,13 +89,13 @@ async def is_ready_middleware(req, call_next):
 
 
 @app.get("/oauth/callback/discord")
-async def discord_authorise(req: fastapi.Request, code: str = None, state: str = None):
+async def discord_authorise(req: Request, code: str = None, state: str = None, from_url: str = None):
     if not bot.is_ready() or not CLIENT_SECRET:
         raise HTTPException(503, "Not ready.")
     if not all((code, state)):
         state_key = secrets.token_urlsafe()
-        authorise_sessions.append(state_key)
-        return fastapi.responses.RedirectResponse(
+        authorise_sessions[state_key] = [from_url]
+        return RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=bot.user.id,
                 redirect_uri=str(req.base_url) + "oauth/callback/discord",
@@ -99,7 +104,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
         )
     elif state not in authorise_sessions:
         raise HTTPException(403, "Invalid state.")
-    authorise_sessions.remove(state)
+    to = authorise_sessions.pop(state)
     data = {
         "grant_type": "authorization_code",
         "code": code,
@@ -115,9 +120,9 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
             response_data = await response.json()
             if response.status != 200:
                 raise HTTPException(response.status, response_data)
-            elif response_data["scope"] != "identify guilds":
-                log.warning(f"User authenticated with {response_data['scope']!r} scopes, not 'identify guilds'..")
-                return fastapi.responses.RedirectResponse(req.url_for("discord_authorise"))
+            elif set(response_data["scope"].split()) != {"identify", "guilds"}:
+                log.warning(f"User authenticated with {response_data['scope']!r} scopes, not 'identify guilds'.")
+                return RedirectResponse(req.url_for("discord_authorise"))
         async with session.get(
             "https://discord.com/api/v10/users/@me",
             headers={"Authorization": f"Bearer {response_data['access_token']}"}
@@ -151,8 +156,10 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
                 user.expires_at = response_data["expires_in"]
                 user.session = token
             await user.save()
-            response = fastapi.responses.RedirectResponse(
-                url=f"{str(req.base_url)}?token={user.session}",
+            if not to:
+                to = f"{str(req.base_url)}?token={user.session}"
+            response = RedirectResponse(
+                url=to,
                 status_code=303
             )
             response.set_cookie("token", user.session, max_age=ACCESS_TOKEN_EXPIRE_SECONDS)
@@ -161,7 +168,7 @@ async def discord_authorise(req: fastapi.Request, code: str = None, state: str =
 
 @app.get("/guilds/{guild_id}/audit-logs")
 async def get_audit_logs(
-        req: fastapi.Request,
+        req: Request,
         guild_id: int,
         user: Annotated[DiscordOauthUser, Depends(logged_in_user)]
 ):
