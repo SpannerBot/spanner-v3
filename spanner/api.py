@@ -1,4 +1,3 @@
-import collections
 import datetime
 import logging
 import os
@@ -10,14 +9,15 @@ import aiohttp
 import discord.utils
 import fastapi
 import jwt
-from fastapi import HTTPException, Depends, Cookie, status, Request, Header
 from bot import bot
+from fastapi import Cookie, Depends, HTTPException, Header, Request, status
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
+
 from spanner.share.config import load_config
-from spanner.share.database import GuildAuditLogEntry, DiscordOauthUser, GuildAuditLogEntryPydantic
+from spanner.share.database import DiscordOauthUser, GuildAuditLogEntry, GuildAuditLogEntryPydantic
 
 
 def _get_root_path():
@@ -50,12 +50,14 @@ if SECRET_KEY == "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f269072882
     log.critical("Using default JWT secret key. change it! set $JWT_SECRET_KEY or set config.toml[web.jwt_secret_key]")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECONDS = 806400  # 1 week, same length as discord token
-OAUTH_URL = ("https://discord.com/oauth2/authorize?"
-             "client_id={client_id}"
-             "&response_type=code"
-             "&redirect_uri={redirect_uri}"
-             "&scope=identify+guilds"
-             "&state={state}")
+OAUTH_URL = (
+    "https://discord.com/oauth2/authorize?"
+    "client_id={client_id}"
+    "&response_type=code"
+    "&redirect_uri={redirect_uri}"
+    "&scope=identify+guilds"
+    "&state={state}"
+)
 CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", load_config()["web"].get("discord_client_secret"))
 if not CLIENT_SECRET:
     log.critical(
@@ -119,9 +121,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            "https://discord.com/api/oauth2/token",
-            data=data,
-            auth=aiohttp.BasicAuth(str(bot.user.id), CLIENT_SECRET)
+            "https://discord.com/api/oauth2/token", data=data, auth=aiohttp.BasicAuth(str(bot.user.id), CLIENT_SECRET)
         ) as response:
             response_data = await response.json()
             if response.status != 200:
@@ -131,13 +131,11 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
                 return RedirectResponse(req.url_for("discord_authorise"))
         async with session.get(
             "https://discord.com/api/v10/users/@me",
-            headers={"Authorization": f"Bearer {response_data['access_token']}"}
+            headers={"Authorization": f"Bearer {response_data['access_token']}"},
         ) as response:
             response_data["user"] = await response.json()
             user_data: discord.Member | None = await discord.utils.get_or_fetch(
-                bot,
-                "user",
-                int(response_data["user"]["id"])
+                bot, "user", int(response_data["user"]["id"])
             )
             if not user_data:
                 raise HTTPException(404, "User not found.")
@@ -164,20 +162,13 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             await user.save()
             if not to:
                 to = f"{str(req.base_url)}?token={user.session}"
-            response = RedirectResponse(
-                url=to,
-                status_code=303
-            )
+            response = RedirectResponse(url=to, status_code=303)
             response.set_cookie("token", user.session, max_age=ACCESS_TOKEN_EXPIRE_SECONDS)
             return response
 
 
 @app.get("/guilds/{guild_id}/audit-logs")
-async def get_audit_logs(
-        req: Request,
-        guild_id: int,
-        user: Annotated[DiscordOauthUser, Depends(logged_in_user)]
-):
+async def get_audit_logs(req: Request, guild_id: int, user: Annotated[DiscordOauthUser, Depends(logged_in_user)]):
     guild = bot.get_guild(guild_id)
     if not guild:
         raise HTTPException(404, "Guild not found.")
@@ -195,7 +186,7 @@ async def get_audit_logs(
     if not audit_log:
         raise HTTPException(404, "No audit logs found.")
 
-    if "Mozilla" not in req.headers.get("User-Agent", ""):
+    if "Mozilla" not in req.headers.get("User-Agent", "") or "application/json" in req.headers.get("Accept", ""):
         return [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
 
     for entry in audit_log:

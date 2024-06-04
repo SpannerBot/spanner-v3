@@ -30,10 +30,7 @@ class CustomBridgeBot(bridge.Bot):
         )
         await Tortoise.generate_schemas()
         config = uvicorn.Config(
-            app,
-            host="0.0.0.0",
-            port=1237,
-            forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
+            app, host="0.0.0.0", port=1237, forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
         )
         config.setup_event_loop()
         server = uvicorn.Server(config)
