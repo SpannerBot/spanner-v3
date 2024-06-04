@@ -99,7 +99,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         raise HTTPException(503, "Not ready.")
     if not all((code, state)):
         state_key = secrets.token_urlsafe()
-        authorise_sessions[state_key] = [from_url]
+        authorise_sessions[state_key] = from_url
         return RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=bot.user.id,
