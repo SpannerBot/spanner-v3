@@ -109,7 +109,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             from_url or '/'
         )
         state_key = secrets.token_urlsafe()
-        if "/oauth/callback/discord" in from_url:
+        if from_url and "/oauth/callback/discord" in from_url:
             from_url = "https://discord.gg/TveBeG7"
         authorise_sessions[state_key] = from_url
         return RedirectResponse(
