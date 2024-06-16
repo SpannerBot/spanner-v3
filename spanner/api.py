@@ -101,14 +101,23 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
     if not bot.is_ready() or not CLIENT_SECRET:
         raise HTTPException(503, "Not ready.")
     if not all((code, state)):
+        log.info(
+            "Request %r had no code (%r) or state (%r) - redirecting to login from %r.",
+            req,
+            code,
+            state,
+            from_url or '/'
+        )
         state_key = secrets.token_urlsafe()
+        if "/oauth/callback/discord" in from_url:
+            from_url = "https://discord.gg/TveBeG7"
         authorise_sessions[state_key] = from_url
         return RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=bot.user.id,
                 redirect_uri=str(req.base_url) + "oauth/callback/discord",
                 state=state_key,
-            )
+            ) + "&prompt=none"
         )
     elif state not in authorise_sessions:
         raise HTTPException(403, "Invalid state.")
@@ -126,9 +135,9 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             response_data = await response.json()
             if response.status != 200:
                 raise HTTPException(response.status, response_data)
-            elif set(response_data["scope"].split()) != {"identify", "guilds"}:
+            elif set(response_data["scope"].lower().split()) != {"identify", "guilds"}:
                 log.warning(f"User authenticated with {response_data['scope']!r} scopes, not 'identify guilds'.")
-                return RedirectResponse(req.url_for("discord_authorise"))
+                return RedirectResponse(req.url_for("discord_authorise", from_url=from_url))
         async with session.get(
             "https://discord.com/api/v10/users/@me",
             headers={"Authorization": f"Bearer {response_data['access_token']}"},
