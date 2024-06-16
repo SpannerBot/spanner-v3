@@ -135,7 +135,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             response_data = await response.json()
             if response.status != 200:
                 raise HTTPException(response.status, response_data)
-            elif set(response_data["scope"].lower().split()) != {"identify", "guilds"}:
+            elif not all(x in response_data["scope"] for x in ("identify", "guilds")):
                 log.warning(f"User authenticated with {response_data['scope']!r} scopes, not 'identify guilds'.")
                 return RedirectResponse(req.url_for("discord_authorise", from_url=from_url))
         async with session.get(
