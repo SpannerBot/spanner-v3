@@ -16,9 +16,8 @@ RUN pip install -U pip wheel setuptools
 RUN pip install -Ur /tmp/requirements.txt
 
 COPY ./spanner/ /spanner/
-COPY .git/ /tmp/__pre__/.git
-RUN git clone --filter=tree:0 file:///tmp/__pre__/.git /tmp/__repo__
-RUN mv /tmp/__repo__/.git /.git && rm -rf /tmp/__repo__ /tmp/__pre__
+COPY .git/ /.git/
+# ^ actions/checkout does a treeless-copy of .git anyway.
 RUN python _generate_version_info.py
 
 CMD ["python", "main.py"]
