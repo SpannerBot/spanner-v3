@@ -3,7 +3,6 @@ from discord.ext import bridge, commands
 
 from spanner.share.config import load_config
 from spanner.share.database import GuildLogFeatures
-from spanner.share.version import __sha__, __sha_short__, __build_time__
 
 
 class MetaCog(commands.Cog):
