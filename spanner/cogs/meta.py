@@ -61,7 +61,7 @@ class MetaCog(commands.Cog):
         url = "https://github.com/nexy7574/spanner-v3/tree/{}".format(__sha__)
         ts = discord.utils.format_dt(__build_time__, 'R')
         return await ctx.reply(
-            f"Running [Spanner v3, commit `{__sha_short__}`]({url}) built {ts}.",
+            f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}.",
         )
 
 
