@@ -198,7 +198,7 @@ async def get_audit_logs(req: Request, guild_id: int, user: Annotated[DiscordOau
     if not audit_log:
         raise HTTPException(404, "No audit logs found.")
 
-    if "Mozilla" not in req.headers.get("User-Agent", "") or "application/json" in req.headers.get("Accept", ""):
+    if "application/json" in req.headers.get("Accept", ""):
         return [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
 
     for entry in audit_log:
