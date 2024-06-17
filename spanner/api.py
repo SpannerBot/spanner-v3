@@ -91,9 +91,12 @@ async def logged_in_user(req: Request, token: str = Cookie(None), x_session: str
 
 @app.middleware("http")
 async def is_ready_middleware(req, call_next):
+    from share.version import __sha__
     if not bot.is_ready():
         await bot.wait_until_ready()
-    return await call_next(req)
+    res: fastapi.Response = await call_next(req)
+    res.headers["X-Spanner-Version"] = __sha__
+    return res
 
 
 @app.get("/oauth/callback/discord")

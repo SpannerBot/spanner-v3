@@ -10,8 +10,13 @@ import discord
 from bot import bot
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
+from _generate_version_info import should_write, write_version_file, gather_version_info
 
 sys.path.append("..")
+
+if should_write():
+    logging.critical("Automatically generating version metadata, this may take a minute.")
+    write_version_file(*gather_version_info())
 
 # Load the configuration file
 CONFIG_FILE = Path.cwd() / "config.toml"

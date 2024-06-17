@@ -3,6 +3,7 @@ from discord.ext import bridge, commands
 
 from spanner.share.config import load_config
 from spanner.share.database import GuildLogFeatures
+from spanner.share.version import __sha__, __sha_short__, __build_time__
 
 
 class MetaCog(commands.Cog):
@@ -52,6 +53,16 @@ class MetaCog(commands.Cog):
             paginator.add_line(f"* {feature} ")
         for page in paginator.pages:
             await ctx.send(page)
+
+    @commands.command()
+    async def version(self, ctx: commands.Context):
+        """Gets the spanner version."""
+        from spanner.share.version import __sha__, __sha_short__, __build_time__
+        url = "https://github.com/nexy7574/spanner-v3/tree/{}".format(__sha__)
+        ts = discord.utils.format_dt(__build_time__, 'R')
+        return await ctx.reply(
+            f"Running [Spanner v3, commit `{__sha_short__}`]({url}) built {ts}.",
+        )
 
 
 def setup(bot: commands.Bot):
