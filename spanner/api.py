@@ -2,22 +2,28 @@ import datetime
 import logging
 import os
 import secrets
-from typing import Annotated
+import time
+from typing import Annotated, Callable, Awaitable
 from urllib.parse import urlparse
 
 import aiohttp
 import discord.utils
 import fastapi
 import jwt
+import platform
+
+import psutil
+
 from bot import bot
-from fastapi import Cookie, Depends, HTTPException, Header, Request, status
+from fastapi import Cookie, Depends, HTTPException, Header, Request, status, Response
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from spanner.share.config import load_config
 from spanner.share.database import DiscordOauthUser, GuildAuditLogEntry, GuildAuditLogEntryPydantic
+from spanner.share.version import __sha__
 
 
 def _get_root_path():
@@ -31,6 +37,20 @@ def _get_root_path():
     return path
 
 
+HOST_DATA = {
+    "architecture": platform.machine(),
+    "platform": platform.platform(terse=True),
+    "python": platform.python_version(),
+    "system": {
+        "name": platform.system(),
+        "version": platform.version()
+    },
+    "docker": os.path.exists("/.dockerenv"),
+    "cpus": os.cpu_count()
+}
+PROCESS_EPOCH = psutil.Process(os.getpid()).create_time()
+
+
 log = logging.getLogger("spanner.api")
 log.info("Base path is set to %r", _get_root_path())
 
@@ -39,14 +59,16 @@ app.mount("/assets", StaticFiles(directory="./assets", html=True), name="assets"
 templates = Jinja2Templates(directory="assets")
 
 authorise_sessions = {}
+ratelimits = {}
 
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
 
+_DEFAULT_JWT = "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f2690728821c"
 SECRET_KEY = os.getenv(
     "JWT_SECRET_KEY",
-    load_config()["web"].get("jwt_secret_key", "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f2690728821c"),
-)
-if SECRET_KEY == "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f2690728821c":
+    load_config()["web"].get("jwt_secret_key", ""),
+) or _DEFAULT_JWT
+if SECRET_KEY == _DEFAULT_JWT:
     log.critical("Using default JWT secret key. change it! set $JWT_SECRET_KEY or set config.toml[web.jwt_secret_key]")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_SECONDS = 806400  # 1 week, same length as discord token
@@ -90,19 +112,90 @@ async def logged_in_user(req: Request, token: str = Cookie(None), x_session: str
 
 
 @app.middleware("http")
-async def is_ready_middleware(req, call_next):
-    from share.version import __sha__
+async def is_ready_middleware(req: Request, call_next: Callable[[Request], Awaitable[Response]]):
+    n = time.time()
     if not bot.is_ready():
         await bot.wait_until_ready()
-    res: fastapi.Response = await call_next(req)
+
+    ratelimits[req.client.host].setdefault(
+        {
+            "expires": time.time(),
+            "hits": 0
+        }
+    )
+    rc = ratelimits[req.client.host]
+    _ignore = (
+        "/healthz",
+        "/docs",
+        "/redoc",
+        "/openapi.json"
+    )
+    if req.url.path not in _ignore:
+        if rc["hits"] > 70:
+            if rc["expires"] < time.time():
+                rc["expires"] = time.time() + 60
+                rc["hits"] = 1
+            else:
+                return JSONResponse(
+                    {
+                        "detail": "You are being rate-limited. Please slow down your requests.",
+                    },
+                    status.HTTP_429_TOO_MANY_REQUESTS,
+                    {
+                        "Retry-After": str(round(rc["expires"] - n)),
+                        "X-Ratelimit-Remaining": "0",
+                        "X-Ratelimit-Reset": str(round(rc["expires"])),
+                        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n))
+                    }
+                )
+        else:
+            rc["hits"] += 1
+    rl_headers = {
+        "X-Ratelimit-Remaining": str(70 - rc["hits"]),
+        "X-Ratelimit-Reset": str(round(rc["expires"])),
+        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n))
+    }
+    res = await call_next(req)
     res.headers["X-Spanner-Version"] = __sha__
+    res.headers.update(rl_headers)
     return res
+
+
+@app.get("/healthz")
+def health_check():
+    if not bot.is_ready():
+        # noinspection PyProtectedMember
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Bot is not online and ready yet.",
+            {
+                "Retry-After": str(round(max(2.0, bot.ws._rate_limiter.get_delay())))
+            }
+        )
+
+    data = {
+        "online": True,
+        "uptime": round(time.time() - PROCESS_EPOCH),
+        "latency": round(bot.latency * 1000, 2),
+        "stats": {
+            "users": len(bot.users),
+            "guilds": len(bot.guilds),
+            "cached_messages": len(bot.cached_messages)
+        },
+        "host": HOST_DATA,
+        "warnings": []
+    }
+    if not CLIENT_SECRET:
+        data["warnings"].append(
+            {"detail": "CLIENT_SECRET is not set."}
+        )
+    return data
 
 
 @app.get("/oauth/callback/discord")
 async def discord_authorise(req: Request, code: str = None, state: str = None, from_url: str = None):
     if not bot.is_ready() or not CLIENT_SECRET:
-        raise HTTPException(503, "Not ready.")
+        raise HTTPException(503, "Not ready.", {"Retry-After": "30"})
     if not all((code, state)):
         log.info(
             "Request %r had no code (%r) or state (%r) - redirecting to login from %r.",
@@ -115,15 +208,19 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         if from_url and "/oauth/callback/discord" in from_url:
             from_url = "https://discord.gg/TveBeG7"
         authorise_sessions[state_key] = from_url
-        return RedirectResponse(
+        r = RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=bot.user.id,
                 redirect_uri=str(req.base_url) + "oauth/callback/discord",
                 state=state_key,
             ) + "&prompt=none"
         )
+        r.set_cookie("_state", state_key, max_age=300, httponly=True, samesite="strict")
+        return r
     elif state not in authorise_sessions:
-        raise HTTPException(403, "Invalid state.")
+        raise HTTPException(403, "Invalid or expired request.")
+    elif state != req.cookies.get("_state"):
+        raise HTTPException(403, "Unable to authenticate request is legitimate.")
     to = authorise_sessions.pop(state)
     data = {
         "grant_type": "authorization_code",
@@ -175,7 +272,8 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             if not to:
                 to = f"{str(req.base_url)}?token={user.session}"
             response = RedirectResponse(url=to, status_code=303)
-            response.set_cookie("token", user.session, max_age=ACCESS_TOKEN_EXPIRE_SECONDS)
+            response.set_cookie("_token", user.session, max_age=ACCESS_TOKEN_EXPIRE_SECONDS)
+            response.delete_cookie("_state")
             return response
 
 

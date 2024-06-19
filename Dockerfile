@@ -12,8 +12,7 @@ WORKDIR /spanner
 RUN apt-get update && apt-get install -y git
 
 COPY requirements.txt /tmp
-RUN pip install -U pip wheel setuptools
-RUN pip install -Ur /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
 
 COPY ./spanner/ /spanner/
 COPY .git/ /.git/
