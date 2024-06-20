@@ -97,9 +97,7 @@ class SelfRoleMenu(Model):
     def __repr__(self):
         return (
             "SelfRoleMenu(id={0.id!r}, guild={0.guild!r}, name={0.name!r}, channel={0.channel!r}, message={0.message!r}"
-            ", mode={0.mode!r}, roles={0.roles!r}, maximum={0.maximum!r})".format(
-                self
-            )
+            ", mode={0.mode!r}, roles={0.roles!r}, maximum={0.maximum!r})".format(self)
         )
 
 
