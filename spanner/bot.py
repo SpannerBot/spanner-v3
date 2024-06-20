@@ -2,9 +2,15 @@ import asyncio
 
 import discord
 import uvicorn
+import logging
+
 from discord.ext import bridge, commands
 from share.config import load_config
+from share.views.self_roles import PersistentSelfRoleView
 from tortoise import Tortoise
+
+
+log = logging.getLogger(__name__)
 
 
 class CustomBridgeBot(bridge.Bot):
@@ -23,12 +29,19 @@ class CustomBridgeBot(bridge.Bot):
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         from api import app
+        from spanner.share.database import SelfRoleMenu
 
         await Tortoise.init(
             db_url=load_config()["database"]["uri"],
             modules={"models": ["spanner.share.database"]},
         )
         await Tortoise.generate_schemas()
+        for menu in await SelfRoleMenu.all().prefetch_related("guild"):
+            log.info("Adding persistent view: %r", menu)
+            self.add_view(
+                PersistentSelfRoleView(menu),
+                message_id=menu.message
+            )
         config = uvicorn.Config(
             app, host="0.0.0.0", port=1237, forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
         )

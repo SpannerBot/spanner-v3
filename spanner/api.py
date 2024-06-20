@@ -113,6 +113,11 @@ async def logged_in_user(req: Request, token: str = Cookie(None), x_session: str
 
 @app.middleware("http")
 async def is_ready_middleware(req: Request, call_next: Callable[[Request], Awaitable[Response]]):
+    if req.url.path == "/healthz":
+        res = await call_next(req)
+        res.headers["X-Spanner-Version"] = __sha__
+        # Just pass it through, skip processing
+        return res
     n = time.time()
     if not bot.is_ready():
         await bot.wait_until_ready()

@@ -11,6 +11,9 @@ class GuildConfig(Model):
     log_channel = fields.BigIntField(default=None, null=True)
     membership_log_channel = fields.BigIntField(default=None, null=True)
 
+    def __repr__(self):
+        return "GuildConfig(id={0.id!r}, log_channel={0.log_channel!r})".format(self)
+
     if typing.TYPE_CHECKING:
         log_features: fields.ReverseRelation["GuildLogFeatures"]
         audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
@@ -90,6 +93,14 @@ class SelfRoleMenu(Model):
     roles = fields.JSONField(default=[])
     # minimum = fields.SmallIntField(default=0)
     maximum = fields.SmallIntField(default=25)
+
+    def __repr__(self):
+        return (
+            "SelfRoleMenu(id={0.id!r}, guild={0.guild!r}, name={0.name!r}, channel={0.channel!r}, message={0.message!r}"
+            ", mode={0.mode!r}, roles={0.roles!r}, maximum={0.maximum!r})".format(
+                self
+            )
+        )
 
 
 SelfRoleMenuPydantic = pydantic_model_creator(SelfRoleMenu, name="SelfRoleMenu")

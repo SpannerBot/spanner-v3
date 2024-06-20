@@ -2,12 +2,15 @@ import asyncio
 import os
 import logging
 from enum import IntEnum
-from typing import Iterable, Any
+from typing import Iterable, Any, TYPE_CHECKING
 
 import discord
 from discord import Interaction
 
-from spanner.share.database import SelfRoleMenu, GuildConfig
+from ..database import SelfRoleMenu, GuildConfig
+
+if TYPE_CHECKING:
+    from spanner.bot import CustomBridgeBot
 
 
 log = logging.getLogger(__name__)
@@ -177,23 +180,20 @@ class CreateRoleSelect(discord.ui.Select):
                 raise ValueError(f"Invalid mode. Expected 0-2, got {self.mode!r}.")
 
         await interaction.followup.send(
-            f"\N{WHITE HEAVY CHECK MARK} Roles {word}:\n" + "\n".join(ra),
-            ephemeral=True,
-            delete_after=5
+            f"\N{WHITE HEAVY CHECK MARK} Roles {word}:\n" + "\n".join(ra), ephemeral=True, delete_after=5
         )
         self.view.stop()
 
 
 class CreateChannelSelect(discord.ui.Select):
     def __init__(
-            self,
-            me: discord.Member,
-            user: discord.Member,
-            min_n: int = 1,
-            max_n: int = 25,
-            channel_types: list[discord.ChannelType] = None,
-            can_send: Iterable[Any] = None
-
+        self,
+        me: discord.Member,
+        user: discord.Member,
+        min_n: int = 1,
+        max_n: int = 25,
+        channel_types: list[discord.ChannelType] = None,
+        can_send: Iterable[Any] = None,
     ):
         channel_types = channel_types or [discord.ChannelType.text]
         w = "channels" if max_n != 1 else "a channel"
@@ -202,7 +202,7 @@ class CreateChannelSelect(discord.ui.Select):
             placeholder="Select " + w,
             min_values=min_n,
             max_values=max_n,
-            channel_types=channel_types
+            channel_types=channel_types,
         )
         self.me = me
         self.user = user
@@ -216,16 +216,14 @@ class CreateChannelSelect(discord.ui.Select):
             if isinstance(channel, discord.abc.Messageable):
                 if not channel.can_send(*self.can_send):
                     return await interaction.followup.send(
-                        f"\N{cross mark} I cannot send messages in {channel}. Make sure I have `Send Messages`,"
+                        f"\N{CROSS MARK} I cannot send messages in {channel}. Make sure I have `Send Messages`,"
                         f" `Embed Links`, and `Attach Files`."
                     )
 
         ra = [f"* {channel.mention}" for channel in v]
 
         await interaction.followup.send(
-            f"\N{WHITE HEAVY CHECK MARK} Channel(s) selected:\n" + "\n".join(ra),
-            ephemeral=True,
-            delete_after=5
+            f"\N{WHITE HEAVY CHECK MARK} Channel(s) selected:\n" + "\n".join(ra), ephemeral=True, delete_after=5
         )
         self.view.stop()
 
@@ -233,15 +231,9 @@ class CreateChannelSelect(discord.ui.Select):
 class ChangeNameModal(discord.ui.Modal):
     def __init__(self, current: str):
         super().__init__(
-            discord.ui.InputText(
-                label="Name",
-                placeholder=current,
-                min_length=1,
-                max_length=32,
-                value=current
-            ),
+            discord.ui.InputText(label="Name", placeholder=current, min_length=1, max_length=32, value=current),
             title="Change self-role menu name",
-            timeout=120.0
+            timeout=120.0,
         )
         self.current = current
 
@@ -253,13 +245,121 @@ class ChangeNameModal(discord.ui.Modal):
         return self.children[0].value or self.current
 
 
+class PersistentSelfRoleView(discord.ui.View):
+    class DropDown(discord.ui.Select):
+        def __init__(self, source: discord.Interaction, menu: SelfRoleMenu):
+            self.source = source
+            self.config = menu
+            self.guild_config = menu.guild
+            self.real_roles = list(
+                filter(
+                    lambda r: r and r < source.guild.me.top_role and r != source.guild.default_role,
+                    [self.source.guild.get_role(x) for x in self.config.roles],
+                )
+            )
+            self.pre_options = [
+                discord.SelectOption(
+                    label="@" + role.name, value=str(role.id), description=role.name, default=role in source.user.roles
+                )
+                for role in self.real_roles
+            ]
+            super().__init__(
+                placeholder="Select up to 25 roles here.",
+                min_values=0,
+                max_values=len(self.real_roles),
+                options=self.pre_options.copy(),
+            )
+
+            self.gained: list[discord.Role | None] = []
+            self.lost: list[discord.Role | None] = []
+
+        async def callback(self, interaction: Interaction):
+            await interaction.response.defer(invisible=True)
+            self.disabled = True
+            await interaction.edit_original_response(view=self.view)
+            for option in self.pre_options:
+                if option.value in self.values:
+                    # Role was selected.
+                    if discord.utils.get(interaction.user.roles, id=int(option.value)):
+                        # Already had role
+                        pass
+                    else:
+                        # Did not have role, add it to the pending list
+                        self.gained.append(interaction.guild.get_role(int(option.value)))
+                else:
+                    # Role was de-selected.
+                    if discord.utils.get(interaction.user.roles, id=int(option.value)):
+                        # Already had role
+                        self.lost.append(interaction.guild.get_role(int(option.value)))
+
+            self.lost = list(filter(None, self.lost))
+            self.gained = list(filter(None, self.gained))
+            self.view.stop()
+
+    def __init__(
+        self,
+        menu: SelfRoleMenu,
+    ):
+        super().__init__(timeout=None)
+        self.menu = menu
+
+    @discord.ui.button(label="Select self-roles", custom_id="select1", style=discord.ButtonStyle.primary)
+    async def select_self_roles(self, _, interaction: Interaction):
+        await interaction.response.defer(ephemeral=True)
+        dd = self.DropDown(interaction, self.menu)
+        view = discord.ui.View(dd, timeout=300, disable_on_timeout=True)
+        m = await interaction.followup.send(view=view, ephemeral=True)
+        await view.wait()
+        await m.edit(embed=discord.Embed(title="Processing..."), view=None)
+        if dd.gained:
+            try:
+                await interaction.user.add_roles(*dd.gained, reason=f"Self-role menu: {self.menu.name!r}", atomic=False)
+            except discord.HTTPException as e:
+                await interaction.followup.send(f":warning: Failed to add roles: {e!r}")
+                log.error(
+                    f"Failed to update self-roles for {interaction.user.id} in {interaction.guild.id}", exc_info=e
+                )
+        if dd.lost:
+            try:
+                await interaction.user.remove_roles(
+                    *dd.lost, reason=f"Self-role menu: {self.menu.name!r}", atomic=False
+                )
+            except discord.HTTPException as e:
+                await interaction.followup.send(f":warning: Failed to remove roles: {e!r}")
+                log.error(
+                    f"Failed to update self-roles for {interaction.user.id} in {interaction.guild.id}", exc_info=e
+                )
+
+        embed = discord.Embed(title="Self-roles registered!")
+        if len(dd.gained) > len(dd.lost):
+            embed.colour = discord.Colour.green()
+        elif len(dd.gained) == len(dd.lost):
+            embed.colour = discord.Colour.blurple()
+            embed.set_footer(text="No changes made")
+        else:
+            embed.colour = discord.Colour.brand_red()
+
+        if dd.gained:
+            embed.add_field(name="Roles added:", value=", ".join(x.mention for x in dd.gained))
+        if dd.lost:
+            embed.add_field(name="Roles removed:", value=", ".join(x.mention for x in dd.lost))
+        return await m.edit(embed=embed)
+
+
 class CreateSelfRolesMasterView(discord.ui.View):
     """
     This is the master view, or the entry point for creating a self role menu.
 
     It can also be used to edit self role menus.
     """
-    def __init__(self, ctx: discord.ApplicationContext, guild_config: GuildConfig, roles: list[discord.Role] = None, name: str = None):
+
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        guild_config: GuildConfig,
+        roles: list[discord.Role] = None,
+        name: str = None,
+    ):
         super().__init__(timeout=300, disable_on_timeout=True)
         self.ctx = ctx
         self.roles = set(roles) if roles else set()
@@ -292,7 +392,6 @@ class CreateSelfRolesMasterView(discord.ui.View):
         row=0,
     )
     async def change_name(self, _, interaction: discord.Interaction):
-        # TODO: implement name change modal
         if self._name_change_task:
             self._name_change_task.cancel()
         modal = ChangeNameModal(self.name)
@@ -357,19 +456,14 @@ class CreateSelfRolesMasterView(discord.ui.View):
 
         channel_view = discord.ui.View(
             CreateChannelSelect(
-                interaction.guild.me,
-                interaction.user,
-                1,
-                1,
-                [discord.ChannelType.text],
-                [discord.Embed()]
+                interaction.guild.me, interaction.user, 1, 1, [discord.ChannelType.text], [discord.Embed()]
             ),
-            disable_on_timeout=True
+            disable_on_timeout=True,
         )
         fm = await interaction.followup.send(
             "Where should this self-role be accessible? (A drop-down message will be sent to this channel)",
             view=channel_view,
-            ephemeral=True
+            ephemeral=True,
         )
         await channel_view.wait()
         channel_view.disable_all_items()
@@ -385,13 +479,9 @@ class CreateSelfRolesMasterView(discord.ui.View):
         _e = discord.Embed(
             title="Self-role menu: " + self.name,
             description="Press my button to select any/all of the following roles:\n",
-            colour=discord.Colour.teal()
+            colour=discord.Colour.teal(),
         )
-        _e.set_author(
-            name=interaction.user.display_name,
-            icon_url=interaction.user.display_avatar.url
-        )
-        _e.set_footer(text="Not implemented yet.")
+        _e.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
 
         selector = await channel.send(
             embed=_e,
@@ -411,12 +501,15 @@ class CreateSelfRolesMasterView(discord.ui.View):
         except Exception:
             log.exception(
                 f"Failed to save self-role menu to database for {interaction.user.id} in {interaction.guild.id}",
-                exc_info=True
+                exc_info=True,
             )
             await selector.delete(delay=0.01)
             return await interaction.followup.send(
                 "There was an error saving your self-role menu. Please contact support.",
             )
+        v = PersistentSelfRoleView(db_entry)
+        await selector.edit(view=v)
+        self.ctx.bot.add_view(v, message_id=selector.id)
 
         await interaction.edit_original_response(embed=self.embed(), view=self)
         self.stop()
