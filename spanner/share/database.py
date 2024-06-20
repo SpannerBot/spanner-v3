@@ -1,4 +1,5 @@
 import secrets
+import typing
 
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
@@ -10,10 +11,11 @@ class GuildConfig(Model):
     log_channel = fields.BigIntField(default=None, null=True)
     membership_log_channel = fields.BigIntField(default=None, null=True)
 
-    # log_features: fields.ReverseRelation["GuildLogFeatures"]
-    # audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
-    # user_history: fields.ReverseRelation["UserHistory"]
-    # self_roles: fields.ReverseRelation["SelfRoleMenu"]
+    if typing.TYPE_CHECKING:
+        log_features: fields.ReverseRelation["GuildLogFeatures"]
+        audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
+        user_history: fields.ReverseRelation["UserHistory"]
+        self_roles: fields.ReverseRelation["SelfRoleMenu"]
 
 
 GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")

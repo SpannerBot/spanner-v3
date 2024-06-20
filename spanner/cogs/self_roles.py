@@ -4,6 +4,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.views.self_roles import CreateSelfRolesMasterView
+from spanner.share.database import GuildConfig
 
 
 class SelfRolesCog(commands.Cog):
@@ -19,9 +20,12 @@ class SelfRolesCog(commands.Cog):
     @commands.max_concurrency(1, per=commands.BucketType.guild)
     async def create(self, ctx: discord.ApplicationContext):
         """Create a new self-assignable role menu"""
-        view = CreateSelfRolesMasterView(ctx)
-        await ctx.respond("Warning: This command is not yet finished!", view=view)
+        config, _ = await GuildConfig.get_or_create(id=ctx.guild.id)
+        view = CreateSelfRolesMasterView(ctx, config)
+        view.update_ui()
+        await ctx.respond(":warning: This command is not yet finished!", embed=view.embed(), view=view)
         await view.wait()
+        await ctx.delete(delay=30)
 
 
 def setup(bot: bridge.Bot):
