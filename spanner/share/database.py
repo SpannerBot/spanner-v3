@@ -37,6 +37,10 @@ class GuildLogFeatures(Model):
         "member.unban",
         "member.nickname-change",
         "member.roles.update",
+        "server.role.create",
+        "server.role.edit",
+        "server.role.permissions.edit",
+        "server.role.delete"
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
