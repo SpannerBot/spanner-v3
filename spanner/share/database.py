@@ -25,7 +25,7 @@ GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")
 
 
 class GuildLogFeatures(Model):
-    _VALID_LOG_FEATURES = [
+    VALID_LOG_FEATURES = [
         "message.edit",
         "message.delete.bulk",
         "message.delete",
@@ -36,8 +36,7 @@ class GuildLogFeatures(Model):
         "member.timeout",
         "member.unban",
         "member.nickname-change",
-        "member.roles.add",
-        "member.roles.remove",
+        "member.roles.update",
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(

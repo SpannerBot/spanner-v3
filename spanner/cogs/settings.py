@@ -87,7 +87,7 @@ class SettingsCog(commands.Cog):
                 name="feature",
                 description="The feature to toggle.",
                 required=True,
-                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures.VALID_LOG_FEATURES),
             ),
         ],
     ):
@@ -97,7 +97,7 @@ class SettingsCog(commands.Cog):
 
         if "*" in feature:
             toggled = []
-            for log_feature in GuildLogFeatures._VALID_LOG_FEATURES:
+            for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
                     await self._set_log_feature(ctx.guild_id, log_feature, user_id=ctx.user.id)
                     toggled.append(log_feature)
@@ -105,7 +105,7 @@ class SettingsCog(commands.Cog):
                 f"\N{WHITE HEAVY CHECK MARK} Toggled the following features: {', '.join(toggled)}."
             )
 
-        if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
+        if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         log_feature = await self._set_log_feature(ctx.guild_id, feature, user_id=ctx.user.id)
@@ -124,7 +124,7 @@ class SettingsCog(commands.Cog):
                 name="feature",
                 description="The feature to enable.",
                 required=True,
-                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures.VALID_LOG_FEATURES),
             ),
         ],
     ):
@@ -133,7 +133,7 @@ class SettingsCog(commands.Cog):
         feature = feature.lower()
         if "*" in feature:
             toggled = []
-            for log_feature in GuildLogFeatures._VALID_LOG_FEATURES:
+            for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
                     await self._set_log_feature(ctx.guild_id, log_feature, True, user_id=ctx.user.id)
                     toggled.append(log_feature)
@@ -141,7 +141,7 @@ class SettingsCog(commands.Cog):
                 f"\N{WHITE HEAVY CHECK MARK} Enabled the following features: {', '.join(toggled)}."
             )
 
-        if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
+        if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         await self._set_log_feature(ctx.guild_id, feature, True, user_id=ctx.user.id)
@@ -157,7 +157,7 @@ class SettingsCog(commands.Cog):
                 name="feature",
                 description="The feature to enable.",
                 required=True,
-                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures._VALID_LOG_FEATURES),
+                autocomplete=discord.utils.basic_autocomplete(GuildLogFeatures.VALID_LOG_FEATURES),
             ),
         ],
     ):
@@ -166,7 +166,7 @@ class SettingsCog(commands.Cog):
         feature = feature.lower()
         if "*" in feature:
             toggled = []
-            for log_feature in GuildLogFeatures._VALID_LOG_FEATURES:
+            for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
                     await self._set_log_feature(ctx.guild_id, log_feature, False, user_id=ctx.user.id)
                     toggled.append(log_feature)
@@ -174,7 +174,7 @@ class SettingsCog(commands.Cog):
                 f"\N{WHITE HEAVY CHECK MARK} Disabled the following features: {', '.join(toggled)}."
             )
 
-        if feature not in GuildLogFeatures._VALID_LOG_FEATURES:
+        if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
         await self._set_log_feature(ctx.guild_id, feature, False, user_id=ctx.user.id)

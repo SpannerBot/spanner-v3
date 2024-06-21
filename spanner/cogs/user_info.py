@@ -191,7 +191,7 @@ class UserInfo(commands.Cog):
 
     @commands.slash_command(name="user-info")
     async def user_info_slash(self, ctx: discord.ApplicationContext, user: discord.User):
-        """Fetches information on a user or member on        discord."""
+        """Fetches information on a user or member on discord."""
         if ctx.guild:
             try:
                 user = await ctx.guild.fetch_member(user.id)

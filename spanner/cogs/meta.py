@@ -50,7 +50,7 @@ class MetaCog(commands.Cog):
 
         paginator.add_line("")
         paginator.add_line("# Disabled logging features:")
-        for feature in set(GuildLogFeatures._VALID_LOG_FEATURES) - {feature.name for feature in features}:
+        for feature in set(GuildLogFeatures.VALID_LOG_FEATURES) - {feature.name for feature in features}:
             paginator.add_line(f"* {feature} ")
         for page in paginator.pages:
             await ctx.send(page)
