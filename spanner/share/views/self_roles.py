@@ -547,6 +547,7 @@ class EditSelfRolesMasterView(CreateSelfRolesMasterView):
         super().__init__(ctx, db.guild, _roles, db.name)
         self.menu = db
         self.remove_item(self.get_item("save"))
+        self.get_item("save_edit").custom_id = "save"
 
     @discord.ui.button(label="Save", custom_id="save_edit", style=discord.ButtonStyle.green, emoji="\U0001f4be", row=2)
     async def save(self, _, interaction: discord.Interaction):
