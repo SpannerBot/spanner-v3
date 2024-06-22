@@ -84,7 +84,7 @@ class SelfRolesCog(commands.Cog):
             )
             if not message:
                 try:
-                    message = await channel.fetch_message(menu.message_id)
+                    message = await channel.fetch_message(menu.message)
                 except discord.NotFound:
                     paginator.add_line(f"* **{menu.name}** (missing message; needs reconfiguring)")
                     continue

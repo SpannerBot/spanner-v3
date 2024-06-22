@@ -578,6 +578,7 @@ class EditSelfRolesMasterView(CreateSelfRolesMasterView):
             view=None
         )
 
+        # noinspection PyBroadException
         try:
             self.menu.channel = selector.channel.id
             self.menu.message = selector.id
