@@ -1,7 +1,9 @@
+import datetime
+import textwrap
+
 import discord
 import httpx
-from discord.ext import bridge, commands
-from httpx import AsyncClient
+from discord.ext import bridge, commands, pages
 
 from spanner.share.config import load_config
 from spanner.share.database import GuildLogFeatures
@@ -62,22 +64,72 @@ class MetaCog(commands.Cog):
         base_url = "https://github.com/nexy7574/spanner-v3/tree/{}"
         url = base_url.format(__sha__)
         ts = discord.utils.format_dt(__build_time__, 'R')
-        msg = await ctx.reply(
-            f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}.",
+        await ctx.reply(
+            f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}. Run `s!changelog` for more info.",
         )
-        async with httpx.AsyncClient() as client:
-            response = await client.get("https://git.i-am.nexus/api/v1/repos/nex/spanner-v3/commits?sha=dev")
-            response.raise_for_status()
-            commits = response.json()
-            latest = commits.pop(0)
-            if latest["sha"] != __sha__:
-                await msg.edit(
-                    content="{0}\n\nA newer version is available: [commit `{1}`]({2})".format(
-                        msg.content,
-                        latest["sha"][:7],
-                        base_url.format(latest["sha"])
+
+    @commands.command()
+    async def changelog(self, ctx: commands.Context):
+        """Gets the spanner changelog."""
+        from spanner.share.version import __sha__
+        msg = await ctx.reply("Loading changelog...")
+        async with httpx.AsyncClient(
+            base_url="https://git.i-am.nexus/api/v1/repos/nex/spanner-v3"
+        ) as client:
+            changes = []
+            page = 0
+            while True:
+                try:
+                    response = await client.get(
+                        "/commits",
+                        params={
+                            "sha": "dev",
+                            "stat": False,
+                            "verification": False,
+                            "files": False,
+                            "page": page,
+                            "limit": "100"
+                        }
                     )
-                )
+                except ConnectionError:
+                    return await msg.edit(content="Failed to contact source server.")
+                if response.status_code != 200:
+                    break
+                data = response.json()
+                if not data:
+                    break
+                for commit in data:
+                    _cm = commit["commit"]["message"].strip()
+                    cm = _cm.splitlines()[0]
+                    changes.append(
+                        {
+                            "sha": commit["sha"],
+                            "created": datetime.datetime.fromisoformat(commit["created"]),
+                            "url": "https://github.com/nexy7574/spanner-v3/commit/" + commit["sha"],
+                            "author": {
+                                "name": commit["commit"]["committer"]["name"],
+                                "url": "https://github.com/" + commit["commit"]["committer"]["name"],
+                            },
+                            "current": commit["sha"] == __sha__,
+                            "message": textwrap.shorten(cm, width=100, placeholder="...")
+                        }
+                    )
+                page += 1
+
+        if not changes:
+            return await ctx.reply("No changelog entries found.")
+
+        paginator = commands.Paginator("", "", 2000)
+        for n, commit in enumerate(changes, 1):
+            commit_no = len(changes) - n + 1
+            paginator.add_line(
+                f"{commit_no}. [{commit['message']} ({commit['sha'][:7]})](<{commit['url']}>) by "
+                f"[{commit['author']['name']}](<{commit['author']['url']}>)"
+                f"{' (current)' if commit['current'] else ''} - {discord.utils.format_dt(commit['created'], 'R')}"
+            )
+        menu = pages.Paginator(paginator.pages)
+        await menu.edit(msg, suppress=True)
+        menu.user = ctx.author
 
 
 def setup(bot: commands.Bot):
