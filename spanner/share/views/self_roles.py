@@ -129,7 +129,7 @@ class CreateRoleSelect(discord.ui.Select):
         w = "a role" if mode == 2 else "up to 25 roles"
         super().__init__(
             select_type=discord.ComponentType.role_select,
-            placeholder="Select a role to add",
+            placeholder=f"Select {w} to add",
             min_values=0 if mode != 2 else 1,
             max_values=25 if mode != 2 else 1,
         )
@@ -333,7 +333,7 @@ class PersistentSelfRoleView(discord.ui.View):
         embed = discord.Embed(title="Self-roles registered!")
         if len(dd.gained) > len(dd.lost):
             embed.colour = discord.Colour.green()
-        elif len(dd.gained) == len(dd.lost):
+        elif dd.gained == dd.lost:
             embed.colour = discord.Colour.blurple()
             embed.set_footer(text="No changes made")
         else:
