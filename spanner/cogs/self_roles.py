@@ -1,4 +1,5 @@
 import logging
+import typing
 
 import discord
 from discord.ext import bridge, commands, pages
@@ -6,6 +7,11 @@ from discord.ext import bridge, commands, pages
 from spanner.share.views.self_roles import CreateSelfRolesMasterView, EditSelfRolesMasterView
 from spanner.share.views import ConfirmView
 from spanner.share.database import GuildConfig, SelfRoleMenu
+
+
+async def self_role_menu_autocomplete(ctx: discord.ApplicationContext):
+    menus = await SelfRoleMenu.filter(guild_id=ctx.guild.id).all()
+    return [m.name for m in menus]
 
 
 class SelfRolesCog(commands.Cog):
@@ -33,7 +39,19 @@ class SelfRolesCog(commands.Cog):
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.max_concurrency(1, per=commands.BucketType.guild)
-    async def edit(self, ctx: discord.ApplicationContext, name: str):
+    async def edit(
+            self,
+            ctx: discord.ApplicationContext,
+            name: typing.Annotated[
+                str,
+                discord.Option(
+                    name="name",
+                    description="The name of the self-assignable role menu to delete",
+                    required=True,
+                    autocomplete=self_role_menu_autocomplete
+                )
+            ]
+    ):
         """Edit a self-assignable role menu"""
         await ctx.defer()
         menu = await SelfRoleMenu.get_or_none(name=name, guild_id=ctx.guild.id)
@@ -50,7 +68,19 @@ class SelfRolesCog(commands.Cog):
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.max_concurrency(1, per=commands.BucketType.guild)
-    async def delete(self, ctx: discord.ApplicationContext, name: str):
+    async def delete(
+            self,
+            ctx: discord.ApplicationContext,
+            name: typing.Annotated[
+                str,
+                discord.Option(
+                    name="name",
+                    description="The name of the self-assignable role menu to delete",
+                    required=True,
+                    autocomplete=self_role_menu_autocomplete
+                )
+            ]
+    ):
         """Delete a self-assignable role menu"""
         await ctx.defer()
         menu = await SelfRoleMenu.get_or_none(name=name, guild_id=ctx.guild.id)
