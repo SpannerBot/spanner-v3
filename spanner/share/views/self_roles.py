@@ -370,7 +370,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         self.update_ui()
 
     def sorted_roles(self) -> list[discord.Role]:
-        return list(sorted(self.roles))
+        return list(sorted(self.roles, reverse=True))
 
     def embed(self):
         return discord.Embed(
@@ -583,7 +583,7 @@ class EditSelfRolesMasterView(CreateSelfRolesMasterView):
         try:
             self.menu.channel = selector.channel.id
             self.menu.message = selector.id
-            self.menu.roles = self.sorted_roles()
+            self.menu.roles = [x.id for x in self.sorted_roles()]
             self.menu.name = self.name
             await self.menu.save()
         except Exception:
