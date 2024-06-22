@@ -1,4 +1,5 @@
 import asyncio
+import signal
 
 import discord
 import uvicorn
@@ -48,6 +49,7 @@ class CustomBridgeBot(bridge.Bot):
         config.setup_event_loop()
         server = uvicorn.Server(config)
         self.web = asyncio.create_task(server.serve())
+        signal.signal(signal.SIGTERM, lambda sig, frame: asyncio.create_task(Tortoise.close_connections()))
         try:
             await super().start(token, reconnect=reconnect)
         finally:

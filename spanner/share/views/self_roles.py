@@ -383,6 +383,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
         self.get_item("add_role").disabled = len(self.roles) >= 25
         self.get_item("remove_role").disabled = len(self.roles) == 0
         self.get_item("edit_role").disabled = len(self.roles) == 0
+        self.get_item("save").disabled = len(self.roles) == 0
 
     @discord.ui.button(
         label="Change Name",
@@ -480,7 +481,10 @@ class CreateSelfRolesMasterView(discord.ui.View):
             title="Self-role menu: " + self.name,
             description="Press my button to select any/all of the following roles:\n",
             colour=discord.Colour.teal(),
+            timestamp=discord.utils.utcnow()
         )
+        for role in self.sorted_roles():
+            _e.description += f"\n- {role.mention}"
         _e.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
 
         selector = await channel.send(
@@ -488,16 +492,15 @@ class CreateSelfRolesMasterView(discord.ui.View):
         )
 
         try:
-            db_entry = SelfRoleMenu(
+            db_entry = await SelfRoleMenu.create(
                 guild=self.guild_config,
                 author=interaction.user.id,
                 name=self.name,
                 channel=selector.channel.id,
                 message=selector.id,
                 mode=SelfRoleMenuType.NORMAL.value,
-                roles=[x.id for x in self.roles],
+                roles=[x.id for x in self.sorted_roles()],
             )
-            await db_entry.save()
         except Exception:
             log.exception(
                 f"Failed to save self-role menu to database for {interaction.user.id} in {interaction.guild.id}",
@@ -531,3 +534,68 @@ class CreateSelfRolesMasterView(discord.ui.View):
 
         await meth(f"An error occurred while processing your request: {error}", ephemeral=True)
         raise error
+
+
+class EditSelfRolesMasterView(CreateSelfRolesMasterView):
+    def __init__(
+        self,
+        ctx: discord.ApplicationContext,
+        db: SelfRoleMenu,
+    ):
+        _roles = map(ctx.guild.get_role, db.roles)
+        _roles = list(filter(None, _roles))
+        super().__init__(ctx, db.guild, _roles, db.name)
+        self.menu = db
+        self.remove_item(self.get_item("save"))
+
+    @discord.ui.button(label="Save", custom_id="save_edit", style=discord.ButtonStyle.green, emoji="\U0001f4be", row=2)
+    async def save(self, _, interaction: discord.Interaction):
+        channel = self.ctx.guild.get_channel(self.menu.channel)
+        if not channel:
+            return await super().save(_, interaction)
+        try:
+            message = await channel.fetch_message(self.menu.message)
+        except discord.NotFound:
+            return await super().save(_, interaction)
+
+        await interaction.response.defer(ephemeral=True)
+        self.update_ui()
+        self.disable_all_items()
+        await interaction.edit_original_response(embed=self.embed(), view=self)
+
+        _e = discord.Embed(
+            title="Self-role menu: " + self.name,
+            description="Press my button to select any/all of the following roles:\n",
+            colour=discord.Colour.teal(),
+            timestamp=discord.utils.utcnow()
+        )
+        for role in self.sorted_roles():
+            _e.description += f"\n- {role.mention}"
+        _e.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+
+        selector = await message.edit(
+            embed=_e,
+            view=None
+        )
+
+        try:
+            self.menu.channel = selector.channel.id
+            self.menu.message = selector.id
+            self.menu.roles = self.sorted_roles()
+            self.menu.name = self.name
+            await self.menu.save()
+        except Exception:
+            log.exception(
+                f"Failed to save self-role menu to database for {interaction.user.id} in {interaction.guild.id}",
+                exc_info=True,
+            )
+            await selector.delete(delay=0.01)
+            return await interaction.followup.send(
+                "There was an error saving your self-role menu. Please contact support.",
+            )
+        v = PersistentSelfRoleView(self.menu)
+        await selector.edit(view=v)
+        self.ctx.bot.add_view(v, message_id=selector.id)
+
+        await interaction.edit_original_response(embed=self.embed(), view=self)
+        self.stop()
