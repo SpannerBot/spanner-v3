@@ -8,12 +8,12 @@ class ConfirmView(discord.ui.View):
     """
 
     def __init__(
-            self,
-            user: discord.User | discord.Member | discord.Object,
-            question: str,
-            *,
-            title: str | None = "Are you sure?",
-            timeout: int = 30,
+        self,
+        user: discord.User | discord.Member | discord.Object,
+        question: str,
+        *,
+        title: str | None = "Are you sure?",
+        timeout: int = 30,
     ):
         super().__init__(timeout=timeout, disable_on_timeout=True)
         self.user = user

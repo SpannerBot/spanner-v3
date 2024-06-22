@@ -61,9 +61,10 @@ class MetaCog(commands.Cog):
     async def version(self, ctx: commands.Context):
         """Gets the spanner version."""
         from spanner.share.version import __sha__, __sha_short__, __build_time__
+
         base_url = "https://github.com/nexy7574/spanner-v3/tree/{}"
         url = base_url.format(__sha__)
-        ts = discord.utils.format_dt(__build_time__, 'R')
+        ts = discord.utils.format_dt(__build_time__, "R")
         await ctx.reply(
             f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}. Run `s!changelog` for more info.",
         )
@@ -72,10 +73,9 @@ class MetaCog(commands.Cog):
     async def changelog(self, ctx: commands.Context):
         """Gets the spanner changelog."""
         from spanner.share.version import __sha__
+
         msg = await ctx.reply("Loading changelog...")
-        async with httpx.AsyncClient(
-            base_url="https://git.i-am.nexus/api/v1/repos/nex/spanner-v3"
-        ) as client:
+        async with httpx.AsyncClient(base_url="https://git.i-am.nexus/api/v1/repos/nex/spanner-v3") as client:
             changes = []
             page = 0
             while True:
@@ -88,8 +88,8 @@ class MetaCog(commands.Cog):
                             "verification": False,
                             "files": False,
                             "page": page,
-                            "limit": "100"
-                        }
+                            "limit": "100",
+                        },
                     )
                 except ConnectionError:
                     return await msg.edit(content="Failed to contact source server.")
@@ -111,7 +111,7 @@ class MetaCog(commands.Cog):
                                 "url": "https://github.com/" + commit["commit"]["committer"]["name"],
                             },
                             "current": commit["sha"] == __sha__,
-                            "message": textwrap.shorten(cm, width=100, placeholder="...")
+                            "message": textwrap.shorten(cm, width=100, placeholder="..."),
                         }
                     )
                 page += 1

@@ -15,11 +15,11 @@ class RoleEvents(commands.Cog):
         self.log = logging.getLogger("spanner.events.role_events")
 
     async def wait_for_audit_log(
-            self,
-            guild: discord.Guild,
-            target: discord.Member,
-            before: Iterable[discord.Role] | None = None,
-            after: Iterable[discord.Role] | None = None
+        self,
+        guild: discord.Guild,
+        target: discord.Member,
+        before: Iterable[discord.Role] | None = None,
+        after: Iterable[discord.Role] | None = None,
     ):
         def the_check(e: discord.AuditLogEntry):
             if e.target == target and e.action == discord.AuditLogAction.member_role_update:
@@ -49,7 +49,7 @@ class RoleEvents(commands.Cog):
             self.log.debug(
                 "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a role change.",
                 guild,
-                target
+                target,
             )
         else:
             return entry
@@ -83,20 +83,12 @@ class RoleEvents(commands.Cog):
         embed = discord.Embed(
             title=f"{after.display_name} {', '.join(actions)} {len(roles_added) + len(roles_removed):,} {r_word}:",
             colour=discord.Colour.blurple(),
-            timestamp=discord.utils.utcnow()
+            timestamp=discord.utils.utcnow(),
         )
         if roles_added:
-            embed.add_field(
-                name="Roles Added:",
-                value=self.role_list(roles_added),
-                inline=False
-            )
+            embed.add_field(name="Roles Added:", value=self.role_list(roles_added), inline=False)
         if roles_removed:
-            embed.add_field(
-                name="Roles Removed:",
-                value=self.role_list(roles_removed),
-                inline=False
-            )
+            embed.add_field(name="Roles Removed:", value=self.role_list(roles_removed), inline=False)
 
         log_channel = await get_log_channel(self.bot, after.guild.id, "member.roles.update")
         if log_channel is None:

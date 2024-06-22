@@ -40,17 +40,17 @@ class SelfRolesCog(commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     @commands.max_concurrency(1, per=commands.BucketType.guild)
     async def edit(
-            self,
-            ctx: discord.ApplicationContext,
-            name: typing.Annotated[
-                str,
-                discord.Option(
-                    name="name",
-                    description="The name of the self-assignable role menu to delete",
-                    required=True,
-                    autocomplete=self_role_menu_autocomplete
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        name: typing.Annotated[
+            str,
+            discord.Option(
+                name="name",
+                description="The name of the self-assignable role menu to delete",
+                required=True,
+                autocomplete=self_role_menu_autocomplete,
+            ),
+        ],
     ):
         """Edit a self-assignable role menu"""
         await ctx.defer()
@@ -69,17 +69,17 @@ class SelfRolesCog(commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     @commands.max_concurrency(1, per=commands.BucketType.guild)
     async def delete(
-            self,
-            ctx: discord.ApplicationContext,
-            name: typing.Annotated[
-                str,
-                discord.Option(
-                    name="name",
-                    description="The name of the self-assignable role menu to delete",
-                    required=True,
-                    autocomplete=self_role_menu_autocomplete
-                )
-            ]
+        self,
+        ctx: discord.ApplicationContext,
+        name: typing.Annotated[
+            str,
+            discord.Option(
+                name="name",
+                description="The name of the self-assignable role menu to delete",
+                required=True,
+                autocomplete=self_role_menu_autocomplete,
+            ),
+        ],
     ):
         """Delete a self-assignable role menu"""
         await ctx.defer()
@@ -88,8 +88,7 @@ class SelfRolesCog(commands.Cog):
             return await ctx.respond("No self-assignable role menu with that name exists", ephemeral=True)
 
         if not await ConfirmView(
-                ctx.user,
-                f"Are you sure you want to delete the self-assignable role menu **{menu.name}**?"
+            ctx.user, f"Are you sure you want to delete the self-assignable role menu **{menu.name}**?"
         ).ask(ctx):
             return await ctx.delete()
         await menu.delete()

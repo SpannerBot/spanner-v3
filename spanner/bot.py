@@ -39,10 +39,7 @@ class CustomBridgeBot(bridge.Bot):
         await Tortoise.generate_schemas()
         for menu in await SelfRoleMenu.all().prefetch_related("guild"):
             log.info("Adding persistent view: %r", menu)
-            self.add_view(
-                PersistentSelfRoleView(menu),
-                message_id=menu.message
-            )
+            self.add_view(PersistentSelfRoleView(menu), message_id=menu.message)
         config = uvicorn.Config(
             app, host="0.0.0.0", port=1237, forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
         )

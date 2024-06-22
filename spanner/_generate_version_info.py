@@ -41,12 +41,7 @@ def find_project_dir(start: Path = None, subdir: str = "share") -> Path:
     if (start / subdir).is_dir():
         logger.info("Found project directory at %s.", start)
         return start
-    logger.info(
-        "Searching for project directory (%s) in %s, as %s did not have it.",
-        subdir,
-        start.parent,
-        start
-    )
+    logger.info("Searching for project directory (%s) in %s, as %s did not have it.", subdir, start.parent, start)
 
     if start.parent == start:
         raise _FNF
@@ -62,8 +57,7 @@ def gather_version_info() -> tuple[str, str, datetime.datetime]:
         find_project_dir(subdir=".git")
     except FileNotFoundError:
         logger.warning(
-            "Git repository was not found, fetching version info from remote and environment.",
-            exc_info=True
+            "Git repository was not found, fetching version info from remote and environment.", exc_info=True
         )
         try:
             response = httpx.get(
@@ -73,8 +67,8 @@ def gather_version_info() -> tuple[str, str, datetime.datetime]:
                     "stat": "false",
                     "verification": "false",
                     "files": "false",
-                    "sha": "dev"
-                }
+                    "sha": "dev",
+                },
             )
             response.raise_for_status()
             commits = response.json()
@@ -115,18 +109,19 @@ def write_version_file(sha: str, sha_short: str, build_time: datetime.datetime) 
     with open(find_project_dir() / "share" / "version.py", "w") as f:
         lines = [
             "import datetime",
-            f'__auto__ = True',
+            f"__auto__ = True",
             f'__sha__ = "{sha}"',
             f'__sha_short__ = "{sha_short}"',
-            f'__build_time__ = {build_time!r}',
+            f"__build_time__ = {build_time!r}",
             f'__all__=("__auto__", "__sha__", "__sha_short__", "__build_time__")',
-            'del datetime'
+            "del datetime",
         ]
         f.write("\n".join(lines))
 
 
 if __name__ == "__main__":
     import argparse
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s: %(name)s: %(levelname)s: %(message)s")
     logger.setLevel(logging.DEBUG)
 
@@ -151,6 +146,7 @@ if __name__ == "__main__":
 
     if args.show:
         from share.version import __sha__, __sha_short__, __build_time__
+
         print("Version information:")
         print(f"Full SHA: {__sha__}")
         print(f"Short SHA: {__sha_short__}")

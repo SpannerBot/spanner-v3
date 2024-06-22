@@ -15,11 +15,7 @@ class GuildRoleEvents(commands.Cog):
         self.log = logging.getLogger("spanner.events.guild_role_events")
         self.log.setLevel(logging.DEBUG)
 
-    async def wait_for_audit_log(
-            self,
-            role: discord.Role,
-            action: discord.AuditLogAction
-    ):
+    async def wait_for_audit_log(self, role: discord.Role, action: discord.AuditLogAction):
         def the_check(e: discord.AuditLogEntry):
             if e.target == role and e.action == action:
                 return True
@@ -41,7 +37,7 @@ class GuildRoleEvents(commands.Cog):
             self.log.debug(
                 "Event(guild=%r, target=%r): Timeout waiting for audit log entry. Likely not a role change.",
                 role.guild,
-                role
+                role,
             )
         else:
             return entry
@@ -52,10 +48,7 @@ class GuildRoleEvents(commands.Cog):
         if log_channel is None:
             return
 
-        embed = discord.Embed(
-            title=f"Role created: {role.name}",
-            colour=discord.Colour.red()
-        )
+        embed = discord.Embed(title=f"Role created: {role.name}", colour=discord.Colour.red())
         embed2 = (await RoleInfoCog(self.bot).get_role_info(role))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])
@@ -80,7 +73,7 @@ class GuildRoleEvents(commands.Cog):
                 site.format(before.permissions),
                 site.format(after.permissions),
             ),
-            colour=discord.Colour.red()
+            colour=discord.Colour.red(),
         )
         msg = await log_channel.send(embed=embed)
         entry = await self.wait_for_audit_log(after, discord.AuditLogAction.role_delete)
@@ -97,16 +90,7 @@ class GuildRoleEvents(commands.Cog):
         if before.permissions != after.permissions:
             self.log.debug("Dispatching permissions update for %r->%r", before, after)
             await self.on_guild_role_permissions_update(before, after)
-        changes = (
-            "name",
-            "color",
-            "hoist",
-            "icon",
-            "mentionable",
-            "position",
-            "tags",
-            "unicode_emoji"
-        )
+        changes = ("name", "color", "hoist", "icon", "mentionable", "position", "tags", "unicode_emoji")
         for attr in changes:
             if getattr(before, attr) != getattr(after, attr):
                 break
@@ -117,10 +101,7 @@ class GuildRoleEvents(commands.Cog):
         if log_channel is None:
             return
 
-        embed = discord.Embed(
-            title=f"Role deleted: {after.name}",
-            colour=discord.Colour.red()
-        )
+        embed = discord.Embed(title=f"Role deleted: {after.name}", colour=discord.Colour.red())
         embed2 = (await RoleInfoCog(self.bot).get_role_info(before))["Overview"]
         embed2.title = "[Before] " + embed2.title
         embed3 = (await RoleInfoCog(self.bot).get_role_info(after))["Overview"]
@@ -142,10 +123,7 @@ class GuildRoleEvents(commands.Cog):
         if log_channel is None:
             return
 
-        embed = discord.Embed(
-            title=f"Role deleted: {role.name}",
-            colour=discord.Colour.red()
-        )
+        embed = discord.Embed(title=f"Role deleted: {role.name}", colour=discord.Colour.red())
         embed2 = (await RoleInfoCog(self.bot).get_role_info(role))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])

@@ -481,7 +481,7 @@ class CreateSelfRolesMasterView(discord.ui.View):
             title="Self-role menu: " + self.name,
             description="Press my button to select any/all of the following roles:\n",
             colour=discord.Colour.teal(),
-            timestamp=discord.utils.utcnow()
+            timestamp=discord.utils.utcnow(),
         )
         for role in self.sorted_roles():
             _e.description += f"\n- {role.mention}"
@@ -568,16 +568,13 @@ class EditSelfRolesMasterView(CreateSelfRolesMasterView):
             title="Self-role menu: " + self.name,
             description="Press my button to select any/all of the following roles:\n",
             colour=discord.Colour.teal(),
-            timestamp=discord.utils.utcnow()
+            timestamp=discord.utils.utcnow(),
         )
         for role in self.sorted_roles():
             _e.description += f"\n- {role.mention}"
         _e.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
 
-        selector = await message.edit(
-            embed=_e,
-            view=None
-        )
+        selector = await message.edit(embed=_e, view=None)
 
         # noinspection PyBroadException
         try:

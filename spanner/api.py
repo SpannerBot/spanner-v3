@@ -41,12 +41,9 @@ HOST_DATA = {
     "architecture": platform.machine(),
     "platform": platform.platform(terse=True),
     "python": platform.python_version(),
-    "system": {
-        "name": platform.system(),
-        "version": platform.version()
-    },
+    "system": {"name": platform.system(), "version": platform.version()},
     "docker": os.path.exists("/.dockerenv"),
-    "cpus": os.cpu_count()
+    "cpus": os.cpu_count(),
 }
 PROCESS_EPOCH = psutil.Process(os.getpid()).create_time()
 
@@ -64,10 +61,13 @@ ratelimits = {}
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
 
 _DEFAULT_JWT = "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f2690728821c"
-SECRET_KEY = os.getenv(
-    "JWT_SECRET_KEY",
-    load_config()["web"].get("jwt_secret_key", ""),
-) or _DEFAULT_JWT
+SECRET_KEY = (
+    os.getenv(
+        "JWT_SECRET_KEY",
+        load_config()["web"].get("jwt_secret_key", ""),
+    )
+    or _DEFAULT_JWT
+)
 if SECRET_KEY == _DEFAULT_JWT:
     log.critical("Using default JWT secret key. change it! set $JWT_SECRET_KEY or set config.toml[web.jwt_secret_key]")
 ALGORITHM = "HS256"
@@ -122,19 +122,9 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
     if not bot.is_ready():
         await bot.wait_until_ready()
 
-    ratelimits[req.client.host].setdefault(
-        {
-            "expires": time.time(),
-            "hits": 0
-        }
-    )
+    ratelimits[req.client.host].setdefault({"expires": time.time(), "hits": 0})
     rc = ratelimits[req.client.host]
-    _ignore = (
-        "/healthz",
-        "/docs",
-        "/redoc",
-        "/openapi.json"
-    )
+    _ignore = ("/healthz", "/docs", "/redoc", "/openapi.json")
     if req.url.path not in _ignore:
         if rc["hits"] > 70:
             if rc["expires"] < time.time():
@@ -150,15 +140,15 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
                         "Retry-After": str(round(rc["expires"] - n)),
                         "X-Ratelimit-Remaining": "0",
                         "X-Ratelimit-Reset": str(round(rc["expires"])),
-                        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n))
-                    }
+                        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n)),
+                    },
                 )
         else:
             rc["hits"] += 1
     rl_headers = {
         "X-Ratelimit-Remaining": str(70 - rc["hits"]),
         "X-Ratelimit-Reset": str(round(rc["expires"])),
-        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n))
+        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n)),
     }
     res = await call_next(req)
     res.headers["X-Spanner-Version"] = __sha__
@@ -173,27 +163,19 @@ def health_check():
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "Bot is not online and ready yet.",
-            {
-                "Retry-After": str(round(max(2.0, bot.ws._rate_limiter.get_delay())))
-            }
+            {"Retry-After": str(round(max(2.0, bot.ws._rate_limiter.get_delay())))},
         )
 
     data = {
         "online": True,
         "uptime": round(time.time() - PROCESS_EPOCH),
         "latency": round(bot.latency * 1000, 2),
-        "stats": {
-            "users": len(bot.users),
-            "guilds": len(bot.guilds),
-            "cached_messages": len(bot.cached_messages)
-        },
+        "stats": {"users": len(bot.users), "guilds": len(bot.guilds), "cached_messages": len(bot.cached_messages)},
         "host": HOST_DATA,
-        "warnings": []
+        "warnings": [],
     }
     if not CLIENT_SECRET:
-        data["warnings"].append(
-            {"detail": "CLIENT_SECRET is not set."}
-        )
+        data["warnings"].append({"detail": "CLIENT_SECRET is not set."})
     return data
 
 
@@ -207,7 +189,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             req,
             code,
             state,
-            from_url or '/'
+            from_url or "/",
         )
         state_key = secrets.token_urlsafe()
         if from_url and "/oauth/callback/discord" in from_url:
@@ -218,7 +200,8 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
                 client_id=bot.user.id,
                 redirect_uri=str(req.base_url) + "oauth/callback/discord",
                 state=state_key,
-            ) + "&prompt=none"
+            )
+            + "&prompt=none"
         )
         r.set_cookie("_state", state_key, max_age=300, httponly=True, samesite="strict")
         return r
