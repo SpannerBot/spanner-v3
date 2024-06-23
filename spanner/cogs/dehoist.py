@@ -19,7 +19,7 @@ class Dehoist(commands.Cog):
             member.display_name,
         )
         if x != member.display_name:
-            await member.edit(nick=x)
+            await member.edit(nick=x, reason=f"Dehoisted by @{member.display_name}")
             await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)
         else:
             await ctx.respond(f"{member.mention} is not hoisted.", ephemeral=True)
