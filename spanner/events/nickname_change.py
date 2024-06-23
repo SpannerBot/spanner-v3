@@ -45,7 +45,7 @@ class NicknameChangeEvents(commands.Cog):
         if before.guild is None or before == self.bot.user:
             return
 
-        log_channel = await get_log_channel(self.bot, before.guild.id, "member.join")
+        log_channel = await get_log_channel(self.bot, before.guild.id, "member.nickname-change")
         if log_channel is None:
             return
 
