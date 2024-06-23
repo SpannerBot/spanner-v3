@@ -62,6 +62,8 @@ class NicknameChangeEvents(commands.Cog):
             entry = await self.wait_for_audit_log(before.guild, after, after.nick)
             if entry:
                 embed.set_author(name=f"Moderator: {entry.user}", icon_url=entry.user.display_avatar.url)
+                if entry.reason:
+                    embed.add_field(name="Reason", value=entry.reason, inline=False)
                 embed.set_footer(text="Nickname change details fetched from audit log.")
                 await msg.edit(embed=embed)
 
