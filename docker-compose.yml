@@ -1,0 +1,39 @@
+services:
+  spanner-v3:
+    container_name: spanner-v3
+#    image: ghcr.io/nexy7574/spanner-v3:dev
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./config.toml:/spanner/config.toml:ro
+      - spanner-data:/data
+    ports:
+      - 1237:1237
+    environment:
+      - TZ=Europe/London
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1237/healthz"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: spanner
+      POSTGRES_PASSWORD: spann3r
+      POSTGRES_DB: spanner-v3
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spanner"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  spanner-data:
+  db-data:

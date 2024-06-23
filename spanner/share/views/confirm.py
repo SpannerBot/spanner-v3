@@ -1,3 +1,5 @@
+import typing
+
 import discord
 from discord.ext import commands
 
@@ -41,7 +43,29 @@ class ConfirmView(discord.ui.View):
         await interaction.response.edit_message(embed=self.embed, view=self)
         self.stop()
 
-    async def ask(self, ctx: discord.ApplicationContext | commands.Context) -> bool:
-        await ctx.respond(embed=self.embed, view=self)
+    @typing.overload
+    async def ask(
+            self,
+            ctx: discord.ApplicationContext | commands.Context,
+            just_result: typing.Literal[False]
+    ) -> tuple[discord.InteractionResponse | discord.WebhookMessage, bool]:
+        ...
+
+    @typing.overload
+    async def ask(
+            self,
+            ctx: discord.ApplicationContext | commands.Context,
+            just_result: typing.Literal[True] = True
+    ) -> bool:
+        ...
+
+    async def ask(
+            self,
+            ctx: discord.ApplicationContext | commands.Context,
+            just_result: bool = True
+    ) -> bool | tuple[discord.InteractionResponse | discord.WebhookMessage, bool]:
+        x = await ctx.respond(embed=self.embed, view=self)
         await self.wait()
-        return self.confirmed
+        if just_result:
+            return self.confirmed
+        return x, self.confirmed

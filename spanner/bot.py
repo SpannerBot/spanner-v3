@@ -1,14 +1,27 @@
 import asyncio
 import signal
+import sys
+
+sys.path.extend([".", ".."])
 
 import discord
 import uvicorn
 import logging
 
 from discord.ext import bridge, commands
-from share.config import load_config
-from share.views.self_roles import PersistentSelfRoleView
+from spanner.share.config import load_config
+from spanner.share.views.self_roles import PersistentSelfRoleView
 from tortoise import Tortoise
+
+TORTOISE_ORM = {
+    "connections": {"default": load_config()["database"]["uri"]},
+    "apps": {
+        "models": {
+            "models": ["spanner.share.database"],
+            "default_connection": "default",
+        },
+    },
+}
 
 
 log = logging.getLogger(__name__)
@@ -33,8 +46,7 @@ class CustomBridgeBot(bridge.Bot):
         from spanner.share.database import SelfRoleMenu
 
         await Tortoise.init(
-            db_url=load_config()["database"]["uri"],
-            modules={"models": ["spanner.share.database"]},
+            config=TORTOISE_ORM,
         )
         await Tortoise.generate_schemas()
         for menu in await SelfRoleMenu.all().prefetch_related("guild"):

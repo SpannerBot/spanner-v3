@@ -19,9 +19,31 @@ class GuildConfig(Model):
         audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
         user_history: fields.ReverseRelation["UserHistory"]
         self_roles: fields.ReverseRelation["SelfRoleMenu"]
+        nickname_moderation: fields.ReverseRelation["GuildNickNameModeration"]
 
 
 GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")
+
+
+class GuildNickNameModeration(Model):
+    id = fields.UUIDField(pk=True)
+    guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
+        "models.GuildConfig", related_name="nickname_moderation"
+    )
+    hate = fields.BooleanField(default=False)
+    harassment = fields.BooleanField(default=False)
+    self_harm = fields.BooleanField(default=False)
+    sexual = fields.BooleanField(default=False)
+    violence = fields.BooleanField(default=False)
+
+    # CATEGORIES = ["hate", "harassment", "self_harm", "sexual", "violence"]
+    CATEGORIES = {
+        "hate": "Content that expresses, incites, or promotes hate based on protected characteristics.",
+        "harassment": "Content that expresses, incites, or promotes harassing language towards any target.",
+        "self_harm": "Content that promotes, encourages, or depicts acts of self-harm.",
+        "sexual": "Content meant to arouse, such as the description of sexual activity, or that promotes sex services.",
+        "violence": "Content that depicts death, violence, or physical injury."
+    }
 
 
 class GuildLogFeatures(Model):

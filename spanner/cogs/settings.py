@@ -5,8 +5,10 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.config import load_config
-from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures
+from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures, GuildNickNameModeration
 from spanner.share.utils import hyperlink
+from spanner.share.views.confirm import ConfirmView
+from spanner.share.views.settings import NicknameFilterManager
 
 
 class SettingsCog(commands.Cog):
@@ -189,6 +191,32 @@ class SettingsCog(commands.Cog):
             f"Visit {hyperlink('%s/guilds/%s/audit-logs' % (base_url, ctx.guild.id))} to see this server's audit log.",
             ephemeral=True,
         )
+
+    @settings.command(name="nickname-filtering")
+    async def manage_nickname_filtering(
+            self,
+            ctx: discord.ApplicationContext,
+    ):
+        """Enables AI-based nickname filtering."""
+        await ctx.defer(ephemeral=True)
+
+        exists = await GuildNickNameModeration.get_or_none(guild_id=ctx.guild_id)
+        if not exists:
+            if not await ConfirmView(
+                ctx.user,
+                "Nickname filtering utilises "
+                "[OpenAI's moderation](https://platform.openai.com/docs/guides/moderation/overview) services. "
+                "Whenever a member joins, or updates their nickname, their display name is sent to OpenAI for "
+                "analysis. You should put a prominent notice in your server rules or guidelines to inform your "
+                "members that their display names are being sent to OpenAI for analysis, for privacy reasons. "
+                "\n"
+                "Do you consent to enabling AI-based nickname filtering?",
+            ).ask(ctx):
+                return await ctx.edit(content="Cancelled.", embed=None, view=None)
+
+        config = await self._ensure_guild_config(ctx.guild_id)
+        v = NicknameFilterManager(config)
+        await ctx.respond(view=v)
 
 
 def setup(bot):

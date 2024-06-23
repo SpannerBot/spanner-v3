@@ -9,7 +9,7 @@ LABEL org.opencontainers.image.description="Version 3 of the spanner discord uti
 
 WORKDIR /spanner
 
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git wamerican-insane
 
 COPY requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt

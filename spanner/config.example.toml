@@ -1,5 +1,6 @@
 [spanner]
 token = "..."
+openai_token = "..."  # currently only used for moderation, which is free.
 debug_guilds = [982308600896704593]  # set to your server IDs, or omit for global commands.
 
 [web]
