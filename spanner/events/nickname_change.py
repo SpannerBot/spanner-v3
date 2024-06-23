@@ -62,6 +62,11 @@ class NicknameChangeEvents(commands.Cog):
         if any(getattr(moderation, x) is True for x in GuildNickNameModeration.CATEGORIES.keys()):
             async with httpx.AsyncClient() as client:
                 async with self.moderation_lock:
+                    self.log.info(
+                        "Preparing to submit display name %r to OpenAI for moderation. On behalf of %r",
+                        after.display_name,
+                        after
+                    )
                     odn = after.display_name
                     response = await client.post(
                         "https://api.openai.com/v1/moderations",
@@ -83,6 +88,7 @@ class NicknameChangeEvents(commands.Cog):
                 data["harassment"] = data["harassment"] or data["harassment/threatening"]
 
                 if flagged is False:
+                    self.log.info("Display name %r was not flagged.", odn)
                     return False
 
                 if after.nick is None:
@@ -96,6 +102,7 @@ class NicknameChangeEvents(commands.Cog):
 
                 try:
                     if data["sexual"] and moderation.sexual:
+                        self.log.info("Display name %r flagged as sexual.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains sexual content, which this server has "
@@ -115,6 +122,7 @@ class NicknameChangeEvents(commands.Cog):
                             )
                         )
                     elif data["hate"] and moderation.hate:
+                        self.log.info("Display name %r flagged as hate.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains hate speech, which this server has "
@@ -134,6 +142,7 @@ class NicknameChangeEvents(commands.Cog):
                             )
                         )
                     elif data["harassment"] and moderation.harassment:
+                        self.log.info("Display name %r flagged as harassment.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains harassment, which this server has "
@@ -153,6 +162,7 @@ class NicknameChangeEvents(commands.Cog):
                             )
                         )
                     elif data["self-harm"] and moderation.self_harm:
+                        self.log.info("Display name %r flagged as self-harm.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains self-harm content, which this server has "
@@ -172,6 +182,7 @@ class NicknameChangeEvents(commands.Cog):
                             )
                         )
                     elif data["violence"] and moderation.violence:
+                        self.log.info("Display name %r flagged as violence.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains violence, which this server has "
@@ -225,6 +236,10 @@ class NicknameChangeEvents(commands.Cog):
                 embed.set_footer(text="Nickname change details fetched from audit log.")
                 await msg.edit(embed=embed)
             await self.moderate_name(after)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        await self.moderate_name(member)
 
 
 def setup(bot: bridge.Bot):
