@@ -15,7 +15,7 @@ class Dehoist(commands.Cog):
         await ctx.defer(ephemeral=True)
         x = re.sub(
             r"^\W+",
-            lambda _m: f"\U000017b5{member.display_name}",
+            f"\U000017b5{member.display_name}",
             member.display_name,
         )
         if x != member.display_name:
