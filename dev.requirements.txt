@@ -1,1 +1,1 @@
-ruff~=0.4
+# Replaced by `pipenv install --dev`

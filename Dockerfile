@@ -9,9 +9,11 @@ LABEL org.opencontainers.image.description="Version 3 of the spanner discord uti
 
 WORKDIR /spanner
 
-RUN apt-get update && apt-get install -y git wamerican-insane
+RUN apt-get update && apt-get install -y git wamerican-insane && pip install pipenv
 
-COPY requirements.txt /tmp
+COPY Pipfile ./Pipfile
+COPY Pipfile.lock ./Pipfile.lock
+RUN pipenv requirements --hash > /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 COPY ./spanner/ /spanner/
