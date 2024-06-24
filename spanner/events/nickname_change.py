@@ -235,11 +235,17 @@ class NicknameChangeEvents(commands.Cog):
                     embed.add_field(name="Reason", value=entry.reason, inline=False)
                 embed.set_footer(text="Nickname change details fetched from audit log.")
                 await msg.edit(embed=embed)
-            await self.moderate_name(after)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        await self.moderate_name(member)
+        if member.pending is False:
+            await self.moderate_name(member)
+
+    @commands.Cog.listener("on_member_update")
+    async def on_member_update_after_pending(self, before: discord.Member, after: discord.Member):
+        if after.pending is False:
+            if before.display_name != after.display_name:
+                await self.moderate_name(after)
 
 
 def setup(bot: bridge.Bot):
