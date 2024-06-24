@@ -1,3 +1,4 @@
+import enum
 import secrets
 import typing
 
@@ -20,6 +21,7 @@ class GuildConfig(Model):
         user_history: fields.ReverseRelation["UserHistory"]
         self_roles: fields.ReverseRelation["SelfRoleMenu"]
         nickname_moderation: fields.ReverseRelation["GuildNickNameModeration"]
+        starboard: fields.ReverseRelation["StarboardConfig"]
 
 
 GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")
@@ -28,7 +30,7 @@ GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")
 class GuildNickNameModeration(Model):
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="nickname_moderation"
+        "models.GuildConfig", related_name="nickname_moderation", on_delete=fields.CASCADE
     )
     hate = fields.BooleanField(default=False)
     harassment = fields.BooleanField(default=False)
@@ -36,7 +38,6 @@ class GuildNickNameModeration(Model):
     sexual = fields.BooleanField(default=False)
     violence = fields.BooleanField(default=False)
 
-    # CATEGORIES = ["hate", "harassment", "self_harm", "sexual", "violence"]
     CATEGORIES = {
         "hate": "Content that expresses, incites, or promotes hate based on protected characteristics.",
         "harassment": "Content that expresses, incites, or promotes harassing language towards any target.",
@@ -44,6 +45,9 @@ class GuildNickNameModeration(Model):
         "sexual": "Content meant to arouse, such as the description of sexual activity, or that promotes sex services.",
         "violence": "Content that depicts death, violence, or physical injury."
     }
+
+
+GuildNickNameModerationPydantic = pydantic_model_creator(GuildNickNameModeration, name="GuildNickNameModeration")
 
 
 class GuildLogFeatures(Model):
@@ -66,7 +70,7 @@ class GuildLogFeatures(Model):
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="log_features"
+        "models.GuildConfig", related_name="log_features", on_delete=fields.CASCADE
     )
 
     name = fields.CharField(min_length=1, max_length=32, index=True)
@@ -80,7 +84,7 @@ GuildLogFeaturesPydantic = pydantic_model_creator(GuildLogFeatures, name="GuildL
 class GuildAuditLogEntry(Model):
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="audit_log_entries"
+        "models.GuildConfig", related_name="audit_log_entries", on_delete=fields.CASCADE
     )
     author = fields.BigIntField()
     namespace = fields.CharField(min_length=1, max_length=128)
@@ -99,7 +103,7 @@ class UserHistory(Model):
     nickname = fields.CharField(min_length=1, max_length=32, default=None, null=True)
     avatar_hash = fields.CharField(max_length=255, default=None, null=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="user_history"
+        "models.GuildConfig", related_name="user_history", on_delete=fields.CASCADE
     )
 
 
@@ -109,7 +113,7 @@ UserHistoryPydantic = pydantic_model_creator(UserHistory, name="UserHistory")
 class SelfRoleMenu(Model):
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="self_roles"
+        "models.GuildConfig", related_name="self_roles", on_delete=fields.CASCADE
     )
     name = fields.CharField(min_length=1, max_length=32)
     channel = fields.BigIntField()
@@ -156,3 +160,33 @@ class DiscordOauthUser(Model):
     refresh_token = fields.CharField(max_length=255)
     expires_at = fields.FloatField()
     session = fields.CharField(max_length=1024, default=None, null=True)
+
+
+class StarboardMode(enum.IntEnum):
+    COUNT = 0
+    PERCENT = 1
+
+
+class StarboardConfig(Model):
+    id = fields.UUIDField(pk=True)
+    guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
+        "models.GuildConfig", related_name="starboard", on_delete=fields.CASCADE
+    )
+    channel_id = fields.BigIntField(unique=True)
+    minimum_stars = fields.SmallIntField(default=1)
+    star_mode = fields.IntEnumField(StarboardMode, default=StarboardMode.COUNT)
+    allow_self_star = fields.BooleanField(default=False)
+    mirror_edits = fields.BooleanField(default=False)
+    mirror_deletes = fields.BooleanField(default=False)
+    allow_bot_messages = fields.BooleanField(default=True)
+    star_emoji = fields.CharField(max_length=64, default="\N{WHITE MEDIUM STAR}")
+
+
+class StarboardEntry(Model):
+    id = fields.UUIDField(pk=True)
+    source_message_id = fields.BigIntField()
+    starboard_message_id = fields.BigIntField()
+    source_channel_id = fields.BigIntField()
+    config: fields.ForeignKeyRelation[StarboardConfig] = fields.ForeignKeyField(
+        "models.StarboardConfig", related_name="entries", on_delete=fields.CASCADE
+    )
