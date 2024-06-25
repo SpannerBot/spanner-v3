@@ -1,5 +1,6 @@
 import asyncio
 import io
+import textwrap
 
 import discord
 from discord.ext import commands
@@ -22,6 +23,125 @@ class StarboardCog(commands.Cog):
                         continue
                     count += 1
         return count
+
+    async def get_or_fetch_message(self, channel_id: int, message_id: int) -> discord.Message:
+        """
+        Fetches a message from cache where possible, falling back to the API.
+        """
+        message: discord.Message | None = discord.utils.get(self.bot.cached_messages, id=message_id)
+        if not message:
+            message: discord.Message = await self.bot.get_channel(channel_id).fetch_message(message_id)
+        return message
+
+    async def generate_starboard_embed(
+            self,
+            message: discord.Message,
+            config: StarboardConfig
+    ) -> tuple[list[discord.Embed], int]:
+        """
+        Generates an embed ready for a starboard message.
+
+        :param message: The message to base off of.
+        :param config: The starboard configuration.
+        :return: The created embed
+        """
+        star_count = self.starboard_cache.get(message, 0)
+        star_emoji_count = (config.star_emoji * min(10, star_count))
+
+        embed = discord.Embed(
+            colour=discord.Colour.gold(),
+            url=message.jump_url,
+            timestamp=message.created_at,
+            author=discord.EmbedAuthor(
+                message.author.display_name,
+                message.author.jump_url,
+                message.author.display_avatar.url
+            ),
+            fields=[
+                discord.EmbedField(
+                    name="Info",
+                    value=f"[Stars: {star_emoji_count} ({star_count:,})]({message.jump_url})"
+                )
+            ]
+        )
+        if message.reference:
+            try:
+                ref_message = await self.get_or_fetch_message(message.reference.channel_id, message.reference.message_id)
+            except discord.HTTPException:
+                pass
+            else:
+                text = ref_message.content.splitlines()[0]
+                v = f"[{ref_message.author.mention}'s message: ]({ref_message.jump_url})"
+                remaining = 1024 - len(v)
+                t = textwrap.shorten(text, remaining, placeholder="...")
+                v = f"[{ref_message.author.display_name}'s message: {t}]({ref_message.jump_url})"
+                embed.add_field(
+                    name="Replying to",
+                    value=v
+                )
+        elif message.interaction:
+            if message.interaction.type == discord.InteractionType.application_command:
+                real_author: discord.User = await discord.utils.get_or_fetch(
+                    self.bot,
+                    "user",
+                    int(message.interaction.data["user"]["id"])
+                )
+                real_author = await discord.utils.get_or_fetch(
+                    message.guild,
+                    "member",
+                    real_author.id,
+                    default=real_author
+                ) or message.author
+                embed.set_author(
+                    name=real_author.display_name,
+                    icon_url=real_author.display_avatar.url,
+                    url=real_author.jump_url
+                )
+                embed.add_field(
+                    name="Interaction",
+                    value=f"Command `/{message.interaction.data['name']}` of {message.author.mention}"
+                )
+
+        if message.content:
+            embed.description = message.content
+        elif message.embeds:
+            for message_embed in message.embeds:
+                if message_embed.type != "rich":
+                    if message_embed.type == "image":
+                        if message_embed.thumbnail and message_embed.thumbnail.proxy_url:
+                            embed.set_image(url=message_embed.thumbnail.proxy_url)
+                    continue
+                if message_embed.description:
+                    embed.description = message_embed.description
+        elif not message.attachments:
+            raise ValueError("Message does not appear to contain any text, embeds, or attachments.")
+
+        if message.attachments:
+            new_fields = []
+            for n, attachment in reversed(tuple(enumerate(message.attachments, start=1))):
+                attachment: discord.Attachment
+                if attachment.size >= 1024 * 1024:
+                    size = f"{attachment.size / 1024 / 1024:,.1f}MiB"
+                elif attachment.size >= 1024:
+                    size = f"{attachment.size / 1024:,.1f}KiB"
+                else:
+                    size = f"{attachment.size:,} bytes"
+                new_fields.append(
+                    {
+                        "name": "Attachment #%d:" % n,
+                        "value": f"[{attachment.filename} ({size})]({attachment.url})",
+                        "inline": True
+                    }
+                )
+                if attachment.content_type.startswith("image/"):
+                    embed.set_image(url=attachment.url)
+            new_fields.reverse()
+            for field in new_fields:
+                embed.add_field(**field)
+            # This whacky reverse -> perform -> reverse basically just means we can set the first image/*
+            # attachment as the image.
+
+        return [embed, *filter(lambda e: e.type == "rich", message.embeds)], star_count
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
