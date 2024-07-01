@@ -7,7 +7,7 @@ from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel
 
 
-class JoinEvents(commands.Cog):
+class AvatarEvents(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
         self.log = logging.getLogger("spanner.events.member.avatar_change")
@@ -55,4 +55,4 @@ class JoinEvents(commands.Cog):
 
 
 def setup(bot: bridge.Bot):
-    bot.add_cog(JoinEvents(bot))
+    bot.add_cog(AvatarEvents(bot))

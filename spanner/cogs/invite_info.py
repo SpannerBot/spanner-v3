@@ -150,4 +150,4 @@ class InviteInfo(commands.Cog):
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(InviteInfoCog(bot))
+    bot.add_cog(InviteInfo(bot))
