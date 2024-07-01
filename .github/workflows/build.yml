@@ -16,9 +16,11 @@ jobs:
       attestations: write
       pages: write
       id-token: write
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm64]
+#    strategy:
+#      matrix:
+#        platform: [linux/amd64, linux/arm64]
+    # This strategy breaks the :latest tag.
+    # I'd prefer slower build times over a broken tag.
 
     steps:
       - name: Checkout repository
@@ -48,7 +50,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
