@@ -45,24 +45,16 @@ class ConfirmView(discord.ui.View):
 
     @typing.overload
     async def ask(
-            self,
-            ctx: discord.ApplicationContext | commands.Context,
-            just_result: typing.Literal[False]
-    ) -> tuple[discord.InteractionResponse | discord.WebhookMessage, bool]:
-        ...
+        self, ctx: discord.ApplicationContext | commands.Context, just_result: typing.Literal[False]
+    ) -> tuple[discord.InteractionResponse | discord.WebhookMessage, bool]: ...
 
     @typing.overload
     async def ask(
-            self,
-            ctx: discord.ApplicationContext | commands.Context,
-            just_result: typing.Literal[True] = True
-    ) -> bool:
-        ...
+        self, ctx: discord.ApplicationContext | commands.Context, just_result: typing.Literal[True] = True
+    ) -> bool: ...
 
     async def ask(
-            self,
-            ctx: discord.ApplicationContext | commands.Context,
-            just_result: bool = True
+        self, ctx: discord.ApplicationContext | commands.Context, just_result: bool = True
     ) -> bool | tuple[discord.InteractionResponse | discord.WebhookMessage, bool]:
         x = await ctx.respond(embed=self.embed, view=self)
         await self.wait()

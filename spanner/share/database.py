@@ -42,7 +42,7 @@ class GuildNickNameModeration(Model):
         "harassment": "Content that expresses, incites, or promotes harassing language towards any target.",
         "self_harm": "Content that promotes, encourages, or depicts acts of self-harm.",
         "sexual": "Content meant to arouse, such as the description of sexual activity, or that promotes sex services.",
-        "violence": "Content that depicts death, violence, or physical injury."
+        "violence": "Content that depicts death, violence, or physical injury.",
     }
 
 
@@ -65,7 +65,7 @@ class GuildLogFeatures(Model):
         "server.role.permissions.edit",
         "server.role.delete",
         "server.invite.create",
-        "server.invite.delete"
+        "server.invite.delete",
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(

@@ -14,12 +14,9 @@ class NicknameFilterManager(discord.ui.View):
         min_values=0,
         max_values=len(GuildNickNameModeration.CATEGORIES),
         options=[
-            discord.SelectOption(
-                label=key,
-                description=value
-            )
+            discord.SelectOption(label=key, description=value)
             for key, value in GuildNickNameModeration.CATEGORIES.items()
-        ]
+        ],
     )
     async def select_filters(self, select: discord.ui.Select, interaction: discord.Interaction):
         await interaction.response.defer(invisible=True)
@@ -32,27 +29,27 @@ class NicknameFilterManager(discord.ui.View):
                 continue
 
             if new:
-                changes.append(f"\N{white heavy check mark} {key}")
+                changes.append(f"\N{WHITE HEAVY CHECK MARK} {key}")
                 await GuildAuditLogEntry.create(
                     guild=self.guild_config,
                     author=interaction.user.id,
                     namespace="settings.nickname_filters",
                     action="enable",
-                    description=f"Enabled the {key!r} filter"
+                    description=f"Enabled the {key!r} filter",
                 )
             else:
-                changes.append(f"\N{cross mark} {key}")
+                changes.append(f"\N{CROSS MARK} {key}")
                 await GuildAuditLogEntry.create(
                     guild=self.guild_config,
                     author=interaction.user.id,
                     namespace="settings.nickname_filters",
                     action="disable",
-                    description=f"Disabled the {key!r} filter"
+                    description=f"Disabled the {key!r} filter",
                 )
 
             setattr(config, key, key in select.values)
         await config.save()
-        await interaction.followup.send("\n".join(changes or ['No changes made.']), ephemeral=True)
+        await interaction.followup.send("\n".join(changes or ["No changes made."]), ephemeral=True)
 
     @discord.ui.button(label="Disable All", style=discord.ButtonStyle.danger)
     async def disable_all(self, _, interaction: discord.Interaction):
@@ -65,6 +62,6 @@ class NicknameFilterManager(discord.ui.View):
                 author=interaction.user.id,
                 namespace="settings.nickname_filters",
                 action="disable.all",
-                description=f"Disabled all filters"
+                description=f"Disabled all filters",
             )
-        await interaction.followup.send("\N{cross mark} Disabled all filters.", ephemeral=True)
+        await interaction.followup.send("\N{CROSS MARK} Disabled all filters.", ephemeral=True)

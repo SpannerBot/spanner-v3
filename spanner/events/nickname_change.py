@@ -51,9 +51,7 @@ class NicknameChangeEvents(commands.Cog):
         openai_token = os.getenv("OPENAI_API_KEY", load_config()["spanner"].get("openai_token"))
         if not openai_token:
             return False
-        moderation = await GuildNickNameModeration.get_or_none(
-            guild_id=after.guild.id
-        )
+        moderation = await GuildNickNameModeration.get_or_none(guild_id=after.guild.id)
         if moderation is None:
             return False
         log_channel = await get_log_channel(self.bot, after.guild.id, "member.nickname-change")
@@ -65,16 +63,13 @@ class NicknameChangeEvents(commands.Cog):
                     self.log.info(
                         "Preparing to submit display name %r to OpenAI for moderation. On behalf of %r",
                         after.display_name,
-                        after
+                        after,
                     )
                     odn = after.display_name
                     response = await client.post(
                         "https://api.openai.com/v1/moderations",
-                        json={
-                            "model": "text-moderation-stable",
-                            "input": odn
-                        },
-                        headers={"Authorization": f"Bearer {openai_token}"}
+                        json={"model": "text-moderation-stable", "input": odn},
+                        headers={"Authorization": f"Bearer {openai_token}"},
                     )
                 response.raise_for_status()
                 data = response.json()["results"][0]
@@ -106,100 +101,95 @@ class NicknameChangeEvents(commands.Cog):
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains sexual content, which this server has "
-                                   f"enabled filtering of."
+                            f"enabled filtering of.",
                         )
                         await log_channel.send(
                             embed=discord.Embed(
                                 title="Member nickname filtered: sexual content",
                                 description=f"{after.mention}'s nickname was filtered due to sexual content.\n"
-                                            f"Was: {odn}\n"
-                                            f"Now: {new_name}",
+                                f"Was: {odn}\n"
+                                f"Now: {new_name}",
                                 colour=discord.Colour.red(),
-                                timestamp=discord.utils.utcnow()
-                            ).set_thumbnail(url=after.display_avatar.url).set_author(
-                                name=after.guild.me.display_name,
-                                icon_url=after.guild.me.display_avatar.url
+                                timestamp=discord.utils.utcnow(),
                             )
+                            .set_thumbnail(url=after.display_avatar.url)
+                            .set_author(name=after.guild.me.display_name, icon_url=after.guild.me.display_avatar.url)
                         )
                     elif data["hate"] and moderation.hate:
                         self.log.info("Display name %r flagged as hate.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains hate speech, which this server has "
-                                   f"enabled filtering of."
+                            f"enabled filtering of.",
                         )
                         await log_channel.send(
                             embed=discord.Embed(
                                 title="Member nickname filtered: hate speech",
                                 description=f"{after.mention}'s nickname was filtered due to hate speech.\n"
-                                            f"Was: {odn}\n"
-                                            f"Now: {new_name}",
+                                f"Was: {odn}\n"
+                                f"Now: {new_name}",
                                 colour=discord.Colour.red(),
-                                timestamp=discord.utils.utcnow()
-                            ).set_thumbnail(url=after.display_avatar.url).set_author(
-                                name=after.guild.me.display_name,
-                                icon_url=after.guild.me.display_avatar.url
+                                timestamp=discord.utils.utcnow(),
                             )
+                            .set_thumbnail(url=after.display_avatar.url)
+                            .set_author(name=after.guild.me.display_name, icon_url=after.guild.me.display_avatar.url)
                         )
                     elif data["harassment"] and moderation.harassment:
                         self.log.info("Display name %r flagged as harassment.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains harassment, which this server has "
-                                   f"enabled filtering of."
+                            f"enabled filtering of.",
                         )
                         await log_channel.send(
                             embed=discord.Embed(
                                 title="Member nickname filtered: harassment",
                                 description=f"{after.mention}'s nickname was filtered due to harassment.\n"
-                                            f"Was: {odn}\n"
-                                            f"Now: {new_name}",
+                                f"Was: {odn}\n"
+                                f"Now: {new_name}",
                                 colour=discord.Colour.red(),
-                                timestamp=discord.utils.utcnow()
-                            ).set_thumbnail(url=after.display_avatar.url).set_author(
-                                name=after.guild.me.display_name,
-                                icon_url=after.guild.me.display_avatar.url
+                                timestamp=discord.utils.utcnow(),
                             )
+                            .set_thumbnail(url=after.display_avatar.url)
+                            .set_author(name=after.guild.me.display_name, icon_url=after.guild.me.display_avatar.url)
                         )
                     elif data["self-harm"] and moderation.self_harm:
                         self.log.info("Display name %r flagged as self-harm.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains self-harm content, which this server has "
-                                   f"enabled filtering of."
+                            f"enabled filtering of.",
                         )
                         await log_channel.send(
                             embed=discord.Embed(
                                 title="Member nickname filtered: self-harm",
                                 description=f"{after.mention}'s nickname was filtered due to self-harm.\n"
-                                            f"Was: {odn}\n"
-                                            f"Now: {new_name}",
+                                f"Was: {odn}\n"
+                                f"Now: {new_name}",
                                 colour=discord.Colour.red(),
-                                timestamp=discord.utils.utcnow()
-                            ).set_thumbnail(url=after.display_avatar.url).set_author(
-                                name=after.guild.me.display_name,
-                                icon_url=after.guild.me.display_avatar.url
+                                timestamp=discord.utils.utcnow(),
                             )
+                            .set_thumbnail(url=after.display_avatar.url)
+                            .set_author(name=after.guild.me.display_name, icon_url=after.guild.me.display_avatar.url)
                         )
                     elif data["violence"] and moderation.violence:
                         self.log.info("Display name %r flagged as violence.", odn)
                         await after.edit(
                             nick=new_name,
                             reason=f"Nickname ({after.display_name}) contains violence, which this server has "
-                                   f"enabled filtering of."
+                            f"enabled filtering of.",
                         )
                         await log_channel.send(
                             embed=discord.Embed(
                                 title="Member nickname filtered: violence",
                                 description=f"{after.mention}'s nickname was filtered due to violence.\n"
-                                            f"Was: {odn}\n"
-                                            f"Now: {new_name}",
+                                f"Was: {odn}\n"
+                                f"Now: {new_name}",
                                 colour=discord.Colour.red(),
-                                timestamp=discord.utils.utcnow()
-                            ).set_thumbnail(url=after.display_avatar.url).set_author(
-                                name=after.guild.me.display_name,
-                                icon_url=after.guild.me.display_avatar.url
+                                timestamp=discord.utils.utcnow(),
                             )
+                            .set_thumbnail(url=after.display_avatar.url)
+                            .set_author(name=after.guild.me.display_name, icon_url=after.guild.me.display_avatar.url)
                         )
                 except discord.Forbidden as e:
                     if log_channel is not None:

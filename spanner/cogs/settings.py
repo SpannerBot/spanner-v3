@@ -194,8 +194,8 @@ class SettingsCog(commands.Cog):
 
     @settings.command(name="nickname-filtering")
     async def manage_nickname_filtering(
-            self,
-            ctx: discord.ApplicationContext,
+        self,
+        ctx: discord.ApplicationContext,
     ):
         """Enables AI-based nickname filtering."""
         await ctx.defer(ephemeral=True)
