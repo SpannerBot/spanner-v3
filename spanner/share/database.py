@@ -64,6 +64,8 @@ class GuildLogFeatures(Model):
         "server.role.edit",
         "server.role.permissions.edit",
         "server.role.delete",
+        "server.invite.create",
+        "server.invite.delete"
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(

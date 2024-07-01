@@ -30,7 +30,7 @@ class ViewInfoButton(discord.ui.Button):
                 await interaction.edit_original_response(view=self.view)
 
 
-class InviteInfoCog(commands.Cog):
+class InviteInfo(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
