@@ -61,7 +61,10 @@ class ChannelInfoCog(commands.Cog):
             f"**Position:** {channel.position:,}",
         ]
         if channel.permissions_for(channel.guild.me).manage_channels:
-            basic_info.append(f"**Invites:** {len(await channel.invites()):,}")
+            try:
+                basic_info.append(f"**Invites:** {len(await channel.invites()):,}")
+            except discord.HTTPException:
+                pass
 
         results = {
             "Overview": discord.Embed(
@@ -76,10 +79,14 @@ class ChannelInfoCog(commands.Cog):
                 slowmode = humanise(channel.slowmode_delay)
             else:
                 slowmode = "Disabled"
+            try:
+                pins = f"{len(await channel.pins()):,}"
+            except discord.HTTPException:
+                pins = "?"
             text_info = [
                 f"**Is NSFW?** {get_bool_emoji(channel.is_nsfw())}",
                 f"**Is news?** {get_bool_emoji(channel.is_news())}",
-                f"**Pins:** {len(await channel.pins()):,}",
+                f"**Pins:** {pins}",
                 f"**Slowmode:** {slowmode}",
                 f"**Members:** {len(channel.members):,}",
             ]

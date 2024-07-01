@@ -49,8 +49,8 @@ class GuildRoleEvents(commands.Cog):
             return
 
         embed = discord.Embed(title=f"Role created: {role.name}", colour=discord.Colour.red())
-
-        embed2 = (await cog.get_role_info(after))["Overview"]
+        cog = RoleInfoCog(self.bot)
+        embed2 = (await cog.get_role_info(role))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])
         entry = await self.wait_for_audit_log(role, discord.AuditLogAction.role_create)
