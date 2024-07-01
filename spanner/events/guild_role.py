@@ -49,7 +49,8 @@ class GuildRoleEvents(commands.Cog):
             return
 
         embed = discord.Embed(title=f"Role created: {role.name}", colour=discord.Colour.red())
-        embed2 = (await RoleInfoCog(self.bot).get_role_info(role))["Overview"]
+        # noinspection PyUnresolvedReferences
+        embed2 = (await cog.get_role_info(after))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])
         entry = await self.wait_for_audit_log(role, discord.AuditLogAction.role_create)
@@ -75,7 +76,10 @@ class GuildRoleEvents(commands.Cog):
             ),
             colour=discord.Colour.red(),
         )
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("RoleInfo")
+        # noinspection PyUnresolvedReferences
+        role_info_embed = (await cog.get_role_info(after))["Overview"]
+        msg = await log_channel.send(embeds=[embed, role_info_embed])
         entry = await self.wait_for_audit_log(after, discord.AuditLogAction.role_delete)
         if entry is None:
             return
@@ -83,14 +87,14 @@ class GuildRoleEvents(commands.Cog):
         embed.add_field(name="Reason", value=entry.reason or "No reason.")
         embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Details fetched from audit log.")
-        await msg.edit(embed=embed)
+        await msg.edit(embeds=[embed, role_info_embed])
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
         if before.permissions != after.permissions:
             self.log.debug("Dispatching permissions update for %r->%r", before, after)
             await self.on_guild_role_permissions_update(before, after)
-        changes = ("name", "color", "hoist", "icon", "mentionable", "position", "tags", "unicode_emoji")
+        changes = ("name", "color", "hoist", "icon", "mentionable", "tags", "unicode_emoji")
         for attr in changes:
             if getattr(before, attr) != getattr(after, attr):
                 break

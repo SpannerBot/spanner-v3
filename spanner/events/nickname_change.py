@@ -227,14 +227,17 @@ class NicknameChangeEvents(commands.Cog):
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=after.display_avatar.url)
-            msg = await log_channel.send(embed=embed)
+            cog = self.bot.get_cog("UserInfo")
+            # noinspection PyUnresolvedReferences
+            user_info_embed = (await cog.get_info(user))["Overview"]
+            msg = await log_channel.send(embeds=[embed, user_info_embed])
             entry = await self.wait_for_audit_log(before.guild, after, after.display_name)
             if entry:
                 embed.set_author(name=f"Moderator: {entry.user}", icon_url=entry.user.display_avatar.url)
                 if entry.reason:
                     embed.add_field(name="Reason", value=entry.reason, inline=False)
                 embed.set_footer(text="Nickname change details fetched from audit log.")
-                await msg.edit(embed=embed)
+                await msg.edit(embeds=[embed, user_info_embed])
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

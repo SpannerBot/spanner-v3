@@ -98,7 +98,10 @@ class BanEvents(commands.Cog):
         else:
             embed.set_footer(text="Ban details could not be fetched from audit log - missing permissions.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_info(user))["Overview"]
+        msg = await log_channel.send(embeds=[embed, user_info_embed])
         if not found_reason:
             self.awaiting_audit_log[msg.id] = {
                 "target": user,
@@ -142,7 +145,10 @@ class BanEvents(commands.Cog):
             embed.set_footer(text="Unban details could not be fetched from audit log - missing permissions.")
 
         embed.set_thumbnail(url=user.display_avatar.url)
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_info(user))["Overview"]
+        msg = await log_channel.send(embeds=[embed, user_info_embed])
         if not found_reason:
             self.awaiting_audit_log[msg.id] = {
                 "target": user,

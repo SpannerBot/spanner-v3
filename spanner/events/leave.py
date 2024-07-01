@@ -51,14 +51,15 @@ class LeaveEvents(commands.Cog):
 
         embed = discord.Embed(
             title="Member left!",
+            description=f"There are now {member.guild.member_count:,} members in the server.",
             colour=discord.Colour.blue(),
-            description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)\n"
-            f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
-            f"* Joined: {discord.utils.format_dt(member.joined_at, 'R')}\n",
             timestamp=discord.utils.utcnow(),
         )
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_member_info(member))["Overview"]
         embed.set_thumbnail(url=member.display_avatar.url)
-        message = await log_channel.send(embed=embed)
+        message = await log_channel.send(embeds=[embed, user_info_embed])
         entry = await self.wait_for_audit_log(member.guild, member)
         self.leave_messages.append({member: message})
         if entry:
@@ -68,7 +69,7 @@ class LeaveEvents(commands.Cog):
             embed.set_footer(text="Kick details fetched from audit log.")
             if entry.reason:
                 embed.add_field(name="Reason", value=entry.reason, inline=False)
-            await message.edit(embed=embed)
+            await message.edit(embeds=[embed, user_info_embed])
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User | discord.Member):
@@ -78,12 +79,12 @@ class LeaveEvents(commands.Cog):
                 if list(item.keys())[0].guild != guild:
                     continue
                 message = item[user]
-                e = discord.utils.utcnow() + datetime.timedelta(seconds=30)
+                e = discord.utils.utcnow() + datetime.timedelta(seconds=60)
                 await message.edit(
                     content=f"This message will self-destruct {discord.utils.format_dt(e, 'R')}.",
-                    delete_after=30,
+                    delete_after=60,
                     embeds=[
-                        message.embeds[0],
+                        *message.embeds,
                         discord.Embed(
                             description="This user was actually banned. If you have the `member.ban` feature enabled,"
                             " a ban log will be sent shortly."

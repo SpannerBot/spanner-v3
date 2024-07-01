@@ -54,7 +54,10 @@ class TimeoutEvents(commands.Cog):
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_info(member))["Overview"]
+        msg = await log_channel.send(embeds=[embed, user_info_embed])
         entry = await self.wait_for_audit_log(member.guild, member, timed_out=True)
         if entry is None:
             return
@@ -62,7 +65,7 @@ class TimeoutEvents(commands.Cog):
         embed.add_field(name="Reason", value=entry.reason or "No reason.")
         embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Timeout details fetched from audit log.")
-        await msg.edit(embed=embed)
+        await msg.edit(embeds=[embed, user_info_embed])
 
     async def on_member_timeout_expire(self, member: discord.Member):
         self.log.debug("%r time out expired in %r.", member, member.guild)
@@ -80,7 +83,10 @@ class TimeoutEvents(commands.Cog):
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_info(member))["Overview"]
+        msg = await log_channel.send(embeds=[embed, user_info_embed])
         entry = await self.wait_for_audit_log(member.guild, member)
         if entry is None:
             return
@@ -88,7 +94,7 @@ class TimeoutEvents(commands.Cog):
         embed.add_field(name="Reason", value=entry.reason or "No reason.")
         embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Timeout details fetched from audit log.")
-        await msg.edit(embed=embed)
+        await msg.edit(embeds=[embed, user_info_embed])
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):

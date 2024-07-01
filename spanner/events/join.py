@@ -21,17 +21,17 @@ class JoinEvents(commands.Cog):
         if log_channel is None:
             return
 
+        cog = self.bot.get_cog("UserInfo")
+        # noinspection PyUnresolvedReferences
+        user_info_embed = (await cog.get_member_info(member))["Overview"]
         embed = discord.Embed(
             title="Member joined!",
             colour=discord.Colour.blue(),
-            description=f"* Info: {member.mention} ({member.display_name}, `{member.id}`)\n"
-            f"* Created: {discord.utils.format_dt(member.created_at, 'R')}\n"
-            f"\n"
-            f"* Total members: {member.guild.member_count:,}",
+            description=f"There are now {member.guild.member_count:,} members in this server.",
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        await log_channel.send(embed=embed)
+        await log_channel.send(embeds=[embed, user_info_embed])
 
 
 def setup(bot: bridge.Bot):

@@ -58,6 +58,7 @@ class GuildLogFeatures(Model):
         "member.timeout",
         "member.unban",
         "member.nickname-change",
+        "member.avatar-change",
         "member.roles.update",
         "server.role.create",
         "server.role.edit",

@@ -94,7 +94,10 @@ class RoleEvents(commands.Cog):
         if log_channel is None:
             return
         embed.set_thumbnail(url=after.display_avatar.url)
-        msg = await log_channel.send(embed=embed)
+        cog = self.bot.get_cog("RoleInfo")
+        # noinspection PyUnresolvedReferences
+        role_info_embed = (await cog.get_info(user))["Overview"]
+        msg = await log_channel.send(embeds=[embed, role_info_embed])
         entry = await self.wait_for_audit_log(after.guild, after)
         if entry is None:
             return
@@ -102,7 +105,7 @@ class RoleEvents(commands.Cog):
         embed.add_field(name="Reason", value=entry.reason or "No reason.")
         embed.set_author(name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url)
         embed.set_footer(text="Timeout details fetched from audit log.")
-        await msg.edit(embed=embed)
+        await msg.edit(embeds=[embed, role_info_embed])
 
 
 def setup(bot):

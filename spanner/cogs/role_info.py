@@ -5,7 +5,7 @@ from spanner.share.utils import get_bool_emoji, hyperlink
 from spanner.share.views import GenericLabelledEmbedView
 
 
-class RoleInfoCog(commands.Cog):
+class RoleInfo(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
