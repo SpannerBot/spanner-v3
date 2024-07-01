@@ -8,6 +8,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
+from spanner.cogs.user_info import UserInfo
 
 
 class LeaveEvents(commands.Cog):
@@ -55,8 +56,7 @@ class LeaveEvents(commands.Cog):
             colour=discord.Colour.blue(),
             timestamp=discord.utils.utcnow(),
         )
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_member_info(member))["Overview"]
         embed.set_thumbnail(url=member.display_avatar.url)
         message = await log_channel.send(embeds=[embed, user_info_embed])

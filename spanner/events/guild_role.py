@@ -6,7 +6,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
-from spanner.cogs.role_info import RoleInfoCog
+from spanner.cogs.role_info import RoleInfo
 
 
 class GuildRoleEvents(commands.Cog):
@@ -49,7 +49,7 @@ class GuildRoleEvents(commands.Cog):
             return
 
         embed = discord.Embed(title=f"Role created: {role.name}", colour=discord.Colour.red())
-        # noinspection PyUnresolvedReferences
+
         embed2 = (await cog.get_role_info(after))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])
@@ -76,8 +76,7 @@ class GuildRoleEvents(commands.Cog):
             ),
             colour=discord.Colour.red(),
         )
-        cog = self.bot.get_cog("RoleInfo")
-        # noinspection PyUnresolvedReferences
+        cog = RoleInfo(self.bot)
         role_info_embed = (await cog.get_role_info(after))["Overview"]
         msg = await log_channel.send(embeds=[embed, role_info_embed])
         entry = await self.wait_for_audit_log(after, discord.AuditLogAction.role_delete)
@@ -106,9 +105,9 @@ class GuildRoleEvents(commands.Cog):
             return
 
         embed = discord.Embed(title=f"Role deleted: {after.name}", colour=discord.Colour.red())
-        embed2 = (await RoleInfoCog(self.bot).get_role_info(before))["Overview"]
+        embed2 = (await RoleInfo(self.bot).get_role_info(before))["Overview"]
         embed2.title = "[Before] " + embed2.title
-        embed3 = (await RoleInfoCog(self.bot).get_role_info(after))["Overview"]
+        embed3 = (await RoleInfo(self.bot).get_role_info(after))["Overview"]
         embed3.title = "[After] " + embed3.title
 
         msg = await log_channel.send(embeds=[embed, embed2, embed3])
@@ -128,7 +127,7 @@ class GuildRoleEvents(commands.Cog):
             return
 
         embed = discord.Embed(title=f"Role deleted: {role.name}", colour=discord.Colour.red())
-        embed2 = (await RoleInfoCog(self.bot).get_role_info(role))["Overview"]
+        embed2 = (await RoleInfo(self.bot).get_role_info(role))["Overview"]
 
         msg = await log_channel.send(embeds=[embed, embed2])
         entry = await self.wait_for_audit_log(role, discord.AuditLogAction.role_delete)

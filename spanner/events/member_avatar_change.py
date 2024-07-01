@@ -3,8 +3,7 @@ import logging
 
 import discord
 from discord.ext import bridge, commands
-from ..cogs import user_info
-
+from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel
 
 
@@ -50,8 +49,7 @@ class JoinEvents(commands.Cog):
             embed.set_image(url=after.display_avatar.url)
             files = [before_avatar_file, after_avatar_file]
             files = list(filter(None, files))
-            cog = self.bot.get_cog("UserInfo")
-            # noinspection PyUnresolvedReferences
+            cog = UserInfo(self.bot)
             user_info_embed = (await cog.get_member_info(after))["Overview"]
             await log_channel.send(embeds=[embed, user_info_embed], files=files)
 

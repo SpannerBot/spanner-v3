@@ -4,6 +4,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
+from spanner.cogs.user_info import UserInfo
 
 
 class JoinEvents(commands.Cog):
@@ -21,8 +22,7 @@ class JoinEvents(commands.Cog):
         if log_channel is None:
             return
 
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_member_info(member))["Overview"]
         embed = discord.Embed(
             title="Member joined!",

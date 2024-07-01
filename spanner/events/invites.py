@@ -4,6 +4,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
+from spanner.cogs.invite_info import InviteInfo
 
 
 class InviteEvents(commands.Cog):
@@ -17,8 +18,7 @@ class InviteEvents(commands.Cog):
         if log_channel is None:
             return
 
-        cog = self.bot.get_cog("InviteInfo")
-        invite_info_embeds = await cog.get_discord_invite_info(invite)  # type: ignore
+        invite_info_embeds = await InviteInfo.get_discord_invite_info(invite)
         invite_info_embeds["Overview"].title = "Invite created: " + invite.code
         invite_info_embeds["Overview"].colour = discord.Colour.green()
         await log_channel.send(embeds=list(invite_info_embeds.values()))
@@ -29,8 +29,7 @@ class InviteEvents(commands.Cog):
         if log_channel is None:
             return
 
-        cog = self.bot.get_cog("InviteInfo")
-        invite_info_embeds = await cog.get_discord_invite_info(invite)  # type: ignore
+        invite_info_embeds = await InviteInfo.get_discord_invite_info(invite)
         invite_info_embeds["Overview"].title = "Invite deleted: " + invite.code
         invite_info_embeds["Overview"].colour = discord.Colour.red()
         await log_channel.send(embeds=list(invite_info_embeds.values()))

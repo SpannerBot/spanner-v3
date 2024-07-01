@@ -34,7 +34,7 @@ class GenericLabelledEmbedView(discord.ui.View):
 
         for embed_key, embed_value in self.embeds.items():
             self.add_item(self.EmbedSwitchButton(embed_key, embed_value))
-        # noinspection PyUnresolvedReferences
+
         self.children[0].update_view()
 
     @property

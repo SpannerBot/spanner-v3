@@ -5,6 +5,7 @@ import logging
 import discord
 from discord.ext import bridge, commands
 
+from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel
 
 
@@ -54,8 +55,7 @@ class TimeoutEvents(commands.Cog):
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_info(member))["Overview"]
         msg = await log_channel.send(embeds=[embed, user_info_embed])
         entry = await self.wait_for_audit_log(member.guild, member, timed_out=True)
@@ -83,8 +83,7 @@ class TimeoutEvents(commands.Cog):
             timestamp=discord.utils.utcnow(),
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_info(member))["Overview"]
         msg = await log_channel.send(embeds=[embed, user_info_embed])
         entry = await self.wait_for_audit_log(member.guild, member)

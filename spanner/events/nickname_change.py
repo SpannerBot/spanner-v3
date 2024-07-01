@@ -11,6 +11,7 @@ from discord.ext import bridge, commands
 from spanner.share.config import load_config
 from spanner.share.utils import get_log_channel
 from spanner.share.database import GuildNickNameModeration
+from spanner.cogs.user_info import UserInfo
 
 
 class NicknameChangeEvents(commands.Cog):
@@ -217,9 +218,8 @@ class NicknameChangeEvents(commands.Cog):
                 timestamp=discord.utils.utcnow(),
             )
             embed.set_thumbnail(url=after.display_avatar.url)
-            cog = self.bot.get_cog("UserInfo")
-            # noinspection PyUnresolvedReferences
-            user_info_embed = (await cog.get_info(user))["Overview"]
+            cog = UserInfo(self.bot)
+            user_info_embed = (await cog.get_info(after))["Overview"]
             msg = await log_channel.send(embeds=[embed, user_info_embed])
             entry = await self.wait_for_audit_log(before.guild, after, after.display_name)
             if entry:

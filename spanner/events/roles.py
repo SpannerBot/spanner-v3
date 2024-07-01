@@ -6,6 +6,7 @@ import discord
 from discord.ext import bridge, commands
 from typing import Iterable
 
+from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel
 
 
@@ -94,9 +95,9 @@ class RoleEvents(commands.Cog):
         if log_channel is None:
             return
         embed.set_thumbnail(url=after.display_avatar.url)
-        cog = self.bot.get_cog("RoleInfo")
-        # noinspection PyUnresolvedReferences
-        role_info_embed = (await cog.get_info(user))["Overview"]
+        cog = UserInfo(self.bot)
+
+        role_info_embed = (await cog.get_info(after))["Overview"]
         msg = await log_channel.send(embeds=[embed, role_info_embed])
         entry = await self.wait_for_audit_log(after.guild, after)
         if entry is None:

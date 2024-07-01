@@ -4,6 +4,7 @@ import discord
 from discord.ext import bridge, commands
 
 from spanner.share.utils import get_log_channel
+from spanner.cogs.user_info import UserInfo
 
 
 class BanEvents(commands.Cog):
@@ -98,8 +99,7 @@ class BanEvents(commands.Cog):
         else:
             embed.set_footer(text="Ban details could not be fetched from audit log - missing permissions.")
         embed.set_thumbnail(url=user.display_avatar.url)
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_info(user))["Overview"]
         msg = await log_channel.send(embeds=[embed, user_info_embed])
         if not found_reason:
@@ -145,8 +145,7 @@ class BanEvents(commands.Cog):
             embed.set_footer(text="Unban details could not be fetched from audit log - missing permissions.")
 
         embed.set_thumbnail(url=user.display_avatar.url)
-        cog = self.bot.get_cog("UserInfo")
-        # noinspection PyUnresolvedReferences
+        cog = UserInfo(self.bot)
         user_info_embed = (await cog.get_info(user))["Overview"]
         msg = await log_channel.send(embeds=[embed, user_info_embed])
         if not found_reason:
