@@ -4,14 +4,15 @@ import sys
 
 sys.path.extend([".", ".."])
 
-import discord
-import uvicorn
 import logging
 
+import discord
+import uvicorn
 from discord.ext import bridge, commands
+from tortoise import Tortoise
+
 from spanner.share.config import load_config
 from spanner.share.views.self_roles import PersistentSelfRoleView
-from tortoise import Tortoise
 
 TORTOISE_ORM = {
     "connections": {"default": load_config()["database"]["uri"]},
@@ -43,6 +44,7 @@ class CustomBridgeBot(bridge.Bot):
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         from api import app
+
         from spanner.share.database import SelfRoleMenu
 
         await Tortoise.init(

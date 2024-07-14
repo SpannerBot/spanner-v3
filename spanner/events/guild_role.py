@@ -5,8 +5,8 @@ import logging
 import discord
 from discord.ext import bridge, commands
 
-from spanner.share.utils import get_log_channel
 from spanner.cogs.role_info import RoleInfoCog
+from spanner.share.utils import get_log_channel
 
 
 class GuildRoleEvents(commands.Cog):

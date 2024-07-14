@@ -3,8 +3,8 @@ import logging
 import discord
 from discord.ext import bridge, commands
 
-from spanner.share.utils import get_log_channel
 from spanner.cogs.invite_info import InviteInfo
+from spanner.share.utils import get_log_channel
 
 
 class InviteEvents(commands.Cog):

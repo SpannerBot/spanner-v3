@@ -3,8 +3,8 @@ import logging
 import discord
 from discord.ext import bridge, commands
 
-from spanner.share.utils import get_log_channel
 from spanner.cogs.user_info import UserInfo
+from spanner.share.utils import get_log_channel
 
 
 class BanEvents(commands.Cog):

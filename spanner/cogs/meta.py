@@ -60,7 +60,7 @@ class MetaCog(commands.Cog):
     @commands.command()
     async def version(self, ctx: commands.Context):
         """Gets the spanner version."""
-        from spanner.share.version import __sha__, __sha_short__, __build_time__
+        from spanner.share.version import __build_time__, __sha__, __sha_short__
 
         base_url = "https://github.com/nexy7574/spanner-v3/tree/{}"
         url = base_url.format(__sha__)

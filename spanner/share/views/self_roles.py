@@ -1,16 +1,16 @@
 import asyncio
-import os
 import logging
+import os
 from enum import IntEnum
-from typing import Iterable, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterable
 
 import discord
 from discord import Interaction
 
-from ..database import SelfRoleMenu, GuildConfig
+from ..database import GuildConfig, SelfRoleMenu
 
 if TYPE_CHECKING:
-    from spanner.bot import CustomBridgeBot
+    pass
 
 
 log = logging.getLogger(__name__)
@@ -223,7 +223,7 @@ class CreateChannelSelect(discord.ui.Select):
         ra = [f"* {channel.mention}" for channel in v]
 
         await interaction.followup.send(
-            f"\N{WHITE HEAVY CHECK MARK} Channel(s) selected:\n" + "\n".join(ra), ephemeral=True, delete_after=5
+            "\N{WHITE HEAVY CHECK MARK} Channel(s) selected:\n" + "\n".join(ra), ephemeral=True, delete_after=5
         )
         self.view.stop()
 

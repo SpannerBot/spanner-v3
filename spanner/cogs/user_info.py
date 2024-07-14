@@ -182,14 +182,20 @@ class UserInfo(commands.Cog):
         else:
             raise ValueError("Invalid target type")
 
-    @commands.user_command(name="User Info")
+    @commands.user_command(
+        name="User Info",
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
     async def user_info(self, ctx: discord.ApplicationContext, user: discord.User | discord.Member):
         await ctx.defer(ephemeral=True)
 
         embeds = await self.get_info(user)
         await ctx.respond(embed=embeds["Overview"], view=GenericLabelledEmbedView(ctx, **embeds), ephemeral=True)
 
-    @commands.slash_command(name="user-info")
+    @commands.slash_command(
+        name="user-info",
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
     async def user_info_slash(self, ctx: discord.ApplicationContext, user: discord.User):
         """Fetches information on a user or member on discord."""
         if ctx.guild:

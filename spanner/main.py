@@ -7,10 +7,10 @@ import tomllib
 from pathlib import Path
 
 import discord
+from _generate_version_info import gather_version_info, should_write, write_version_file
 from bot import bot
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
-from _generate_version_info import should_write, write_version_file, gather_version_info
 
 sys.path.append("..")
 

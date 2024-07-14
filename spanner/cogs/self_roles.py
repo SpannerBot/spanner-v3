@@ -4,9 +4,9 @@ import typing
 import discord
 from discord.ext import bridge, commands, pages
 
-from spanner.share.views.self_roles import CreateSelfRolesMasterView, EditSelfRolesMasterView
-from spanner.share.views import ConfirmView
 from spanner.share.database import GuildConfig, SelfRoleMenu
+from spanner.share.views import ConfirmView
+from spanner.share.views.self_roles import CreateSelfRolesMasterView, EditSelfRolesMasterView
 
 
 async def self_role_menu_autocomplete(ctx: discord.ApplicationContext):

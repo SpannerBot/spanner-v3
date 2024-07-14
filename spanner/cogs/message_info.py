@@ -149,7 +149,10 @@ class MessageInfoCog(commands.Cog):
 
         return result
 
-    @commands.message_command(name="Message Info")
+    @commands.message_command(
+        name="Message Info",
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
     async def message_info(self, ctx: discord.ApplicationContext, message: discord.Message):
         """Get information about a message."""
         await ctx.defer(ephemeral=True)

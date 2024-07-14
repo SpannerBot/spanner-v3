@@ -67,7 +67,7 @@ class GuildLogFeatures(Model):
         "server.invite.create",
         "server.invite.delete",
         "server.channel.create",
-        "server.channel.delete"
+        "server.channel.delete",
     ]
     id = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(

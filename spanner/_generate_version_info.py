@@ -1,12 +1,13 @@
 #!/bin/env python3
-import os
 import datetime
-import subprocess
 import logging
+import os
+import subprocess
 import sys
 import time
-import httpx
 from pathlib import Path
+
+import httpx
 
 logger = logging.getLogger("spanner.version")
 
@@ -109,11 +110,11 @@ def write_version_file(sha: str, sha_short: str, build_time: datetime.datetime) 
     with open(find_project_dir() / "share" / "version.py", "w") as f:
         lines = [
             "import datetime",
-            f"__auto__ = True",
+            "__auto__ = True",
             f'__sha__ = "{sha}"',
             f'__sha_short__ = "{sha_short}"',
             f"__build_time__ = {build_time!r}",
-            f'__all__=("__auto__", "__sha__", "__sha_short__", "__build_time__")',
+            '__all__=("__auto__", "__sha__", "__sha_short__", "__build_time__")',
             "del datetime",
         ]
         f.write("\n".join(lines))
@@ -145,7 +146,7 @@ if __name__ == "__main__":
         logger.info("Version info written successfully.")
 
     if args.show:
-        from share.version import __sha__, __sha_short__, __build_time__
+        from share.version import __build_time__, __sha__, __sha_short__
 
         print("Version information:")
         print(f"Full SHA: {__sha__}")

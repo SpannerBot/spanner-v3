@@ -1,23 +1,21 @@
 import datetime
 import logging
 import os
+import platform
 import secrets
 import time
-from typing import Annotated, Callable, Awaitable
+from typing import Annotated, Awaitable, Callable
 from urllib.parse import urlparse
 
 import aiohttp
 import discord.utils
 import fastapi
 import jwt
-import platform
-
 import psutil
-
 from bot import bot
-from fastapi import Cookie, Depends, HTTPException, Header, Request, status, Response
+from fastapi import Cookie, Depends, HTTPException, Header, Request, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 

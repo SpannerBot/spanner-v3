@@ -1,10 +1,10 @@
 import asyncio
 import datetime
 import logging
+from typing import Iterable
 
 import discord
 from discord.ext import bridge, commands
-from typing import Iterable
 
 from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel

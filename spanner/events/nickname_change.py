@@ -8,10 +8,10 @@ import discord
 import httpx
 from discord.ext import bridge, commands
 
-from spanner.share.config import load_config
-from spanner.share.utils import get_log_channel
-from spanner.share.database import GuildNickNameModeration
 from spanner.cogs.user_info import UserInfo
+from spanner.share.config import load_config
+from spanner.share.database import GuildNickNameModeration
+from spanner.share.utils import get_log_channel
 
 
 class NicknameChangeEvents(commands.Cog):

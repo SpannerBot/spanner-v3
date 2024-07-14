@@ -1,6 +1,6 @@
 import discord
 
-from spanner.share.database import GuildConfig, GuildNickNameModeration, GuildAuditLogEntry
+from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildNickNameModeration
 
 
 class NicknameFilterManager(discord.ui.View):
@@ -62,6 +62,6 @@ class NicknameFilterManager(discord.ui.View):
                 author=interaction.user.id,
                 namespace="settings.nickname_filters",
                 action="disable.all",
-                description=f"Disabled all filters",
+                description="Disabled all filters",
             )
         await interaction.followup.send("\N{CROSS MARK} Disabled all filters.", ephemeral=True)

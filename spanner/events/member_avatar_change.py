@@ -3,6 +3,7 @@ import logging
 
 import discord
 from discord.ext import bridge, commands
+
 from spanner.cogs.user_info import UserInfo
 from spanner.share.utils import get_log_channel
 

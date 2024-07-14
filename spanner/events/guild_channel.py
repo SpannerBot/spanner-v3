@@ -5,8 +5,8 @@ import logging
 import discord
 from discord.ext import bridge, commands
 
-from spanner.share.utils import get_log_channel
 from spanner.cogs.channel_info import ChannelInfoCog
+from spanner.share.utils import get_log_channel
 
 
 class GuildChannelEvents(commands.Cog):
@@ -56,14 +56,13 @@ class GuildChannelEvents(commands.Cog):
         entry = await self.wait_for_audit_log(channel, discord.AuditLogAction.channel_create)
         if entry:
             embeds["Overview"].set_author(
-                name="Moderator: " + entry.user.display_name,
-                icon_url=entry.user.display_avatar.url
+                name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url
             )
             embeds["Overview"].set_footer(text="Details fetched from audit log.")
             if entry.reason:
                 embeds["Overview"].add_field(name="Reason", value=entry.reason, inline=False)
         await msg.edit(embeds=list(embeds.values()))
-    
+
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         log_channel = await get_log_channel(self.bot, channel.guild.id, "server.channel.delete")
@@ -80,8 +79,7 @@ class GuildChannelEvents(commands.Cog):
         entry = await self.wait_for_audit_log(channel, discord.AuditLogAction.channel_create)
         if entry:
             embeds["Overview"].set_author(
-                name="Moderator: " + entry.user.display_name,
-                icon_url=entry.user.display_avatar.url
+                name="Moderator: " + entry.user.display_name, icon_url=entry.user.display_avatar.url
             )
             embeds["Overview"].set_footer(text="Details fetched from audit log.")
             if entry.reason:

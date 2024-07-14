@@ -225,7 +225,10 @@ class ChannelInfoCog(commands.Cog):
             results["Category-specific info"] = category_embed
         return results
 
-    @commands.slash_command(name="channel-info")
+    @commands.slash_command(
+        name="channel-info",
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
     async def channel_info(
         self, ctx: discord.ApplicationContext, channel: discord.SlashCommandOptionType.channel = None
     ):
