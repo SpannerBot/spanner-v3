@@ -19,7 +19,7 @@ class SettingsCog(commands.Cog):
         name="settings",
         description="Manages settings for the server.",
         default_member_permissions=discord.Permissions(manage_guild=True),
-        guild_only=True,
+        contexts={discord.InteractionContextType.guild},
     )
 
     @staticmethod

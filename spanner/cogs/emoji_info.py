@@ -120,7 +120,12 @@ class EmojiInfoCog(commands.Cog):
             return {"Overview": emoji_embed, "Allowed roles": emoji_roles_embed}
         return {"Overview": emoji_embed}
 
-    emoji_group = discord.SlashCommandGroup(name="emoji", description="Commands for managing emojis.", guild_only=True)
+    emoji_group = discord.SlashCommandGroup(
+        name="emoji",
+        description="Commands for managing emojis.",
+        contexts={discord.InteractionContextType.guild},
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
 
     @emoji_group.command(name="info", description="Get information about an emoji.")
     async def emoji_info(self, ctx: discord.ApplicationContext, emoji: str):
@@ -158,6 +163,8 @@ class EmojiInfoCog(commands.Cog):
         name="set-roles",
         description="Set the roles that can use an emoji.",
         default_member_permissions=discord.Permissions(manage_emojis=True),
+        contexts={discord.InteractionContextType.guild},
+        integration_types={discord.IntegrationType.guild_install},
     )
     @commands.max_concurrency(1, per=commands.BucketType.member)
     async def emoji_set_roles(
@@ -177,7 +184,11 @@ class EmojiInfoCog(commands.Cog):
             "Select up to 25 roles that can use this emoji. Click apply once you're done.", view=view, ephemeral=True
         )
 
-    @commands.slash_command(name="character-info")
+    @commands.slash_command(
+        name="character-info",
+        contexts={discord.InteractionContextType.guild},
+        integration_types={discord.IntegrationType.guild_install},
+    )
     async def character_info(self, ctx: discord.ApplicationContext, character: str):
         """Get information about a character."""
         await ctx.defer(ephemeral=True)

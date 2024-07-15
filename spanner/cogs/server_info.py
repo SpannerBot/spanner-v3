@@ -116,6 +116,7 @@ class ServerInfoCog(commands.Cog):
     @commands.slash_command(
         name="server-info",
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+        contexts={discord.InteractionContextType.guild},
     )
     async def server_info(self, ctx: discord.ApplicationContext):
         """Get information about the server."""

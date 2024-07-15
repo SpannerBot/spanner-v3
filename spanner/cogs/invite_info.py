@@ -120,7 +120,10 @@ class InviteInfo(commands.Cog):
 
         return result
 
-    @commands.slash_command(name="invite-info")
+    @commands.slash_command(
+        name="invite-info",
+        integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+    )
     async def invite_info(self, ctx: discord.ApplicationContext, url: str):
         """Get information about an invite."""
         await ctx.defer(ephemeral=True)

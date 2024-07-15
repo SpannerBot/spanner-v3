@@ -56,6 +56,7 @@ class RoleInfoCog(commands.Cog):
     @commands.slash_command(
         name="role-info",
         integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install},
+        contexts={discord.InteractionContextType.guild},
     )
     async def role_info(self, ctx: discord.ApplicationContext, role: discord.Role):
         """Get information about a role."""

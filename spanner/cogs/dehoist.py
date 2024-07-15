@@ -8,7 +8,7 @@ class Dehoist(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.user_command(name="Dehoist")
+    @commands.user_command(name="Dehoist", context={discord.InteractionContextType.guild})
     @discord.default_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     async def do_dehoist(self, ctx: discord.ApplicationContext, member: discord.Member):

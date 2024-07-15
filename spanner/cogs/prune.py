@@ -11,7 +11,7 @@ class PruneCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
 
-    @commands.slash_command()
+    @commands.slash_command(contexts={discord.InteractionContextType.guild})
     @discord.commands.default_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, read_message_history=True)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
