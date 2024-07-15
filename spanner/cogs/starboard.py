@@ -34,9 +34,7 @@ class StarboardCog(commands.Cog):
         return message
 
     async def generate_starboard_embed(
-            self,
-            message: discord.Message,
-            config: StarboardConfig
+        self, message: discord.Message, config: StarboardConfig
     ) -> tuple[list[discord.Embed], int]:
         """
         Generates an embed ready for a starboard message.
@@ -46,27 +44,26 @@ class StarboardCog(commands.Cog):
         :return: The created embed
         """
         star_count = self.starboard_cache.get(message, 0)
-        star_emoji_count = (config.star_emoji * min(10, star_count))
+        star_emoji_count = config.star_emoji * min(10, star_count)
 
         embed = discord.Embed(
             colour=discord.Colour.gold(),
             url=message.jump_url,
             timestamp=message.created_at,
             author=discord.EmbedAuthor(
-                message.author.display_name,
-                message.author.jump_url,
-                message.author.display_avatar.url
+                message.author.display_name, message.author.jump_url, message.author.display_avatar.url
             ),
             fields=[
                 discord.EmbedField(
-                    name="Info",
-                    value=f"[Stars: {star_emoji_count} ({star_count:,})]({message.jump_url})"
+                    name="Info", value=f"[Stars: {star_emoji_count} ({star_count:,})]({message.jump_url})"
                 )
-            ]
+            ],
         )
         if message.reference:
             try:
-                ref_message = await self.get_or_fetch_message(message.reference.channel_id, message.reference.message_id)
+                ref_message = await self.get_or_fetch_message(
+                    message.reference.channel_id, message.reference.message_id
+                )
             except discord.HTTPException:
                 pass
             else:
@@ -75,31 +72,22 @@ class StarboardCog(commands.Cog):
                 remaining = 1024 - len(v)
                 t = textwrap.shorten(text, remaining, placeholder="...")
                 v = f"[{ref_message.author.display_name}'s message: {t}]({ref_message.jump_url})"
-                embed.add_field(
-                    name="Replying to",
-                    value=v
-                )
+                embed.add_field(name="Replying to", value=v)
         elif message.interaction:
             if message.interaction.type == discord.InteractionType.application_command:
                 real_author: discord.User = await discord.utils.get_or_fetch(
-                    self.bot,
-                    "user",
-                    int(message.interaction.data["user"]["id"])
+                    self.bot, "user", int(message.interaction.data["user"]["id"])
                 )
-                real_author = await discord.utils.get_or_fetch(
-                    message.guild,
-                    "member",
-                    real_author.id,
-                    default=real_author
-                ) or message.author
+                real_author = (
+                    await discord.utils.get_or_fetch(message.guild, "member", real_author.id, default=real_author)
+                    or message.author
+                )
                 embed.set_author(
-                    name=real_author.display_name,
-                    icon_url=real_author.display_avatar.url,
-                    url=real_author.jump_url
+                    name=real_author.display_name, icon_url=real_author.display_avatar.url, url=real_author.jump_url
                 )
                 embed.add_field(
                     name="Interaction",
-                    value=f"Command `/{message.interaction.data['name']}` of {message.author.mention}"
+                    value=f"Command `/{message.interaction.data['name']}` of {message.author.mention}",
                 )
 
         if message.content:
@@ -130,7 +118,7 @@ class StarboardCog(commands.Cog):
                     {
                         "name": "Attachment #%d:" % n,
                         "value": f"[{attachment.filename} ({size})]({message.jump_url})",
-                        "inline": True
+                        "inline": True,
                     }
                 )
                 if attachment.content_type.startswith("image/"):
@@ -176,8 +164,7 @@ class StarboardCog(commands.Cog):
                         await message.remove_reaction(payload.emoji, discord.Object(payload.user_id))
                     if message.channel.permissions_for(message.guild.me).send_messages:
                         await message.channel.send(
-                            f"{message.author.mention}, you cannot star your own messages.",
-                            delete_after=10
+                            f"{message.author.mention}, you cannot star your own messages.", delete_after=10
                         )
                 return
 
@@ -198,7 +185,9 @@ class StarboardCog(commands.Cog):
             if config.star_mode == StarboardMode.PERCENT:
                 star_count = (star_count / message.channel.member_count) / 100
             enough_stars = star_count >= config.minimum_stars
-            existing_message = await StarboardEntry.get_or_none(source_message_id=message.id, source_channel_id=source_channel.id, using_db=conn)
+            existing_message = await StarboardEntry.get_or_none(
+                source_message_id=message.id, source_channel_id=source_channel.id, using_db=conn
+            )
             if existing_message:
                 try:
                     m = await starboard_channel.fetch_message(existing_message.starboard_message_id)
@@ -206,10 +195,7 @@ class StarboardCog(commands.Cog):
                     await existing_message.delete(using_db=conn)
                 else:
                     if enough_stars:
-                        return await m.edit(
-                            embeds=embeds,
-                            allowed_mentions=discord.AllowedMentions.none()
-                        )
+                        return await m.edit(embeds=embeds, allowed_mentions=discord.AllowedMentions.none())
                     else:
                         await m.delete(reason="Not enough stars.")
                         return await existing_message.delete(using_db=conn)
@@ -217,10 +203,7 @@ class StarboardCog(commands.Cog):
                 if not enough_stars:
                     return
                 try:
-                    m = await starboard_channel.send(
-                        embeds=embeds,
-                        allowed_mentions=discord.AllowedMentions.none()
-                    )
+                    m = await starboard_channel.send(embeds=embeds, allowed_mentions=discord.AllowedMentions.none())
                 except discord.HTTPException:
                     return
                 else:
@@ -229,8 +212,44 @@ class StarboardCog(commands.Cog):
                         starboard_message_id=m.id,
                         source_channel_id=source_channel.id,
                         config=config,
-                        using_db=conn
+                        using_db=conn,
                     )
+
+    @commands.Cog.listener("on_raw_reaction_clear")
+    async def on_raw_reaction_clear(self, payload: discord.RawReactionClearEvent):
+        config = await StarboardConfig.get_or_none(guild__id=payload.guild_id)
+        if not config:
+            return
+        existing = await StarboardEntry.get_or_none(
+            source_message_id=payload.message_id, source_channel_id=payload.channel_id
+        )
+        if existing:
+            channel = self.bot.get_channel(config.channel_id)
+            if channel:
+                try:
+                    await (await channel.fetch_message(existing.starboard_message_id)).delete()
+                except discord.HTTPException:
+                    pass
+            await existing.delete()
+
+    @commands.Cog.listener("on_raw_reaction_clear_emoji")
+    async def on_raw_reaction_clear_emoji(self, payload: discord.RawReactionClearEmojiEvent):
+        config = await StarboardConfig.get_or_none(guild__id=payload.guild_id)
+        if not config:
+            return
+        if str(payload.emoji) != config.star_emoji:
+            return
+        existing = await StarboardEntry.get_or_none(
+            source_message_id=payload.message_id, source_channel_id=payload.channel_id
+        )
+        if existing:
+            channel = self.bot.get_channel(config.channel_id)
+            if channel:
+                try:
+                    await (await channel.fetch_message(existing.starboard_message_id)).delete()
+                except discord.HTTPException:
+                    pass
+            await existing.delete()
 
     starboard_group = discord.SlashCommandGroup(name="starboard", description="Manage the starboard settings")
 
@@ -250,13 +269,13 @@ class StarboardCog(commands.Cog):
             # "Mirror edits to starboard: %s" % ("Yes" if config.mirror_edits else "No"),
             # "Mirror deletes to starboard: %s" % ("Yes" if config.mirror_deletes else "No"),
             "Allow bot messages: %s" % ("Yes" if config.allow_bot_messages else "No"),
-            "Star emoji: %s" % config.star_emoji
+            "Star emoji: %s" % config.star_emoji,
         ]
         embed = discord.Embed(
             title="Starboard configuration: %s" % ctx.guild.name,
             colour=discord.Colour.gold(),
             timestamp=discord.utils.utcnow(),
-            description="\n".join(lines)
+            description="\n".join(lines),
         )
         return await ctx.respond(embed=embed)
 
@@ -267,10 +286,10 @@ class StarboardCog(commands.Cog):
         await ctx.defer()
         if not channel.can_send(discord.Embed, discord.File):
             return await ctx.respond(
-                "\N{cross mark} I need `send messages`, `embed links`, and `attach files` permissions in "
+                "\N{CROSS MARK} I need `send messages`, `embed links`, and `attach files` permissions in "
                 f"{channel.mention}. Please change the permissions, and try again.",
                 ephemeral=True,
-                delete_after=60
+                delete_after=60,
             )
         _emoji = discord.PartialEmoji.from_str("\N{WHITE MEDIUM STAR}")
         try:
@@ -282,13 +301,12 @@ class StarboardCog(commands.Cog):
                     colour=discord.Colour.gold(),
                     timestamp=discord.utils.utcnow(),
                     author=discord.EmbedAuthor(name=ctx.user.display_name, icon_url=ctx.user.display_avatar.url),
-                    image="attachment://avatar.png"
+                    image="attachment://avatar.png",
                 ),
                 file=discord.File(
-                    io.BytesIO(await ctx.me.display_avatar.with_format("png").read()),
-                    filename="avatar.png"
+                    io.BytesIO(await ctx.me.display_avatar.with_format("png").read()), filename="avatar.png"
                 ),
-                silent=True
+                silent=True,
             )
         except discord.HTTPException as e:
             return await ctx.respond(
@@ -306,11 +324,7 @@ class StarboardCog(commands.Cog):
         async with in_transaction() as conn:
             gc, _ = await GuildConfig.get_or_create(id=ctx.guild.id)
             config, _ = await StarboardConfig.get_or_create(
-                guild=gc,
-                defaults={
-                    "channel_id": channel.id,
-                    "star_emoji": str(_emoji)
-                }
+                guild=gc, defaults={"channel_id": channel.id, "star_emoji": str(_emoji)}
             )
             config.channel_id = channel.id
             config.star_emoji = str(_emoji)
@@ -321,7 +335,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user.id,
                 namespace="settings.starboard",
                 action="set_channel",
-                description=f"Set the starboard channel to {channel.mention}"
+                description=f"Set the starboard channel to {channel.mention}",
             )
             await GuildAuditLogEntry.create(
                 using_db=conn,
@@ -329,7 +343,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user.id,
                 namespace="settings.starboard",
                 action="set_emoji",
-                description=f"Set the starboard emoji to {_emoji}"
+                description=f"Set the starboard emoji to {_emoji}",
             )
             await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Starboard channel set to {channel.mention}.")
 
@@ -345,16 +359,14 @@ class StarboardCog(commands.Cog):
                 return await ctx.respond(
                     "You need to set up a starboard channel first. Use `/starboard set-channel` to set up a "
                     "starboard channel.",
-                    ephemeral=True
+                    ephemeral=True,
                 )
             m = await ctx.respond(
                 "React to this message with the emoji you want to use as the starboard emoji.",
             )
             try:
                 reaction, _ = await self.bot.wait_for(
-                    "reaction_add",
-                    check=lambda r, u: r.message.id == m.id and u.id == ctx.user.id,
-                    timeout=60.0
+                    "reaction_add", check=lambda r, u: r.message.id == m.id and u.id == ctx.user.id, timeout=60.0
                 )
             except asyncio.TimeoutError:
                 return await ctx.edit(content="You took too long to react.")
@@ -372,7 +384,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user.id,
                 namespace="settings.starboard",
                 action="set_emoji",
-                description=f"Set the starboard emoji to {reaction.emoji}"
+                description=f"Set the starboard emoji to {reaction.emoji}",
             )
             await ctx.edit(content=f"Starboard emoji set to {reaction.emoji}")
             await m.clear_reactions()
