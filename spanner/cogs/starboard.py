@@ -129,7 +129,7 @@ class StarboardCog(commands.Cog):
                 new_fields.append(
                     {
                         "name": "Attachment #%d:" % n,
-                        "value": f"[{attachment.filename} ({size})]({attachment.url})",
+                        "value": f"[{attachment.filename} ({size})]({message.jump_url})",
                         "inline": True
                     }
                 )
@@ -145,38 +145,73 @@ class StarboardCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if payload.user_id == self.bot.user.id:
-            return
+        async with in_transaction() as conn:
+            if payload.user_id == self.bot.user.id or payload.guild_id is None:
+                return
 
-        guild = self.bot.get_guild(payload.guild_id)
-        if not guild:
-            return
-        source_channel: discord.abc.Messageable | None = guild.get_channel(payload.channel_id)
-        if not source_channel:
-            return
-        try:
-            message = await source_channel.fetch_message(payload.message_id)
-        except discord.NotFound:
-            return
-        if message.author.bot:
-            return
+            guild = self.bot.get_guild(payload.guild_id)
+            if not guild:
+                # Not in guild? Return
+                return
+            source_channel: discord.abc.TextChannel | None = guild.get_channel(payload.channel_id)
+            if not source_channel:
+                # No source channel, return
+                return
+            try:
+                message = await source_channel.fetch_message(payload.message_id)
+                if message.author.bot:
+                    # Message was a bot message, do not star
+                    return
+            except discord.NotFound:
+                return
 
-        config = await StarboardConfig.get_or_none(guild__id=payload.guild_id)
-        if not config:
-            return
-        if str(payload.emoji) != config.star_emoji:
-            return
-        starboard_channel: discord.TextChannel | None = guild.get_channel(config.channel_id)
-        if not starboard_channel:
-            return
-        elif not starboard_channel.can_send(discord.Embed, discord.File):
-            return
-        await config.fetch_related("guild")
+            config = await StarboardConfig.get_or_none(guild__id=payload.guild_id, using_db=conn)
+            if not config:
+                return
+            if str(payload.emoji) != config.star_emoji:
+                return
 
-        if message not in self.starboard_cache:
-            self.starboard_cache[message] = await self.count_reactions(message, config.star_emoji)
-        else:
-            self.starboard_cache[message] += 1
+            starboard_channel: discord.TextChannel | None = guild.get_channel(config.channel_id)
+            if not starboard_channel:
+                return
+            elif not starboard_channel.can_send(discord.Embed, discord.File):
+                return
+
+            await config.fetch_related("guild")
+
+            if message not in self.starboard_cache:
+                self.starboard_cache[message] = await self.count_reactions(message, config.star_emoji)
+            else:
+                self.starboard_cache[message] += 1
+
+            embeds, star_count = await self.generate_starboard_embed(message, config)
+            existing_message = await StarboardEntry.get_or_none(source_message_id=message.id, source_channel_id=source_channel.id, using_db=conn)
+            if existing_message:
+                try:
+                    m = await starboard_channel.fetch_message(existing_message.starboard_message_id)
+                except discord.NotFound:
+                    await existing_message.delete(using_db=conn)
+                else:
+                    return await m.edit(
+                        embeds=embeds,
+                        allowed_mentions=discord.AllowedMentions.none()
+                    )
+            else:
+                try:
+                    m = await starboard_channel.send(
+                        embeds=embeds,
+                        allowed_mentions=discord.AllowedMentions.none()
+                    )
+                except discord.HTTPException:
+                    return
+                else:
+                    await StarboardEntry.create(
+                        source_message_id=message.id,
+                        starboard_message_id=m.id,
+                        source_channel_id=source_channel.id,
+                        config=config,
+                        using_db=conn
+                    )
 
     starboard_group = discord.SlashCommandGroup(name="starboard", description="Manage the starboard settings")
 
