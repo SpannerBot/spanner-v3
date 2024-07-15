@@ -120,7 +120,7 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
     if not bot.is_ready():
         await bot.wait_until_ready()
 
-    ratelimits[req.client.host].setdefault({"expires": time.time(), "hits": 0})
+    ratelimits.setdefault(req.client.host, {"expires": time.time(), "hits": 0})
     rc = ratelimits[req.client.host]
     _ignore = ("/healthz", "/docs", "/redoc", "/openapi.json")
     if req.url.path not in _ignore:
