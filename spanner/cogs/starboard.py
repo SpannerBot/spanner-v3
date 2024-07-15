@@ -441,6 +441,31 @@ class StarboardCog(commands.Cog):
             )
         )
 
+    @starboard_group.command(name="set-threshold")
+    @discord.default_permissions(manage_channels=True, manage_messages=True)
+    @commands.bot_has_permissions(add_reactions=True, manage_messages=True)
+    async def set_threshold(
+            self, ctx: discord.ApplicationContext,
+            value: int,
+            mode: StarboardMode = StarboardMode.COUNT
+    ):
+        """Sets the minimum number/percent of stars required to star a message."""
+        async with in_transaction() as conn:
+            await ctx.defer()
+            config = await StarboardConfig.get_or_none(guild__id=ctx.guild.id, using_db=conn)
+            if not config:
+                return await ctx.respond(
+                    "You need to set up a starboard channel first. Use `/starboard set-channel` to set up a "
+                    "starboard channel.",
+                    ephemeral=True,
+                )
+            config.star_mode = mode
+            config.minimum_stars = value
+            await config.save(using_db=conn)
+        await ctx.respond(
+            f"\N{white heavy check mark} Starboard threshold set to {value} {mode.name.lower()}."
+        )
+
 
 def setup(bot):
     bot.add_cog(StarboardCog(bot))

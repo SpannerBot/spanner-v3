@@ -188,7 +188,8 @@ class SettingsCog(commands.Cog):
         cfg = load_config()
         base_url = cfg["web"].get("base_url", "http://%s:%s" % (cfg["web"]["host"], cfg["web"]["port"]))
         await ctx.respond(
-            f"Visit {hyperlink('%s/guilds/%s/audit-logs' % (base_url, ctx.guild.id))} to see this server's audit log.",
+            f"Visit {hyperlink('%s/guilds/%s/api/audit-logs' % (base_url, ctx.guild.id))} to see this server's "
+            f"audit log.",
             ephemeral=True,
         )
 

@@ -112,13 +112,17 @@ async def logged_in_user(
         raise reauth
 
 
+api = fastapi.APIRouter(prefix="/api")
+
+
 @app.middleware("http")
 async def is_ready_middleware(req: Request, call_next: Callable[[Request], Awaitable[Response]]):
-    if req.url.path == "/healthz":
+    if not req.url.path.startswith("/api"):
         res = await call_next(req)
         res.headers["X-Spanner-Version"] = __sha__
         # Just pass it through, skip processing
         return res
+
     n = time.time()
     if not bot.is_ready():
         await bot.wait_until_ready()
@@ -180,7 +184,7 @@ def health_check():
     return data
 
 
-@app.get("/oauth/callback/discord")
+@api.get("/oauth/callback/discord")
 async def discord_authorise(req: Request, code: str = None, state: str = None, from_url: str = None):
     if not bot.is_ready() or not CLIENT_SECRET:
         raise HTTPException(503, "Not ready.", {"Retry-After": "30"})
@@ -199,7 +203,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         r = RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=bot.user.id,
-                redirect_uri=str(req.base_url) + "oauth/callback/discord",
+                redirect_uri=str(req.base_url) + "api/oauth/callback/discord",
                 state=state_key,
             )
             + "&prompt=none"
@@ -214,7 +218,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
     data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": str(req.base_url) + "oauth/callback/discord",
+        "redirect_uri": str(req.base_url) + "api/oauth/callback/discord",
         "scope": "identify guilds",
     }
     async with aiohttp.ClientSession() as session:
@@ -266,7 +270,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             return response
 
 
-@app.get("/guilds/{guild_id}/audit-logs")
+@api.get("/guilds/{guild_id}/audit-logs")
 async def get_audit_logs(req: Request, guild_id: int, user: Annotated[DiscordOauthUser, Depends(logged_in_user)]):
     guild = bot.get_guild(guild_id)
     if not guild:
@@ -293,3 +297,11 @@ async def get_audit_logs(req: Request, guild_id: int, user: Annotated[DiscordOau
     return templates.TemplateResponse(
         "guild-audit-log.html", {"request": req, "guild": bot.get_guild(guild_id), "events": audit_log}
     )
+
+
+app.include_router(api)
+if os.path.exists("./docs"):
+    app.mount("/", StaticFiles(directory="./assets/docs", html=True), name="docs")
+else:
+    pwd = os.getcwd()
+    log.warning(f"Docs have not been built - run `mkdocs build -d {pwd}/assets/docs` to generate them.")

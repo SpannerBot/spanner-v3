@@ -315,3 +315,4 @@ spanner/config.toml
 *.db-wal
 *.db-shm
 spanner/share/version.py
+spanner/docs

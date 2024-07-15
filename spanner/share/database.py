@@ -168,7 +168,9 @@ class DiscordOauthUser(Model):
 
 class StarboardMode(enum.IntEnum):
     COUNT = 0
+    """Up to N stars are required to be on the starboard."""
     PERCENT = 1
+    """Up to N% of the current channel's members must've starred the message."""
 
 
 class StarboardConfig(Model):

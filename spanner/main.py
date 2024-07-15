@@ -43,6 +43,7 @@ logging.basicConfig(
     datefmt=CONFIG_LOGGING.get("datefmt", "%Y-%m-%d %H:%M:%S"),
     handlers=[RichHandler(logging.INFO, rich_tracebacks=True, markup=True, show_time=False, show_path=False)],
 )
+logging.getLogger("discord.gateway").setLevel(logging.WARNING)
 if "file" in CONFIG_LOGGING:
     handler = logging.FileHandler(
         CONFIG_LOGGING["file"]["name"],

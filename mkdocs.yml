@@ -1,0 +1,14 @@
+site_name: Spanner v3
+theme: readthedocs
+repo_url: https://github.com/nexy7574/spanner-v3
+edit_uri: edit/dev/docs/
+#site_url: http://localhost:1237/
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+#  - pymdownx.emoji:
+#      emoji_index: !!python/name:material.extensions.emoji.twemoji
+#      emoji_generator: !!python/name:material.extensions.emoji.to_svg
