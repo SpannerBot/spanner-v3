@@ -60,7 +60,7 @@ class ChannelInfoCog(commands.Cog):
             f"**Created:** {discord.utils.format_dt(channel.created_at, 'R')}",
             f"**Position:** {channel.position:,}",
         ]
-        if channel.permissions_for(channel.guild.me).manage_channels:
+        if channel.guild.me and channel.permissions_for(channel.guild.me).manage_channels:
             try:
                 basic_info.append(f"**Invites:** {len(await channel.invites()):,}")
             except discord.HTTPException:
@@ -70,7 +70,7 @@ class ChannelInfoCog(commands.Cog):
             "Overview": discord.Embed(
                 title=f"Channel Info: {channel.name}",
                 description="\n".join(basic_info),
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
         }
 
@@ -93,7 +93,7 @@ class ChannelInfoCog(commands.Cog):
             text_embed = discord.Embed(
                 title=f"Text Channel Info: {channel.name}",
                 description="\n".join(text_info),
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
             if channel.topic:
                 text_embed.add_field(name="Topic", value=channel.topic, inline=False)
@@ -125,7 +125,7 @@ class ChannelInfoCog(commands.Cog):
             forum_embed = discord.Embed(
                 title=f"Forum Channel Info: {channel.name}",
                 description="\n".join(forum_info),
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
             if channel.topic:
                 forum_embed.add_field(name="Guidelines", value=channel.topic, inline=False)
@@ -133,7 +133,7 @@ class ChannelInfoCog(commands.Cog):
 
             tags_embed = discord.Embed(
                 title=f"Available tags for {channel.name}:",
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
             for tag in channel.available_tags:
                 tags_embed.add_field(
@@ -159,7 +159,7 @@ class ChannelInfoCog(commands.Cog):
             voice_embed = discord.Embed(
                 title=f"Voice Channel Info: {channel.name}",
                 description="\n".join(voice_info),
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
             results["Voice-specific info"] = voice_embed
 
@@ -174,7 +174,7 @@ class ChannelInfoCog(commands.Cog):
                 stage_embed = discord.Embed(
                     title=f"Stage Channel Info: {channel.name}",
                     description="\n".join(stage_info),
-                    colour=channel.guild.me.colour or discord.Colour.blurple(),
+                    colour=discord.Colour.blurple(),
                 )
                 results["Stage-specific info"] = stage_embed
                 if channel.instance:
@@ -185,7 +185,7 @@ class ChannelInfoCog(commands.Cog):
                     event_embed = discord.Embed(
                         title=f"Stage Instance Info: {channel.name}",
                         description="\n".join(event_info),
-                        colour=channel.guild.me.colour or discord.Colour.blurple(),
+                        colour=discord.Colour.blurple(),
                     )
                     if channel.instance.scheduled_event:
                         start = discord.utils.format_dt(channel.instance.scheduled_event.start_time, "R")
@@ -220,7 +220,7 @@ class ChannelInfoCog(commands.Cog):
             category_embed = discord.Embed(
                 title=f"Category Channel Info: {channel.name}",
                 description="\n".join(category_info),
-                colour=channel.guild.me.colour or discord.Colour.blurple(),
+                colour=discord.Colour.blurple(),
             )
             results["Category-specific info"] = category_embed
         return results

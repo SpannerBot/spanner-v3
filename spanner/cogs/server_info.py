@@ -18,7 +18,7 @@ class ServerInfoCog(commands.Cog):
     @staticmethod
     async def get_server_info(guild: discord.Guild):
         vanity_url = None
-        if guild.me.guild_permissions.manage_guild:
+        if guild.me and guild.me.guild_permissions.manage_guild:
             auto_mod_rules = await guild.fetch_auto_moderation_rules()
             guild_integration_count = await guild.integrations()
             invites = await guild.invites()
@@ -29,7 +29,7 @@ class ServerInfoCog(commands.Cog):
         else:
             guild_integration_count = invites = auto_mod_rules = []
 
-        if guild.me.guild_permissions.ban_members:
+        if guild.me and guild.me.guild_permissions.ban_members:
             bans = await guild.bans().flatten()
             ban_count = len(bans)
         else:
@@ -58,13 +58,13 @@ class ServerInfoCog(commands.Cog):
             f"**Max Channels:** 500 ({len(guild.channels)} used)",
             f"**Max Categories:** 50 ({len(guild.categories)} used)",
             f"**Max Integrations:** 50 ({len(guild_integration_count)} used)"
-            if guild.me.guild_permissions.manage_guild
+            if guild.me and guild.me.guild_permissions.manage_guild
             else "**Max Integrations:** 50 (*missing manage server permission*)",
             f"**Max Invites:** 1,000 ({len(invites)} used)"
-            if guild.me.guild_permissions.manage_guild
+            if guild.me and guild.me.guild_permissions.manage_guild
             else "**Max Invites:** 1,000 (*missing manage server permission*)",
             f"**Max Auto Mod Rules:** 10 ({len(auto_mod_rules)} used)"
-            if guild.me.guild_permissions.manage_guild
+            if guild.me and guild.me.guild_permissions.manage_guild
             else "**Max Auto Mod Rules:** 10 (*missing manage server permission*)",
         ]
         invites_info = [
@@ -81,7 +81,7 @@ class ServerInfoCog(commands.Cog):
             f"**System Channel:** {guild.system_channel or 'None'}",
             f"**Rules Channel:** {guild.rules_channel or 'None'}",
             f"**Auto Mod Rules:** {len(auto_mod_rules):,} ({', '.join([repr(x.name) for x in auto_mod_rules])})"
-            if guild.me.guild_permissions.manage_guild
+            if guild.me and guild.me.guild_permissions.manage_guild
             else "**Auto Mod Rules:** *missing manage server permission*",
             f"**Bans:** {ban_count:,}" + "+" if ban_count and ban_count >= 1000 else "",
         ]

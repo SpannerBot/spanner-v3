@@ -39,11 +39,12 @@ class InviteInfo(commands.Cog):
         approx_member_count = invite.approximate_member_count
         approx_presence_count = invite.approximate_presence_count
         expires_at = invite.expires_at
+        me = invite.guild.me if invite.guild else None
 
         if isinstance(invite.channel, discord.abc.GuildChannel):
-            if invite.channel.permissions_for(invite.channel.guild.me).manage_guild:
+            if me and invite.channel.permissions_for(invite.channel.guild.me).manage_guild:
                 invite: discord.Invite = discord.utils.get(await invite.channel.guild.invites(), id=invite.id) or invite
-            elif invite.channel.guild.me.guild_permissions.manage_guild:
+            elif me and invite.channel.guild.me.guild_permissions.manage_guild:
                 invite: discord.Invite = discord.utils.get(await invite.channel.guild.invites(), id=invite.id) or invite
 
         invite_lines = [
