@@ -73,10 +73,10 @@ class ServerInfoCog(commands.Cog):
             f"**Vanity URL:** {vanity_url}" if vanity_url else None,
         ]
         moderation_info = [
-            f"**Verification Level:** {verification_levels[guild.verification_level]}",
-            f"**Content Filter:** {content_filter_names[guild.explicit_content_filter]} "
-            f"({content_filters[guild.explicit_content_filter]})",
-            f"**NSFW Level:** {nsfw_levels[guild.nsfw_level]}",
+            f"**Verification Level:** {verification_levels.get(guild.verification_level, '?')}",
+            f"**Content Filter:** {content_filter_names.get(guild.explicit_content_filter, '?')} "
+            f"({content_filters.get(guild.explicit_content_filter, '?')})",
+            f"**NSFW Level:** {nsfw_levels.get(guild.nsfw_level, '?')}",
             f"**Requires 2FA for moderation actions?** {get_bool_emoji(guild.mfa_level)}",
             f"**System Channel:** {guild.system_channel or 'None'}",
             f"**Rules Channel:** {guild.rules_channel or 'None'}",
