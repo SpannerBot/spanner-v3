@@ -143,8 +143,9 @@ class StarboardCog(commands.Cog):
 
         return [embed, *filter(lambda e: e.type == "rich", message.embeds)], star_count
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    @commands.Cog.listener("on_raw_reaction_add")
+    @commands.Cog.listener("on_raw_reaction_remove")
+    async def reaction_handler(self, payload: discord.RawReactionActionEvent):
         async with in_transaction() as conn:
             if payload.user_id == self.bot.user.id or payload.guild_id is None:
                 return
@@ -159,9 +160,6 @@ class StarboardCog(commands.Cog):
                 return
             try:
                 message = await source_channel.fetch_message(payload.message_id)
-                if message.author.bot:
-                    # Message was a bot message, do not star
-                    return
             except discord.NotFound:
                 return
 
@@ -169,6 +167,18 @@ class StarboardCog(commands.Cog):
             if not config:
                 return
             if str(payload.emoji) != config.star_emoji:
+                return
+            if config.allow_bot_messages is False and message.author.bot is True:
+                return
+            if config.allow_self_star is False and message.author.id == payload.user_id:
+                if payload.event_type == "REACTION_ADD":
+                    if message.channel.permissions_for(message.guild.me).manage_messages:
+                        await message.remove_reaction(payload.emoji, discord.Object(payload.user_id))
+                    if message.channel.permissions_for(message.guild.me).send_messages:
+                        await message.channel.send(
+                            f"{message.author.mention}, you cannot star your own messages.",
+                            delete_after=10
+                        )
                 return
 
             starboard_channel: discord.TextChannel | None = guild.get_channel(config.channel_id)
@@ -185,6 +195,9 @@ class StarboardCog(commands.Cog):
                 self.starboard_cache[message] += 1
 
             embeds, star_count = await self.generate_starboard_embed(message, config)
+            if config.star_mode == StarboardMode.PERCENT:
+                star_count = (star_count / message.channel.member_count) / 100
+            enough_stars = star_count >= config.minimum_stars
             existing_message = await StarboardEntry.get_or_none(source_message_id=message.id, source_channel_id=source_channel.id, using_db=conn)
             if existing_message:
                 try:
@@ -192,11 +205,17 @@ class StarboardCog(commands.Cog):
                 except discord.NotFound:
                     await existing_message.delete(using_db=conn)
                 else:
-                    return await m.edit(
-                        embeds=embeds,
-                        allowed_mentions=discord.AllowedMentions.none()
-                    )
+                    if enough_stars:
+                        return await m.edit(
+                            embeds=embeds,
+                            allowed_mentions=discord.AllowedMentions.none()
+                        )
+                    else:
+                        await m.delete(reason="Not enough stars.")
+                        return await existing_message.delete(using_db=conn)
             else:
+                if not enough_stars:
+                    return
                 try:
                     m = await starboard_channel.send(
                         embeds=embeds,
@@ -214,6 +233,32 @@ class StarboardCog(commands.Cog):
                     )
 
     starboard_group = discord.SlashCommandGroup(name="starboard", description="Manage the starboard settings")
+
+    @starboard_group.command(name="info")
+    async def starboard_info(self, ctx: discord.ApplicationContext):
+        """Displays information about the current server's starboard config"""
+        await ctx.defer()
+        config = await StarboardConfig.get_or_none(guild__id=ctx.guild.id)
+        if not config:
+            return await ctx.respond("This server does not have a starboard set up.")
+
+        lines = [
+            "Channel: <#%d>" % config.channel_id,
+            "Minimum stars: %d" % config.minimum_stars,
+            "Star mode: %s" % config.star_mode.name.lower(),
+            "Allow self-star: %s" % ("Yes" if config.allow_self_star else "No"),
+            # "Mirror edits to starboard: %s" % ("Yes" if config.mirror_edits else "No"),
+            # "Mirror deletes to starboard: %s" % ("Yes" if config.mirror_deletes else "No"),
+            "Allow bot messages: %s" % ("Yes" if config.allow_bot_messages else "No"),
+            "Star emoji: %s" % config.star_emoji
+        ]
+        embed = discord.Embed(
+            title="Starboard configuration: %s" % ctx.guild.name,
+            colour=discord.Colour.gold(),
+            timestamp=discord.utils.utcnow(),
+            description="\n".join(lines)
+        )
+        return await ctx.respond(embed=embed)
 
     @starboard_group.command(name="set-channel")
     @discord.default_permissions(manage_channels=True, manage_messages=True)
