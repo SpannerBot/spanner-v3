@@ -86,7 +86,11 @@ if not CLIENT_SECRET:
     )
 
 
-async def logged_in_user(req: Request, token: str = Cookie(None), x_session: str = Header(None, alias="X-Session")):
+async def logged_in_user(
+        req: Request,
+        token: str = Cookie(None, alias="_token"),
+        x_session: str = Header(None, alias="X-Session")
+):
     url = req.url_for("discord_authorise").include_query_params(from_url=req.url.path)
     reauth = HTTPException(status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": str(url)})
     token = token or x_session
