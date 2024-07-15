@@ -1,6 +1,7 @@
 import asyncio
 import io
 import textwrap
+import typing
 
 import discord
 from discord.ext import commands
@@ -388,6 +389,57 @@ class StarboardCog(commands.Cog):
             )
             await ctx.edit(content=f"Starboard emoji set to {reaction.emoji}")
             await m.clear_reactions()
+
+    @starboard_group.command(name="bot-messages")
+    @discord.default_permissions(manage_channels=True, manage_messages=True)
+    @commands.bot_has_permissions(add_reactions=True, manage_messages=True)
+    async def set_bot_messages(
+        self, ctx: discord.ApplicationContext, enable: typing.Annotated[str, discord.Option(str, choices=["Yes", "No"])]
+    ):
+        """Toggles whether bot messages can be starred."""
+        await ctx.defer()
+        async with in_transaction() as conn:
+            await ctx.defer()
+            config = await StarboardConfig.get_or_none(guild__id=ctx.guild.id, using_db=conn)
+            if not config:
+                return await ctx.respond(
+                    "You need to set up a starboard channel first. Use `/starboard set-channel` to set up a "
+                    "starboard channel.",
+                    ephemeral=True,
+                )
+            config.allow_bot_messages = enable == "Yes"
+            await config.save(using_db=conn)
+        await ctx.respond(
+            "\N{white heavy check mark} Bot messages can be %sstarred." % (
+                "no longer be " if enable == "No" else ""
+            )
+        )
+
+    @starboard_group.command(name="self-star")
+    @discord.default_permissions(manage_channels=True, manage_messages=True)
+    @commands.bot_has_permissions(add_reactions=True, manage_messages=True)
+    async def set_self_star(
+            self, ctx: discord.ApplicationContext,
+            enable: typing.Annotated[str, discord.Option(str, choices=["Yes", "No"])]
+    ):
+        """Toggles whether users can star their own messages."""
+        await ctx.defer()
+        async with in_transaction() as conn:
+            await ctx.defer()
+            config = await StarboardConfig.get_or_none(guild__id=ctx.guild.id, using_db=conn)
+            if not config:
+                return await ctx.respond(
+                    "You need to set up a starboard channel first. Use `/starboard set-channel` to set up a "
+                    "starboard channel.",
+                    ephemeral=True,
+                )
+            config.allow_self_star = enable == "Yes"
+            await config.save(using_db=conn)
+        await ctx.respond(
+            "\N{white heavy check mark} Users can now %sstar their own messages." % (
+                "no longer " if enable == "No" else ""
+            )
+        )
 
 
 def setup(bot):
