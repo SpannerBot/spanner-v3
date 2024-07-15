@@ -187,12 +187,14 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
 
 @bot.before_invoke
 async def is_chunked(ctx: discord.ApplicationContext):
+    if not ctx.guild:
+        return
     if ctx.guild.chunked is False and bot.intents.members:
         log.warning("Guild %r is not chunked. Chunking now.", ctx.guild.name)
         await ctx.guild.chunk()
 
 
-@bot.bridge_command()
+@bot.bridge_command(integration_types={discord.IntegrationType.user_install, discord.IntegrationType.guild_install})
 async def ping(ctx: bridge.Context):
     """Checks the latency between the bot and discord."""
     t = f"WebSocket: `{round(ctx.bot.latency * 1000)}ms`\nHTTP: `pinging`"
