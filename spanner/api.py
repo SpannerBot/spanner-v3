@@ -201,7 +201,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
             )
             + "&prompt=none"
         )
-        r.set_cookie("_state", state_key, max_age=300, httponly=True, samesite="strict")
+        r.set_cookie("_state", state_key, max_age=300, httponly=True, samesite="lax")
         return r
     elif state not in authorise_sessions:
         raise HTTPException(403, "Invalid or expired request.")
