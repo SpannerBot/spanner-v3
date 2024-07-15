@@ -49,7 +49,7 @@ class NicknameChangeEvents(commands.Cog):
             return entry
 
     async def moderate_name(self, after: discord.Member):
-        if after >= after.guild.me:
+        if after.top_role >= after.guild.me.top_role:
             return False
         openai_token = os.getenv("OPENAI_API_KEY", load_config()["spanner"].get("openai_token"))
         if not openai_token:

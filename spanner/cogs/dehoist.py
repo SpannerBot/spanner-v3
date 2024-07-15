@@ -4,6 +4,9 @@ import discord
 from discord.ext import commands
 
 
+CHAR = "\U000017b5"
+
+
 class Dehoist(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -13,16 +16,12 @@ class Dehoist(commands.Cog):
     @commands.bot_has_permissions(manage_nicknames=True)
     async def do_dehoist(self, ctx: discord.ApplicationContext, member: discord.Member):
         await ctx.defer(ephemeral=True)
-        x = re.sub(
-            r"^\W+",
-            f"\U000017b5{member.display_name}",
-            member.display_name,
-        )
-        if x != member.display_name:
-            await member.edit(nick=x, reason=f"Dehoisted by @{member.display_name}")
-            await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)
+        if member.display_name.startswith(CHAR):
+            await ctx.respond(f"{member.mention} is already de-hoisted.", ephemeral=True)
         else:
-            await ctx.respond(f"{member.mention} is not hoisted.", ephemeral=True)
+            x = f"{CHAR}{member.display_name}"[:32]
+            await member.edit(nick=x, reason=f"Dehoisted by @{ctx.user.global_name}")
+            await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)
 
 
 def setup(bot):

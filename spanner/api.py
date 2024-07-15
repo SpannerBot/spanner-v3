@@ -128,8 +128,8 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
     _ignore = ("/healthz", "/docs", "/redoc", "/openapi.json")
     if req.url.path not in _ignore:
         if rc["hits"] > 70:
-            if rc["expires"] < time.time():
-                rc["expires"] = time.time() + 60
+            if rc["expires"] < n:
+                rc["expires"] = n + 60
                 rc["hits"] = 1
             else:
                 return JSONResponse(

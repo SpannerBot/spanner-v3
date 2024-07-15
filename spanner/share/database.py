@@ -125,7 +125,6 @@ class SelfRoleMenu(Model):
     message = fields.BigIntField()
     mode = fields.SmallIntField()
     roles = fields.JSONField(default=[])
-    # minimum = fields.SmallIntField(default=0)
     maximum = fields.SmallIntField(default=25)
 
     def __repr__(self):
