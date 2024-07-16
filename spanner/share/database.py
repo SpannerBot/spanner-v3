@@ -136,27 +136,6 @@ class SelfRoleMenu(Model):
 SelfRoleMenuPydantic = pydantic_model_creator(SelfRoleMenu, name="SelfRoleMenu")
 
 
-class PremiumKey(Model):
-    id = fields.UUIDField(pk=True)
-    key = fields.CharField(min_length=8, max_length=512, unique=True, default=secrets.token_hex)
-    created_at = fields.DatetimeField(auto_now=True)
-    redeemed_at = fields.DatetimeField(null=True)
-    redeemer = fields.BigIntField(null=True)
-
-
-PremiumKeyPydantic = pydantic_model_creator(PremiumKey, name="PremiumKey")
-
-
-class PremiumGuild(Model):
-    id = fields.UUIDField(pk=True)
-    guild_id = fields.BigIntField()
-    premium_since = fields.FloatField()
-    premium_until = fields.FloatField(null=True)
-
-
-PremiumGuildPydantic = pydantic_model_creator(PremiumGuild, name="PremiumGuild")
-
-
 class DiscordOauthUser(Model):
     id = fields.BigIntField(pk=True, generated=False)
     access_token = fields.CharField(max_length=255)
@@ -201,3 +180,32 @@ class StarboardEntry(Model):
 
 
 StarboardEntryPydantic = pydantic_model_creator(StarboardEntry, name="StarboardEntry")
+
+
+class EntitlementType(enum.IntEnum):
+    PURCHASE = 1
+    """Entitlement was purchased by user"""
+    DEVELOPER_GIFT = 3
+    """Entitlement was gifted by developer"""
+    TEST_MODE_PURCHASE = 4
+    """Entitlement was purchased by a dev in application test mode"""
+    FREE_PURCHASE = 5
+    """Entitlement was granted when the SKU was free"""
+    USER_GIFT = 6
+    """Entitlement was gifted by another user"""
+    APPLICATION_SUBSCRIPTION = 8
+    """Entitlement was purchased as an app subscription"""
+
+
+class Premium(Model):
+    uuid = fields.UUIDField(pk=True)
+    entitlement_id = fields.BigIntField()
+    sku_id = fields.BigIntField()
+    user_id = fields.BigIntField(null=True)
+    guild_id = fields.BigIntField(null=True)
+    consumed = fields.BooleanField(default=False)
+    starts_at = fields.DatetimeField(null=True)
+    expires_at = fields.DatetimeField(null=True)
+
+    key = fields.TextField(default=secrets.token_urlsafe)
+    invalid = fields.BooleanField(default=False)
