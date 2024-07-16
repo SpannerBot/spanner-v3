@@ -57,10 +57,11 @@ if not CLIENT_SECRET:
         " Authorised endpoints will be unavailable."
     )
 
-    class BotFastAPI(FastAPI):
-        server: uvicorn.Server | None = None
 
-        def __init__(self, *args, **kwargs):
-            _b = kwargs.pop("bot", None)
-            super().__init__(*args, **kwargs)
-            self.bot = _b
+class BotFastAPI(FastAPI):
+    server: uvicorn.Server | None = None
+
+    def __init__(self, *args, **kwargs):
+        _b = kwargs.pop("bot", None)
+        super().__init__(*args, **kwargs)
+        self.bot = _b
