@@ -6,7 +6,7 @@ import httpx
 from discord.ext import bridge, commands, pages
 
 from spanner.share.config import load_config
-from spanner.share.database import GuildLogFeatures
+from spanner.share.database import GuildConfig, GuildLogFeatures
 
 
 class MetaCog(commands.Cog):
@@ -61,12 +61,18 @@ class MetaCog(commands.Cog):
     async def version(self, ctx: commands.Context):
         """Gets the spanner version."""
         from spanner.share.version import __build_time__, __sha__, __sha_short__
+        from discord import __version__ as discord_version
+        from fastapi import __version__ as fastapi_version
 
         base_url = "https://github.com/nexy7574/spanner-v3/tree/{}"
         url = base_url.format(__sha__)
+        pycord_url = "https://pypi.org/project/py-cord/%s/" % discord_version
+        fastapi_url = "https://pypi.org/project/fastapi/%s/" % fastapi_version
         ts = discord.utils.format_dt(__build_time__, "R")
         await ctx.reply(
-            f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}. Run `s!changelog` for more info.",
+            f"Running [Spanner v3, commit `{__sha_short__}`](<{url}>) built {ts}, using "
+            f"[pycord {discord_version}]({pycord_url}) and [FastAPI {fastapi_version}]({fastapi_url}). "
+            f"Run `s!changelog` for more info.",
         )
 
     @commands.command()
@@ -123,13 +129,17 @@ class MetaCog(commands.Cog):
         for n, commit in enumerate(changes, 1):
             commit_no = len(changes) - n + 1
             paginator.add_line(
-                f"{commit_no}. [{commit['message']} ({commit['sha'][:7]})](<{commit['url']}>) by "
+                f"* [{commit['message']} ({commit['sha'][:7]})](<{commit['url']}>) by "
                 f"[{commit['author']['name']}](<{commit['author']['url']}>)"
                 f"{' (current)' if commit['current'] else ''} - {discord.utils.format_dt(commit['created'], 'R')}"
             )
         menu = pages.Paginator(paginator.pages)
         await menu.edit(msg, suppress=True)
         menu.user = ctx.author
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild):
+        await GuildConfig.filter(guild_id=guild.id).delete()
 
 
 def setup(bot: commands.Bot):
