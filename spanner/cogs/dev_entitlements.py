@@ -17,7 +17,7 @@ class DevEntitlementCog(commands.Cog):
             self,
             ctx: commands.Context,
             user: discord.User | None = None,
-            sku_ids: commands.Greedy[int] | None = None,
+            sku_ids: commands.Greedy[int] = None,
             guild_id: int | None = None,
             exclude_ended: bool | None = False
     ):
