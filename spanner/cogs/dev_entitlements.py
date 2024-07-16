@@ -162,6 +162,7 @@ class DevEntitlementCog(commands.Cog):
     @commands.group(name="free-trial", invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
+    @commands.max_concurrency(1, per=commands.BucketType.guild, wait=True)
     async def free_trial(self, ctx: commands.Context):
         """Activates a free trial of the premium service."""
         already_entitled = await entitled_to_premium(ctx.guild, allow_trial=False)
@@ -193,7 +194,7 @@ class DevEntitlementCog(commands.Cog):
             ).ask(ctx, just_result=False)
             if confirm is False:
                 return await msg.edit(content="\N{cross mark} Will not activate free trial.")
-            await msg.edit("<a:loading:923665831345418241> Activating free trial...")
+            await msg.edit("<a:loading:923665831345418241> Activating free trial...", view=None)
             try:
                 trial = await PremiumTrial.create(
                     user_id=ctx.author.id,
