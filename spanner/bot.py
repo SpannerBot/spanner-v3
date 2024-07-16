@@ -2,6 +2,9 @@ import asyncio
 import signal
 import sys
 
+from tortoise.transactions import in_transaction
+
+
 sys.path.extend([".", ".."])
 
 import logging

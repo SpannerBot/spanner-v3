@@ -1,7 +1,10 @@
+import datetime
 import enum
 import secrets
 import typing
+from typing import Optional
 
+import discord
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.models import Model
@@ -197,15 +200,16 @@ class EntitlementType(enum.IntEnum):
     """Entitlement was purchased as an app subscription"""
 
 
-class Premium(Model):
-    uuid = fields.UUIDField(pk=True)
-    entitlement_id = fields.BigIntField()
-    sku_id = fields.BigIntField()
-    user_id = fields.BigIntField(null=True)
-    guild_id = fields.BigIntField(null=True)
-    consumed = fields.BooleanField(default=False)
-    starts_at = fields.DatetimeField(null=True)
-    expires_at = fields.DatetimeField(null=True)
+class PremiumTrial(Model):
+    id = fields.UUIDField(pk=True)
+    user_id = fields.BigIntField()
+    guild_id = fields.BigIntField(unique=True, index=True)
+    start = fields.DatetimeField()
+    end = fields.DatetimeField()
 
-    key = fields.TextField(default=secrets.token_urlsafe)
-    invalid = fields.BooleanField(default=False)
+    @property
+    def is_expired(self) -> bool:
+        return discord.utils.utcnow() >= self.end
+
+    async def delete(self, *args) -> None:
+        raise RuntimeError("PremiumTrial objects cannot be deleted.")

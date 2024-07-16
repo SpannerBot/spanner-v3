@@ -23,5 +23,6 @@ def load_config():
     config.setdefault("web", {"host": "127.0.0.1", "port": 1237, "base_url": "http://localhost:1237"})
     config.setdefault("database", {"url": "sqlite://./spanner.db"})
     config["cogs"].setdefault("meta", {"support_guild_id": None})
+    config.setdefault("skus", {"otk_id": None, "subscription_id": None})
 
     return config

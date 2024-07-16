@@ -26,6 +26,7 @@ __all__ = [
     "get_log_channel",
     "format_html",
     "format_template",
+    "entitled_to_premium",
 ]
 log = logging.getLogger(__name__)
 
@@ -187,3 +188,57 @@ def format_template(template: str, **kwargs) -> str:
         template = p.read_text()
     kwargs.setdefault("css", _get_css(True))
     return Template(template).render(**kwargs)
+
+
+async def entitled_to_premium(
+        interaction: discord.Interaction | discord.Guild,
+        *,
+        allow_trial: bool = True,
+) -> bool:
+    """
+    Checks if the current interaction is entitled to premium.
+
+    :param interaction: The interaction. If a guild, checks for entitlements on the guild.
+    :param allow_trial: Whether to allow premium trials
+    :returns: bool - Whether the interaction is entitled to premium
+    """
+    def iter_(ens: list[discord.Entitlement], g: discord.Guild | None):
+        for e in ens:
+            if e.deleted:
+                continue
+            if e.ends_at and e.ends_at < discord.utils.utcnow():
+                continue
+            if g and g.id == e.guild_id:
+                return True
+        return False
+
+    if isinstance(interaction, discord.Interaction):
+        guild = interaction.guild
+        if iter_(interaction.entitlements, guild):
+            return True
+    elif isinstance(interaction, discord.Guild):
+        guild = interaction
+        # noinspection PyProtectedMember
+        entitlements = await guild._state.http.list_entitlements(
+            guild._state.user.id,
+            exclude_ended=True,
+            guild_id=guild.id
+        )
+        # noinspection PyTypeChecker
+        if iter_(entitlements, guild):
+            return True
+    else:
+        raise TypeError(f"Expected discord.Interaction or discord.Guild, got {type(interaction)}")
+
+    if not allow_trial:
+        return False
+
+    if not guild:
+        raise ValueError("Guild is required for this check.")
+
+    from spanner.share.database import PremiumTrial
+
+    trial = await PremiumTrial.get_or_none(guild_id=guild.id)
+    if trial and trial.end and trial.end > discord.utils.utcnow():
+        return True
+    return False
