@@ -35,7 +35,7 @@ The Service is provided "as is" and "as available" without any warranties of any
 ## Modifications to the Terms
 
 We reserve the right to modify these Terms at any time, to which you will automatically agree to under
-[\[Acceptance of terms\]](#Usage-agreement). We may or may not notify you of these changes.
+[\[Acceptance of terms\]](#usage-agreement). We may or may not notify you of these changes.
 You can see a history of changes on
 [GitHub](https://github.com/nexy7574/spanner-v3/commits/dev/docs/policies/terms%20of%20service.md).
 
