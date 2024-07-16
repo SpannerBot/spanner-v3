@@ -213,7 +213,7 @@ class ChannelInfoCog(commands.Cog):
             category_info = [
                 f"**Channels:** {len(channel.channels):,}",
                 f"**Text Channels:** {len(channel.text_channels):,}",
-                f"**Forum Channels** {len(channel.forum_channels):,}"
+                f"**Forum Channels** {len(channel.forum_channels):,}",
                 f"**Voice Channels:** {len(channel.voice_channels):,}",
                 f"**Stage Channels:** {len(channel.stage_channels):,}",
             ]
