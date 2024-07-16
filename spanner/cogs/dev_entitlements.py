@@ -171,7 +171,7 @@ class DevEntitlementCog(commands.Cog):
                 view=None
             )
         now = discord.utils.utcnow()
-
+        view = self.get_premium_view(ctx)
 
         if (trial := await PremiumTrial.get_or_none(guild_id=ctx.guild.id)) is not None:
             if trial.is_expired:
