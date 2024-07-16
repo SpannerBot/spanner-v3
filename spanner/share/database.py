@@ -10,7 +10,6 @@ from tortoise.models import Model
 class GuildConfig(Model):
     id = fields.BigIntField(pk=True, generated=False)
     log_channel = fields.BigIntField(default=None, null=True)
-    membership_log_channel = fields.BigIntField(default=None, null=True)
 
     def __repr__(self):
         return "GuildConfig(id={0.id!r}, log_channel={0.log_channel!r})".format(self)
@@ -188,6 +187,9 @@ class StarboardConfig(Model):
     star_emoji = fields.CharField(max_length=64, default="\N{WHITE MEDIUM STAR}")
 
 
+StarboardConfigPydantic = pydantic_model_creator(StarboardConfig, name="StarboardConfig")
+
+
 class StarboardEntry(Model):
     id = fields.UUIDField(pk=True)
     source_message_id = fields.BigIntField()
@@ -196,3 +198,6 @@ class StarboardEntry(Model):
     config: fields.ForeignKeyRelation[StarboardConfig] = fields.ForeignKeyField(
         "models.StarboardConfig", related_name="entries", on_delete=fields.CASCADE
     )
+
+
+StarboardEntryPydantic = pydantic_model_creator(StarboardEntry, name="StarboardEntry")

@@ -6,7 +6,8 @@ import typing
 import discord
 from discord.ext import commands
 from tortoise.transactions import in_transaction
-from spanner.share.database import StarboardEntry, StarboardConfig, StarboardMode, GuildAuditLogEntry, GuildConfig
+
+from spanner.share.database import GuildAuditLogEntry, GuildConfig, StarboardConfig, StarboardEntry, StarboardMode
 
 
 class StarboardCog(commands.Cog):

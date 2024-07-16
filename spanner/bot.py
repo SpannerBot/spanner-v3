@@ -43,8 +43,6 @@ class CustomBridgeBot(bridge.Bot):
         await super().close()
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
-        from api import app
-
         from spanner.share.database import SelfRoleMenu
 
         await Tortoise.init(
@@ -54,13 +52,6 @@ class CustomBridgeBot(bridge.Bot):
         for menu in await SelfRoleMenu.all().prefetch_related("guild"):
             log.info("Adding persistent view: %r", menu)
             self.add_view(PersistentSelfRoleView(menu), message_id=menu.message)
-        config = uvicorn.Config(
-            app, host="0.0.0.0", port=1237, forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
-        )
-        config.setup_event_loop()
-        server = uvicorn.Server(config)
-        self.web = asyncio.create_task(server.serve())
-        signal.signal(signal.SIGTERM, lambda sig, frame: asyncio.create_task(Tortoise.close_connections()))
         try:
             await super().start(token, reconnect=reconnect)
         finally:

@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_USER: spanner
       POSTGRES_PASSWORD: spann3r
-      POSTGRES_DB: spanner-v3
+      POSTGRES_DB: spanner
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
