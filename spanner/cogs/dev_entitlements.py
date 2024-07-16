@@ -61,9 +61,9 @@ class DevEntitlementCog(commands.Cog):
             owner = self.bot.get_user(owner) or self.bot.get_guild(owner)
 
         if isinstance(owner, discord.User):
-            owner_type = "user"
+            owner_type = 2  # user
         else:
-            owner_type = "guild"
+            owner_type = 1  # guild
 
         sku = discord.utils.get(await self.bot.fetch_skus(), id=sku_id)
         if not sku:
