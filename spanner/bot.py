@@ -10,6 +10,7 @@ import discord
 import uvicorn
 from discord.ext import bridge, commands
 from tortoise import Tortoise
+from tortoise.contrib.fastapi import RegisterTortoise
 
 from spanner.share.config import load_config
 from spanner.share.views.self_roles import PersistentSelfRoleView
@@ -30,11 +31,15 @@ log = logging.getLogger(__name__)
 
 class CustomBridgeBot(bridge.Bot):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.web_server: uvicorn.Server | None = kwargs.pop("server", None)
         self.web: asyncio.Task | None = None
+
+        super().__init__(*args, **kwargs)
 
     async def close(self) -> None:
         if self.web is not None:
+            self.web_server.should_exit = True
+            self.web_server.force_exit = True
             self.web.cancel()
             try:
                 await self.web
@@ -45,17 +50,18 @@ class CustomBridgeBot(bridge.Bot):
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         from spanner.share.database import SelfRoleMenu
 
-        await Tortoise.init(
-            config=TORTOISE_ORM,
-        )
-        await Tortoise.generate_schemas()
-        for menu in await SelfRoleMenu.all().prefetch_related("guild"):
-            log.info("Adding persistent view: %r", menu)
-            self.add_view(PersistentSelfRoleView(menu), message_id=menu.message)
-        try:
-            await super().start(token, reconnect=reconnect)
-        finally:
-            await Tortoise.close_connections()
+        # noinspection PyTypeChecker
+        async with RegisterTortoise(
+            self.web_server.config.app, TORTOISE_ORM, generate_schemas=True, add_exception_handlers=True
+        ):
+            for menu in await SelfRoleMenu.all().prefetch_related("guild"):
+                log.info("Adding persistent view: %r", menu)
+                self.add_view(PersistentSelfRoleView(menu), message_id=menu.message)
+            try:
+                self.web = asyncio.create_task(self.web_server.serve())
+                await super().start(token, reconnect=reconnect)
+            finally:
+                await Tortoise.close_connections()
 
 
 bot = CustomBridgeBot(

@@ -6,23 +6,17 @@ import asyncio
 from typing import Awaitable, Callable
 from urllib.parse import urlparse
 
-import fastapi
-from bot import bot
 from fastapi import HTTPException, Request, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse as JSONResponse
 from fastapi.staticfiles import StaticFiles
-from tortoise.contrib.fastapi import RegisterTortoise
 
 from spanner.share.config import load_config
-from spanner.share.version import __sha__
 
 from .routes import guilds_api, oauth_api
-from .vars import CLIENT_SECRET, HOST_DATA, PROCESS_EPOCH
+from .vars import CLIENT_SECRET, HOST_DATA, PROCESS_EPOCH, BotFastAPI
 
-__all__ = (
-    "app"
-)
+__all__ = "app"
 
 
 TORTOISE_ORM = {
@@ -47,21 +41,10 @@ def _get_root_path():
     return path
 
 
-@contextlib.asynccontextmanager
-async def lifespan(_app: fastapi.FastAPI):
-    async with RegisterTortoise(_app, TORTOISE_ORM, generate_schemas=True, add_exception_handlers=True):
-        task = asyncio.create_task(bot.start(load_config()["spanner"]["token"]))
-        try:
-            yield
-        finally:
-            await bot.close()
-            await task
-
-
 log = logging.getLogger("spanner.api")
 log.info("Base path is set to %r", _get_root_path())
 
-app = fastapi.FastAPI(debug=True, lifespan=lifespan, root_path=_get_root_path(), default_response_class=JSONResponse)
+app = BotFastAPI(debug=True, root_path=_get_root_path(), default_response_class=JSONResponse)
 app.include_router(guilds_api)
 app.include_router(oauth_api)
 app.mount("/assets", StaticFiles(directory="./assets", html=True), name="assets")
@@ -73,14 +56,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
 @app.middleware("http")
 async def is_ready_middleware(req: Request, call_next: Callable[[Request], Awaitable[Response]]):
     if not req.url.path.startswith("/api"):
-        res = await call_next(req)
-        res.headers["X-Spanner-Version"] = __sha__
-        # Just pass it through, skip processing
-        return res
+        return await call_next(req)
 
     n = time.time()
-    if not bot.is_ready():
-        await bot.wait_until_ready()
+    if not app.bot.is_ready():
+        await app.bot.wait_until_ready()
 
     ratelimits.setdefault(req.client.host, {"expires": time.time(), "hits": 0})
     rc = ratelimits[req.client.host]
@@ -111,26 +91,29 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
         "X-Ratelimit-Reset-After": str(round(rc["expires"] - n)),
     }
     res = await call_next(req)
-    res.headers["X-Spanner-Version"] = __sha__
     res.headers.update(rl_headers)
     return res
 
 
 @app.get("/healthz")
 def health_check():
-    if not bot.is_ready():
+    if not app.bot.is_ready():
         # noinspection PyProtectedMember
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "Bot is not online and ready yet.",
-            {"Retry-After": str(round(max(2.0, bot.ws._rate_limiter.get_delay())))},
+            {"Retry-After": str(round(max(2.0, app.bot.ws._rate_limiter.get_delay())))},
         )
 
     data = {
         "online": True,
         "uptime": round(time.time() - PROCESS_EPOCH),
-        "latency": round(bot.latency * 1000, 2),
-        "stats": {"users": len(bot.users), "guilds": len(bot.guilds), "cached_messages": len(bot.cached_messages)},
+        "latency": round(app.bot.latency * 1000, 2),
+        "stats": {
+            "users": len(app.bot.users),
+            "guilds": len(app.bot.guilds),
+            "cached_messages": len(app.bot.cached_messages),
+        },
         "host": HOST_DATA,
         "warnings": [],
     }

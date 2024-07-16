@@ -8,7 +8,6 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from spanner.bot import bot
 from spanner.share.database import DiscordOauthUser
 
 from ..auth import STATE_KEYS
@@ -20,7 +19,7 @@ log = logging.getLogger("spanner.api.oauth")
 
 @api.get("/callback/discord", include_in_schema=False)
 async def discord_authorise(req: Request, code: str = None, state: str = None, from_url: str = None):
-    if not bot.is_ready() or not CLIENT_SECRET:
+    if not req.app.bot.is_ready() or not CLIENT_SECRET:
         raise HTTPException(503, "Not ready.", {"Retry-After": "30"})
     if not all((code, state)):
         log.info(
@@ -36,7 +35,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         STATE_KEYS[state_key] = from_url
         r = RedirectResponse(
             url=OAUTH_URL.format(
-                client_id=bot.user.id,
+                client_id=req.app.bot.user.id,
                 redirect_uri=str(req.base_url) + "api/oauth/callback/discord",
                 state=state_key,
             )
@@ -57,7 +56,9 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            "https://discord.com/api/oauth2/token", data=data, auth=aiohttp.BasicAuth(str(bot.user.id), CLIENT_SECRET)
+            "https://discord.com/api/oauth2/token",
+            data=data,
+            auth=aiohttp.BasicAuth(str(req.app.bot.user.id), CLIENT_SECRET),
         ) as response:
             response_data = await response.json()
             if response.status != 200:
@@ -71,7 +72,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         ) as response:
             response_data["user"] = await response.json()
             user_data: discord.Member | None = await discord.utils.get_or_fetch(
-                bot, "user", int(response_data["user"]["id"])
+                req.app.bot, "user", int(response_data["user"]["id"])
             )
             if not user_data:
                 raise HTTPException(404, "User not found.")

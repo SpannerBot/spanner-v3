@@ -2,6 +2,8 @@ import logging
 import os
 import platform
 
+import uvicorn
+from fastapi import FastAPI
 import psutil
 
 from spanner.share.config import load_config
@@ -14,6 +16,7 @@ __all__ = (
     "ACCESS_TOKEN_EXPIRE_SECONDS",
     "OAUTH_URL",
     "CLIENT_SECRET",
+    "BotFastAPI",
 )
 
 log = logging.getLogger("spanner.api.vars")
@@ -53,3 +56,12 @@ if not CLIENT_SECRET:
         "No client secret passed to API (either $DISCORD_CLIENT_SECRET or config.toml[web.discord_client_secret])."
         " Authorised endpoints will be unavailable."
     )
+
+
+    class BotFastAPI(FastAPI):
+        server: uvicorn.Server | None = None
+
+        def __init__(self, *args, **kwargs):
+            _b = kwargs.pop("bot", None)
+            super().__init__(*args, **kwargs)
+            self.bot = _b

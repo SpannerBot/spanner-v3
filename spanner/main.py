@@ -1,8 +1,6 @@
-import asyncio
 import datetime
 import logging
 import os
-import signal
 import sys
 import time
 import tomllib
@@ -13,13 +11,13 @@ import uvicorn
 from _generate_version_info import gather_version_info, should_write, write_version_file
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
-from tortoise import Tortoise
 
 sys.path.append("..")
 
 from spanner.bot import bot  # noqa: I001
 from spanner.api import app
 from spanner.share.config import load_config
+from spanner.share.version import __sha__
 
 
 if should_write():
@@ -216,10 +214,15 @@ async def ping(ctx: bridge.Context):
 
 if __name__ == "__main__":
     config = uvicorn.Config(
-        app, host="0.0.0.0", port=1237, forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*")
+        app,
+        host="0.0.0.0",
+        port=1237,
+        forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*"),
+        headers=[("X-Spanner-Version", __sha__)],
     )
-    config.setup_event_loop()
     server = uvicorn.Server(config)
-    bot.web = asyncio.create_task(server.serve())
-    signal.signal(signal.SIGTERM, lambda sig, frame: asyncio.create_task(Tortoise.close_connections()))
-    # bot.run(CONFIG_SPANNER["token"])
+    app.server = server
+    server.config.setup_event_loop()
+    app.bot = bot
+    bot.web_server = server
+    bot.run(load_config()["spanner"]["token"])

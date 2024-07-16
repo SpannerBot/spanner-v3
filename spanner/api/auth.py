@@ -43,13 +43,13 @@ async def logged_in_user(
 
 
 def user_has_permissions(perms: discord.Permissions | int) -> Depends:
-    from spanner.bot import bot
-
     if isinstance(perms, int):
         perms = discord.Permissions(perms)
 
-    async def inner(guild_id: Annotated[int, Path(...)], user: Annotated[DiscordOauthUser, Depends(logged_in_user)]):
-        guild = bot.get_guild(guild_id)
+    async def inner(
+        req: Request, guild_id: Annotated[int, Path(...)], user: Annotated[DiscordOauthUser, Depends(logged_in_user)]
+    ):
+        guild = req.app.bot.get_guild(guild_id)
         if not guild:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Guild not found.")
         try:

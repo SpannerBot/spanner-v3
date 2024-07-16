@@ -76,13 +76,10 @@ async def get_guild_log_features(guild_id: int):
     return [await GuildLogFeaturesPydantic.from_tortoise_orm(feature) for feature in features]
 
 
-@api.get(
-    "/{guild_id}/config/log-features/all",
-    response_model=list[str]
-)
+@api.get("/{guild_id}/config/log-features/all", response_model=list[str])
 def get_all_available_log_features():
     """
-    Returns a list of all of the available log flags.
+    Returns a list of all the available log flags.
     """
     return GuildLogFeatures.VALID_LOG_FEATURES
 
@@ -104,14 +101,11 @@ async def get_audit_logs(guild_id: int):
 
     return [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
 
+
 # Section: SelfRoles ###
 
 
-@api.get(
-    "/{guild_id}/self-roles",
-    response_model=list[SelfRoleMenuPydantic],
-    tags=["Guilds", "Self-Roles"]
-)
+@api.get("/{guild_id}/self-roles", response_model=list[SelfRoleMenuPydantic], tags=["Guilds", "Self-Roles"])
 async def get_guild_self_roles(guild_id: int):
     """
     Fetches the self roles for a guild.

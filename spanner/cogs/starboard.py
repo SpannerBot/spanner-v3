@@ -411,17 +411,14 @@ class StarboardCog(commands.Cog):
             config.allow_bot_messages = enable == "Yes"
             await config.save(using_db=conn)
         await ctx.respond(
-            "\N{white heavy check mark} Bot messages can be %sstarred." % (
-                "no longer be " if enable == "No" else ""
-            )
+            "\N{WHITE HEAVY CHECK MARK} Bot messages can be %sstarred." % ("no longer be " if enable == "No" else "")
         )
 
     @starboard_group.command(name="self-star")
     @discord.default_permissions(manage_channels=True, manage_messages=True)
     @commands.bot_has_permissions(add_reactions=True, manage_messages=True)
     async def set_self_star(
-            self, ctx: discord.ApplicationContext,
-            enable: typing.Annotated[str, discord.Option(str, choices=["Yes", "No"])]
+        self, ctx: discord.ApplicationContext, enable: typing.Annotated[str, discord.Option(str, choices=["Yes", "No"])]
     ):
         """Toggles whether users can star their own messages."""
         await ctx.defer()
@@ -437,20 +434,26 @@ class StarboardCog(commands.Cog):
             config.allow_self_star = enable == "Yes"
             await config.save(using_db=conn)
         await ctx.respond(
-            "\N{white heavy check mark} Users can now %sstar their own messages." % (
-                "no longer " if enable == "No" else ""
-            )
+            "\N{WHITE HEAVY CHECK MARK} Users can now %sstar their own messages."
+            % ("no longer " if enable == "No" else "")
         )
 
     @starboard_group.command(name="set-threshold")
     @discord.default_permissions(manage_channels=True, manage_messages=True)
     @commands.bot_has_permissions(add_reactions=True, manage_messages=True)
     async def set_threshold(
-            self, ctx: discord.ApplicationContext,
-            value: int,
-            mode: StarboardMode = StarboardMode.COUNT
+        self,
+        ctx: discord.ApplicationContext,
+        value: typing.Annotated[
+            StarboardMode,
+            discord.Option(
+                StarboardMode,
+                description="The mode to use for the starboard threshold",
+            ),
+        ],
     ):
         """Sets the minimum number/percent of stars required to star a message."""
+        mode = StarboardMode.COUNT
         async with in_transaction() as conn:
             await ctx.defer()
             config = await StarboardConfig.get_or_none(guild__id=ctx.guild.id, using_db=conn)
@@ -463,9 +466,7 @@ class StarboardCog(commands.Cog):
             config.star_mode = mode
             config.minimum_stars = value
             await config.save(using_db=conn)
-        await ctx.respond(
-            f"\N{white heavy check mark} Starboard threshold set to {value} {mode.name.lower()}."
-        )
+        await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Starboard threshold set to {value} {mode.name.lower()}.")
 
 
 def setup(bot):
