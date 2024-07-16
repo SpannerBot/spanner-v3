@@ -6,7 +6,7 @@ import re
 import textwrap
 from base64 import b64encode
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 from urllib.parse import urlparse
 
 import discord
@@ -202,7 +202,7 @@ async def entitled_to_premium(
     :param allow_trial: Whether to allow premium trials
     :returns: bool - Whether the interaction is entitled to premium
     """
-    def iter_(ens: list[discord.Entitlement], g: discord.Guild | None):
+    def iter_(ens: Iterable[discord.Entitlement], g: discord.Guild | None):
         for e in ens:
             if e.deleted:
                 continue
@@ -224,8 +224,7 @@ async def entitled_to_premium(
             exclude_ended=True,
             guild_id=guild.id
         )
-        # noinspection PyTypeChecker
-        if iter_(entitlements, guild):
+        if iter_(map(lambda d: discord.Entitlement(data=d, state=guild._state), entitlements), guild):
             return True
     else:
         raise TypeError(f"Expected discord.Interaction or discord.Guild, got {type(interaction)}")
