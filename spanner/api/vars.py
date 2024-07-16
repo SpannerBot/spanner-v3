@@ -57,7 +57,6 @@ if not CLIENT_SECRET:
         " Authorised endpoints will be unavailable."
     )
 
-
     class BotFastAPI(FastAPI):
         server: uvicorn.Server | None = None
 

@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from spanner.share.config import load_config
 
-from .routes import guilds_api, oauth_api
+from .routes import guilds_api, oauth_api, bot_api
 from .vars import CLIENT_SECRET, HOST_DATA, PROCESS_EPOCH, BotFastAPI
 
 __all__ = "app"
@@ -47,6 +47,7 @@ log.info("Base path is set to %r", _get_root_path())
 app = BotFastAPI(debug=True, root_path=_get_root_path(), default_response_class=JSONResponse)
 app.include_router(guilds_api)
 app.include_router(oauth_api)
+app.include_router(bot_api)
 app.mount("/assets", StaticFiles(directory="./assets", html=True), name="assets")
 ratelimits = {}
 
@@ -64,27 +65,25 @@ async def is_ready_middleware(req: Request, call_next: Callable[[Request], Await
 
     ratelimits.setdefault(req.client.host, {"expires": time.time(), "hits": 0})
     rc = ratelimits[req.client.host]
-    _ignore = ("/healthz", "/docs", "/redoc", "/openapi.json")
-    if req.url.path not in _ignore:
-        if rc["hits"] > 70:
-            if rc["expires"] < n:
-                rc["expires"] = n + 60
-                rc["hits"] = 1
-            else:
-                return JSONResponse(
-                    {
-                        "detail": "You are being rate-limited. Please slow down your requests.",
-                    },
-                    status.HTTP_429_TOO_MANY_REQUESTS,
-                    {
-                        "Retry-After": str(round(rc["expires"] - n)),
-                        "X-Ratelimit-Remaining": "0",
-                        "X-Ratelimit-Reset": str(round(rc["expires"])),
-                        "X-Ratelimit-Reset-After": str(round(rc["expires"] - n)),
-                    },
-                )
+    if rc["hits"] > 70:
+        if rc["expires"] < n:
+            rc["expires"] = n + 60
+            rc["hits"] = 1
         else:
-            rc["hits"] += 1
+            return JSONResponse(
+                {
+                    "detail": "You are being rate-limited. Please slow down your requests.",
+                },
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                {
+                    "Retry-After": str(round(rc["expires"] - n)),
+                    "X-Ratelimit-Remaining": "0",
+                    "X-Ratelimit-Reset": str(round(rc["expires"])),
+                    "X-Ratelimit-Reset-After": str(round(rc["expires"] - n)),
+                },
+            )
+    else:
+        rc["hits"] += 1
     rl_headers = {
         "X-Ratelimit-Remaining": str(70 - rc["hits"]),
         "X-Ratelimit-Reset": str(round(rc["expires"])),
@@ -113,6 +112,7 @@ def health_check():
             "users": len(app.bot.users),
             "guilds": len(app.bot.guilds),
             "cached_messages": len(app.bot.cached_messages),
+            "user_id": app.bot.user.id,
         },
         "host": HOST_DATA,
         "warnings": [],
