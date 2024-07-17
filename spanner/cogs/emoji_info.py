@@ -173,6 +173,11 @@ class EmojiInfoCog(commands.Cog):
         emoji: str,
     ):
         """Set the roles that can use an emoji."""
+        if ctx.guild.me is None:
+            return await ctx.respond(
+                ":x: I need to be in the server to manage emojis (I can't see any of the guild's emojis otherwise).",
+                ephemeral=True
+            )
         await ctx.defer(ephemeral=True)
         emoji = discord.PartialEmoji.from_str(emoji)
         emoji = discord.utils.get(ctx.guild.emojis, name=emoji.name)
