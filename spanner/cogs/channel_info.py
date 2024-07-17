@@ -19,7 +19,7 @@ class ChannelInfoCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    async def get_channel_info(self, channel: typing.Union[*SUPPORTED_CHANNELS]):
+    async def get_channel_info(self, channel: typing.Union[*SUPPORTED_CHANNELS]) -> dict[str, discord.Embed]:
         def humanise(v: int, *, precise: bool = False):
             def pluralise(word: str, value: int | float):
                 value = round(value)

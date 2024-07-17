@@ -16,7 +16,7 @@ class ServerInfoCog(commands.Cog):
         self.bot = bot
 
     @staticmethod
-    async def get_server_info(guild: discord.Guild):
+    async def get_server_info(guild: discord.Guild) -> dict[str, list[str]]:
         vanity_url = None
         if guild.me and guild.me.guild_permissions.manage_guild:
             auto_mod_rules = await guild.fetch_auto_moderation_rules()

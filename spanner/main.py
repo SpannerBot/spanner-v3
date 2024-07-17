@@ -118,11 +118,10 @@ async def on_ready():
 async def on_application_command(ctx: discord.ApplicationContext):
     ctx.start = time.perf_counter()
     log.info(
-        "%r (%s) used application command %r (%s) in %r (%s), %r (%s), with interaction ID %s.",
+        "%r (%s) used application command %r in %r (%s), %r (%s), with interaction ID %s.",
         ctx.user.name,
         ctx.user.id,
         ctx.command.qualified_name,
-        ctx.command.qualified_id,
         getattr(ctx.channel, "name", f"@{ctx.user.name}"),
         ctx.channel.id,
         getattr((ctx.guild or ctx.channel), "name", "DM"),
