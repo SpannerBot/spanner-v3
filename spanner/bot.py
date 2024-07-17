@@ -42,7 +42,8 @@ class CustomBridgeBot(bridge.Bot):
 
         intents_config = _config.get("intents", discord.Intents.default().value)
         if isinstance(intents_config, int):
-            intents = discord.Intents(intents_config)
+            intents = discord.Intents.default()
+            intents.value = intents_config
         elif isinstance(intents_config, dict):
             intents = discord.Intents(**intents_config)
         else:
