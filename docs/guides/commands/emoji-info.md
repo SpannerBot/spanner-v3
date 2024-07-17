@@ -16,7 +16,7 @@ The information given to you includes:
 * whether it is managed (by an integration, such as twitch)
 * whether it is available (for use)
 * whether it requires colons to use
-* whether it is [exclusive to roles](./emoji-set-roles.md)
+* whether it is [exclusive to roles](emoji-set-roles.md)
 * when it was created
 * who created it (if available)
 * the URL to the emoji

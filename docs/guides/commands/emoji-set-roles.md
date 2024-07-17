@@ -1,1 +1,1 @@
-# /emoji set-roles | Emoji Set Roles    
+# /emoji set-roles | Emoji Set Roles
