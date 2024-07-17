@@ -2,7 +2,7 @@
 
 !!! tip "This feature is available everywhere!"
 
-    This command is available in both a guild install, and user install! See
+    This command is available in both a guild context, and user context! See
     [Installation](../0000-getting-started.md#1-installation) for more information!
 
 Channel Info gives you a bunch of information about the current or given channel.

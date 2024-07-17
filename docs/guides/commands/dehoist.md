@@ -2,7 +2,7 @@
 
 !!! tip "Can't see the command?"
 
-    This command is a user-context command. This means you need to right-click a member (in the member list, or in
+    This command is a user command. This means you need to right-click a member (in the member list, or in
     chat), hover over "Apps", and click "Dehoist".
 
     If you are on mobile, you can do this by tapping on a member, scrolling to just below their "About Me",
