@@ -137,6 +137,11 @@ class ServerInfoCog(commands.Cog):
             embeds["Icon (Enlarged)"] = discord.Embed().set_image(url=ctx.guild.icon.with_size(4096).url)
         if ctx.guild.banner:
             embeds["Overview"].set_image(url=ctx.guild.banner.url)
+        if not ctx.interaction.authorizing_integration_owners.guild_id:
+            for embed in embeds.values():
+                embed.set_footer(
+                    text="This information may be incomplete as I am not in the server."
+                )
         await ctx.respond(embed=embeds["Overview"], view=GenericLabelledEmbedView(ctx, **embeds))
 
 

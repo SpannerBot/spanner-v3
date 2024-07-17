@@ -209,6 +209,11 @@ class InviteInfo(commands.Cog):
         if _channel:
             btn = ViewInfoButton(ctx, self.ii_channel_callback(view, _channel), label="View Channel Info")
             view.add_item(btn)
+        if not ctx.interaction.authorizing_integration_owners.guild_id:
+            for embed in embeds.values():
+                embed.set_footer(
+                    text="This information may be incomplete as I am not in the server."
+                )
         await ctx.respond(embed=embeds["Overview"], view=view, ephemeral=True)
 
 

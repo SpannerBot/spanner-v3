@@ -37,6 +37,18 @@ class CustomBridgeBot(bridge.Bot):
         self.web_server: uvicorn.Server | None = kwargs.pop("server", None)
         self.web: asyncio.Task | None = None
 
+        _config = load_config()["spanner"]
+        kwargs["debug_guilds"] = _config.get("debug_guilds", None)
+
+        intents_config = _config.get("intents", discord.Intents.default().value)
+        if isinstance(intents_config, int):
+            intents = discord.Intents(intents_config)
+        elif isinstance(intents_config, dict):
+            intents = discord.Intents(**intents_config)
+        else:
+            raise ValueError("Invalid intents configuration. Must be bitfield value, or table.")
+        kwargs["intents"] = intents
+
         super().__init__(*args, **kwargs)
 
     async def close(self) -> None:
@@ -71,8 +83,6 @@ bot = CustomBridgeBot(
     command_prefix=commands.when_mentioned_or("s!", "S!"),
     strip_after_prefix=True,
     case_insensitive=True,
-    debug_guilds=load_config()["spanner"].get("debug_guilds", None),
-    intents=discord.Intents.all(),
     status=discord.Status.idle,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False, users=True),
 )

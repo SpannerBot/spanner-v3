@@ -241,6 +241,11 @@ class ChannelInfoCog(commands.Cog):
             return await ctx.respond("This channel type is not supported!", ephemeral=True)
         embeds = await self.get_channel_info(channel)
         view = GenericLabelledEmbedView(ctx, **embeds)
+        if not ctx.interaction.authorizing_integration_owners.guild_id:
+            for embed in embeds.values():
+                embed.set_footer(
+                    text="This information may be incomplete as I am not in the server."
+                )
         await ctx.respond(embed=embeds["Overview"], view=view)
 
 

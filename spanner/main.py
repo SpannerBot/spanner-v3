@@ -211,7 +211,7 @@ async def ping(ctx: bridge.Context):
     return await ctx.edit(content=t)
 
 
-if __name__ == "__main__":
+def run():
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
@@ -225,3 +225,7 @@ if __name__ == "__main__":
     app.bot = bot
     bot.web_server = server
     bot.run(load_config()["spanner"]["token"])
+
+
+if __name__ == "__main__":
+    run()

@@ -147,6 +147,11 @@ class EmojiInfoCog(commands.Cog):
         embeds = self.get_emoji_info(emoji)
         view = GenericLabelledEmbedView(ctx, **embeds)
         embed = embeds["Overview"]
+        if not ctx.interaction.authorizing_integration_owners.guild_id:
+            for embed in embeds.values():
+                embed.set_footer(
+                    text="This information may be incomplete as I am not in the server."
+                )
         button = EmojiStealButton(emoji)
         if ctx.guild and ctx.guild.me and len(ctx.guild.emojis) < ctx.guild.emoji_limit:
             if ctx.user.guild_permissions.manage_emojis and ctx.me.guild_permissions.manage_emojis:

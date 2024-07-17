@@ -62,6 +62,11 @@ class RoleInfoCog(commands.Cog):
         """Get information about a role."""
         await ctx.defer(ephemeral=True)
         embeds = await self.get_role_info(role)
+        if not ctx.interaction.authorizing_integration_owners.guild_id:
+            for embed in embeds.values():
+                embed.set_footer(
+                    text="This information may be incomplete as I am not in the server."
+                )
         view = GenericLabelledEmbedView(ctx, **embeds)
         await ctx.respond(embed=embeds["Overview"], view=view)
 

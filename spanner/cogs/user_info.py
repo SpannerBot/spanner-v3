@@ -198,7 +198,7 @@ class UserInfo(commands.Cog):
     )
     async def user_info_slash(self, ctx: discord.ApplicationContext, user: discord.User):
         """Fetches information on a user or member on discord."""
-        if ctx.guild:
+        if ctx.guild and ctx.interaction.authorizing_integration_owners.guild_id:
             try:
                 user = await ctx.guild.fetch_member(user.id)
             except discord.NotFound:
