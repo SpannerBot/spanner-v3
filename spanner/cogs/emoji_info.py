@@ -148,7 +148,7 @@ class EmojiInfoCog(commands.Cog):
         view = GenericLabelledEmbedView(ctx, **embeds)
         embed = embeds["Overview"]
         button = EmojiStealButton(emoji)
-        if ctx.guild and len(ctx.guild.emojis) < ctx.guild.emoji_limit:
+        if ctx.guild and ctx.guild.me and len(ctx.guild.emojis) < ctx.guild.emoji_limit:
             if ctx.user.guild_permissions.manage_emojis and ctx.me.guild_permissions.manage_emojis:
                 if isinstance(emoji, discord.Emoji) or emoji.is_custom_emoji():
                     if discord.utils.get(ctx.guild.emojis, name=emoji.name) is None:
