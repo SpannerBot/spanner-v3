@@ -161,7 +161,7 @@ class InviteInfo(commands.Cog):
             new_view.add_item(btn)
             await interaction.edit_original_response(embed=new_view.current_embed, view=new_view)
             await new_view.wait()
-            await interaction.edit_original_response(embed=original_view.current_embed, view=original_view)
+            await interaction.edit_original_response(embed=original_view.embeds["Overview"], view=original_view)
         return inner
 
     def ii_channel_callback(self, original_view: GenericLabelledEmbedView, channel: discord.abc.GuildChannel):
@@ -183,7 +183,7 @@ class InviteInfo(commands.Cog):
             new_view.add_item(btn)
             await interaction.edit_original_response(embed=new_view.current_embed, view=new_view)
             await new_view.wait()
-            await interaction.edit_original_response(embed=original_view.current_embed, view=original_view)
+            await interaction.edit_original_response(embed=original_view.embeds["Overview"], view=original_view)
         return inner
 
     @commands.slash_command(
@@ -203,11 +203,21 @@ class InviteInfo(commands.Cog):
 
         _guild = self.bot.get_guild(invite.guild.id)
         if _guild:
-            btn = ViewInfoButton(ctx, self.ii_guild_callback(view, _guild), label="View Server Info")
+            btn = ViewInfoButton(
+                ctx,
+                self.ii_guild_callback(view, _guild),
+                label="View Server Info",
+                style=discord.ButtonStyle.secondary
+            )
             view.add_item(btn)
         _channel = discord.utils.get(set(self.bot.get_all_channels()), id=invite.channel.id)
         if _channel:
-            btn = ViewInfoButton(ctx, self.ii_channel_callback(view, _channel), label="View Channel Info")
+            btn = ViewInfoButton(
+                ctx,
+                self.ii_channel_callback(view, _channel),
+                label="View Channel Info",
+                style=discord.ButtonStyle.secondary
+            )
             view.add_item(btn)
         if not ctx.interaction.authorizing_integration_owners.guild_id:
             for embed in embeds.values():
