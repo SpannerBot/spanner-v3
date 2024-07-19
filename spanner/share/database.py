@@ -95,7 +95,7 @@ class GuildAuditLogEntry(Model):
     namespace = fields.CharField(min_length=1, max_length=128)
     action = fields.CharField(min_length=1, max_length=128)
     description = fields.TextField()
-    created_at = fields.DatetimeField(default=discord.utils.utcnow)
+    created_at = fields.DatetimeField(auto_now=True)
 
 
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")
