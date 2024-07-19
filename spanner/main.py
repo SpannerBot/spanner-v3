@@ -212,11 +212,12 @@ async def ping(ctx: bridge.Context):
 
 
 def run():
+    data_config = load_config()
     config = uvicorn.Config(
         app,
-        host="0.0.0.0",
-        port=1237,
-        forwarded_allow_ips=load_config()["web"].get("forwarded_allow_ips", "*"),
+        host=data_config["web"].get("host", "0.0.0.0"),
+        port=data_config["web"].get("port", 1237),
+        forwarded_allow_ips=data_config["web"].get("forwarded_allow_ips", "*"),
         headers=[("X-Spanner-Version", __sha__)],
     )
     server = uvicorn.Server(config)
@@ -224,7 +225,7 @@ def run():
     server.config.setup_event_loop()
     app.bot = bot
     bot.web_server = server
-    bot.run(load_config()["spanner"]["token"])
+    bot.run(data_config["spanner"]["token"])
 
 
 if __name__ == "__main__":
