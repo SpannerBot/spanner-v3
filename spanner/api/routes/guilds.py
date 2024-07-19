@@ -1,5 +1,6 @@
 import discord
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.templating import Jinja2Templates
 
 from spanner.share.database import (
     GuildAuditLogEntry,
@@ -21,6 +22,7 @@ from spanner.share.database import (
 from ..auth import user_has_permissions
 
 api = APIRouter(prefix="/api/guilds", tags=["Guilds"])
+templates = Jinja2Templates(directory="./assets/templates")
 
 
 @api.get("/{guild_id}/config", response_model=GuildConfigPydantic, dependencies=[user_has_permissions(0)])
@@ -100,6 +102,25 @@ async def get_audit_logs(guild_id: int):
         raise HTTPException(404, "No audit logs found.")
 
     return [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
+
+
+@api.get(
+    "/{guild_id}/audit-logs/html",
+    dependencies=[user_has_permissions(discord.Permissions(view_audit_log=True))],
+    include_in_schema=False
+)
+async def get_audit_logs(req: Request, guild_id: int):
+    """
+    Fetches the audit logs for a guild.
+
+    This is an array of audit log entries, ordered newest->oldest.
+    """
+    audit_log = await GuildAuditLogEntry.filter(guild__id=guild_id).order_by("-created_at").all()
+    if not audit_log:
+        raise HTTPException(404, "No audit logs found.")
+
+    models = [await GuildAuditLogEntryPydantic.from_tortoise_orm(entry) for entry in audit_log]
+    return templates.TemplateResponse("audit_logs.html", {"request": None, "events": models})
 
 
 # Section: SelfRoles ###
