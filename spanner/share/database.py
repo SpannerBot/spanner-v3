@@ -95,7 +95,7 @@ class GuildAuditLogEntry(Model):
     namespace = fields.CharField(min_length=1, max_length=128)
     action = fields.CharField(min_length=1, max_length=128)
     description = fields.TextField()
-    created_at = fields.DatetimeField(auto_now=True)
+    created_at = fields.DatetimeField(default=discord.utils.utcnow)
 
 
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")
@@ -192,10 +192,8 @@ class Premium(Model):
     """The user ID the premium belongs to."""
     guild_id = fields.BigIntField(unique=True, index=True)
     """The guild ID the premium belongs to."""
-    start = fields.DatetimeField(auto_now_add=True)
+    start = fields.DatetimeField(default=discord.utils.utcnow)
     """When the premium started"""
-    updated = fields.DatetimeField(auto_now=True)
-    """When the premium was last updated"""
     end = fields.DatetimeField()
     """When the premium ends"""
     is_trial = fields.BooleanField()

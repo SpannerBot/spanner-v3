@@ -56,7 +56,7 @@ class SettingsCog(commands.Cog):
 
     log_feature = settings.create_subgroup(name="log-features", description="Manages logging features for the server.")
 
-    async def _set_log_feature(
+    async def   _set_log_feature(
         self, guild_id: int, feature: str, enabled: bool = None, *, user_id: int = None
     ) -> GuildLogFeatures | None:
         config = await self._ensure_guild_config(guild_id)
