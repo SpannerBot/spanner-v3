@@ -31,7 +31,7 @@ async def get_guild_config(guild_id: int):
     This information itself is not very useful.
     """
 
-    config = await GuildConfig.get_or_none(guild_id=guild_id)
+    config = await GuildConfig.get_or_none(id=guild_id)
     if not config:
         raise HTTPException(404, "No config found.")
 
