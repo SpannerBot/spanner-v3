@@ -15,7 +15,7 @@ pyjwt = "~=2.8"
 psutil = "~=6.0"
 orjson = "*"
 mkdocs = "*"
-mkdocs-material = "*"
+pymdown-extensions = "*"
 
 [dev-packages]
 ruff = "*"

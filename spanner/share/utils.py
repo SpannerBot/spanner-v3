@@ -14,7 +14,8 @@ from discord.ext import bridge, commands
 from jinja2 import Template
 
 from .data import boolean_emojis
-from .database import GuildLogFeatures
+from .database import GuildLogFeatures, Premium
+
 
 __all__ = [
     "get_bool_emoji",
@@ -211,33 +212,22 @@ async def entitled_to_premium(
             if g and g.id == e.guild_id:
                 return True
         return False
-
     if isinstance(interaction, discord.Interaction):
         guild = interaction.guild
-        if iter_(interaction.entitlements, guild):
-            return True
     elif isinstance(interaction, discord.Guild):
         guild = interaction
-        # noinspection PyProtectedMember
-        entitlements = await guild._state.http.list_entitlements(
-            guild._state.user.id,
-            exclude_ended=True,
-            guild_id=guild.id
-        )
-        if iter_(map(lambda d: discord.Entitlement(data=d, state=guild._state), entitlements), guild):
-            return True
     else:
         raise TypeError(f"Expected discord.Interaction or discord.Guild, got {type(interaction)}")
+    db_entry = await Premium.get_or_none(guild_id=guild.id)
+    if db_entry:
+        if not db_entry.is_expired:
+            # Valid premium!
+            if allow_trial is False and db_entry.is_trial:
+                # Valid trial, however not available for this feature.
+                return False
+            return True
+        else:
+            return False
 
-    if not allow_trial:
-        return False
-
-    if not guild:
-        raise ValueError("Guild is required for this check.")
-
-    from spanner.share.database import PremiumTrial
-
-    trial = await PremiumTrial.get_or_none(guild_id=guild.id)
-    if trial and trial.end and trial.end > discord.utils.utcnow():
-        return True
+    # No premium or is expired. Should display the "need premium" view.
     return False

@@ -1,8 +1,6 @@
 import datetime
 import enum
-import secrets
 import typing
-from typing import Optional
 
 import discord
 from tortoise import fields
@@ -185,31 +183,56 @@ class StarboardEntry(Model):
 StarboardEntryPydantic = pydantic_model_creator(StarboardEntry, name="StarboardEntry")
 
 
-class EntitlementType(enum.IntEnum):
-    PURCHASE = 1
-    """Entitlement was purchased by user"""
-    DEVELOPER_GIFT = 3
-    """Entitlement was gifted by developer"""
-    TEST_MODE_PURCHASE = 4
-    """Entitlement was purchased by a dev in application test mode"""
-    FREE_PURCHASE = 5
-    """Entitlement was granted when the SKU was free"""
-    USER_GIFT = 6
-    """Entitlement was gifted by another user"""
-    APPLICATION_SUBSCRIPTION = 8
-    """Entitlement was purchased as an app subscription"""
+class Premium(Model):
+    class Meta:
+        table = "premium"
 
-
-class PremiumTrial(Model):
     id = fields.UUIDField(pk=True)
     user_id = fields.BigIntField()
+    """The user ID the premium belongs to."""
     guild_id = fields.BigIntField(unique=True, index=True)
-    start = fields.DatetimeField()
+    """The guild ID the premium belongs to."""
+    start = fields.DatetimeField(auto_now_add=True)
+    """When the premium started"""
+    updated = fields.DatetimeField(auto_now=True)
+    """When the premium was last updated"""
     end = fields.DatetimeField()
+    """When the premium ends"""
+    is_trial = fields.BooleanField()
+    """Whether the premium is a trial (True) or official discord purchase (False)"""
 
     @property
     def is_expired(self) -> bool:
         return discord.utils.utcnow() >= self.end
 
+    @is_expired.setter
+    def is_expired(self, value: typing.Literal[True]) -> None:
+        if value is not True:
+            raise ValueError("Premium.is_expired can only be set to True.")
+        self.end = discord.utils.utcnow()
+
+    @classmethod
+    async def from_entitlement(cls, entitlement: discord.Entitlement) -> "Premium":
+        """
+        Creates a premium entry from an entitlement.
+        """
+        existing = await cls.get_or_none(guild_id=entitlement.guild_id)
+        if existing:
+            existing.end = entitlement.ends_at
+            existing.user_id = entitlement.user_id
+            existing.is_trial = False
+            await existing.save()
+            return existing
+        else:
+            result = await cls.create(
+                user_id=entitlement.user_id,
+                guild_id=entitlement.guild_id,
+                start=entitlement.starts_at,
+                end=entitlement.ends_at,
+                is_trial=False,
+            )
+            return result
+
     async def delete(self, *args) -> None:
-        raise RuntimeError("PremiumTrial objects cannot be deleted.")
+        if self.is_trial:
+            raise RuntimeError("Premium trial objects cannot be deleted.")

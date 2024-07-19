@@ -74,7 +74,8 @@ class CustomBridgeBot(bridge.Bot):
                 log.info("Adding persistent view: %r", menu)
                 self.add_view(PersistentSelfRoleView(menu), message_id=menu.message)
             try:
-                self.web = asyncio.create_task(self.web_server.serve())
+                if load_config()["web"].get("enabled", True) is True:
+                    self.web = asyncio.create_task(self.web_server.serve())
                 await super().start(token, reconnect=reconnect)
             finally:
                 await Tortoise.close_connections()

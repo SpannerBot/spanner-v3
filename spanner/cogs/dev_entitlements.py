@@ -3,7 +3,7 @@ import logging
 
 import discord
 from discord.ext import commands, bridge
-from spanner.share.database import PremiumTrial
+from spanner.share.database import Premium
 from spanner.share.config import load_config
 from spanner.share.views.confirm import ConfirmView
 from spanner.share.views.premium import PremiumRequired
@@ -19,6 +19,9 @@ class DevEntitlementCog(commands.Cog):
     def get_premium_view(ctx: discord.ApplicationContext | commands.Context) -> PremiumRequired | None:
         subscription_sku = load_config()["skus"]["subscription_id"]
         if not subscription_sku:
+            logging.getLogger("spanner.cogs.dev_entitlements").warning(
+                "No subscription SKU configured in the bot configuration. Set `skus.subscription_id`."
+            )
             view = None
         else:
             view = PremiumRequired(ctx, subscription_sku)
@@ -174,7 +177,7 @@ class DevEntitlementCog(commands.Cog):
         now = discord.utils.utcnow()
         view = self.get_premium_view(ctx)
 
-        if (trial := await PremiumTrial.get_or_none(guild_id=ctx.guild.id)) is not None:
+        if (trial := await Premium.get_or_none(guild_id=ctx.guild.id)) is not None:
             if trial.is_expired:
                 return await ctx.reply(
                     f"\N{cross mark} Your free trial expired {discord.utils.format_dt(trial.end, 'R')}.",
@@ -196,7 +199,7 @@ class DevEntitlementCog(commands.Cog):
                 return await msg.edit(content="\N{cross mark} Will not activate free trial.")
             await msg.edit("<a:loading:923665831345418241> Activating free trial...", view=None)
             try:
-                trial = await PremiumTrial.create(
+                trial = await Premium.create(
                     user_id=ctx.author.id,
                     guild_id=ctx.guild.id,
                     start=now,
@@ -220,7 +223,7 @@ class DevEntitlementCog(commands.Cog):
         if guild_id is not None and not await self.bot.is_owner(ctx.author):
             return await ctx.reply("\N{cross mark} You are not allowed to check other guild's premium trial status.")
         guild_id = guild_id or ctx.guild.id
-        trial = await PremiumTrial.get_or_none(guild_id=guild_id)
+        trial = await Premium.get_or_none(guild_id=guild_id)
         if trial is None:
             return await ctx.reply("\N{cross mark} No free trial found.")
         return await ctx.reply(
@@ -244,7 +247,7 @@ class DevEntitlementCog(commands.Cog):
         """Grants a server a free trial, or renews an existing one."""
         guild_id = guild_id or ctx.guild.id
         now = discord.utils.utcnow()
-        trial, _ = await PremiumTrial.update_or_create(
+        trial, _ = await Premium.update_or_create(
             guild_id=guild_id,
             defaults=dict(
                 user_id=ctx.author.id,
@@ -262,28 +265,37 @@ class DevEntitlementCog(commands.Cog):
     async def free_trial_delete(self, ctx: commands.Context, guild_id: int = None):
         """Deletes a free trial of the premium service."""
         guild_id = guild_id or ctx.guild.id
-        trial = await PremiumTrial.get_or_none(guild_id=guild_id)
+        trial = await Premium.get_or_none(guild_id=guild_id)
         if trial is None:
             return await ctx.reply("\N{cross mark} No free trial found.")
         trial.end = discord.utils.utcnow()
         await trial.save()
         return await ctx.reply("\N{white heavy check mark} Free trial expired.")
 
-    @free_trial.command(name="test")
+    @free_trial.command(name="test", aliases=["check"])
     @commands.is_owner()
     async def free_trial_test(self, ctx: commands.Context, guild_id: int = None, allow_trial: bool = False):
-        """Tests the free trial command."""
+        """
+        Checks whether premium (or trial) features are enabled for a server.
+
+        If [allow_trial] is set to True, the server will be considered entitled to premium features if it has a trial.
+        """
         guild_id = guild_id or ctx.guild.id
         guild = self.bot.get_guild(guild_id)
         if not await entitled_to_premium(guild, allow_trial=allow_trial):
+            existing_trial = await Premium.get_or_none(guild_id=guild_id)
+            if existing_trial:
+                return await ctx.reply(
+                    "\N{cross mark} This server's free trial expired.",
+                    view=self.get_premium_view(ctx)
+                )
             return await ctx.reply(
                 "\N{cross mark} This server is not entitled to premium features.",
                 view=self.get_premium_view(ctx)
             )
         else:
             return await ctx.reply(
-                "\N{white heavy check mark} This server is entitled to premium features.",
-                view=None
+                "\N{white heavy check mark} This server is entitled to premium features."
             )
 
 

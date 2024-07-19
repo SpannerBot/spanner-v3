@@ -213,6 +213,7 @@ async def ping(ctx: bridge.Context):
 
 def run():
     data_config = load_config()
+
     config = uvicorn.Config(
         app,
         host=data_config["web"].get("host", "0.0.0.0"),
@@ -225,6 +226,7 @@ def run():
     server.config.setup_event_loop()
     app.bot = bot
     bot.web_server = server
+
     bot.run(data_config["spanner"]["token"])
 
 

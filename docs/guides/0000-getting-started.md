@@ -4,7 +4,9 @@ Not sure how to get started with spanner? This guide will help you get up and ru
 
 ## 1. Installation
 
-The first step to using spanner is actually inviting it. You can do this with one of the following links:
+The first step to using spanner is actually inviting it. You can do this with one of the following links]
+
+[![A GIF showing the installation of Spanner](../img/install.webp)](../img/install.webm)
 
 ### Server Installation
 
