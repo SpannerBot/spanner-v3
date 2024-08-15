@@ -221,3 +221,12 @@ class Premium(Model):
         if self.is_trial:
             raise RuntimeError("Premium trial objects cannot be deleted.")
         await super().delete(*args)
+
+
+class AutoRole(Model):
+    """Roles to automatically grant new members"""
+    id: uuid.UUID = fields.UUIDField(pk=True)
+    guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
+        "models.GuildConfig", related_name="auto_roles", on_delete=fields.CASCADE
+    )
+    role_id: int = fields.BigIntField(unique=True)

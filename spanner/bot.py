@@ -2,9 +2,6 @@ import asyncio
 import signal
 import sys
 
-from tortoise.transactions import in_transaction
-
-
 sys.path.extend([".", ".."])
 
 import logging
@@ -17,6 +14,7 @@ from tortoise.contrib.fastapi import RegisterTortoise
 
 from spanner.share.config import load_config
 from spanner.share.views.self_roles import PersistentSelfRoleView
+from spanner.share.database import GuildConfig
 
 TORTOISE_ORM = {
     "connections": {"default": load_config()["database"]["uri"]},
@@ -88,3 +86,9 @@ bot = CustomBridgeBot(
     status=discord.Status.idle,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False, users=True),
 )
+
+
+@bot.before_invoke
+async def ensure_database(ctx):
+    if ctx.guild is not None:
+        await GuildConfig.get_or_create(guild_id=ctx.guild.id)
