@@ -1,6 +1,7 @@
 import datetime
 import enum
 import typing
+import uuid
 
 import discord
 from tortoise import fields
@@ -9,8 +10,8 @@ from tortoise.models import Model
 
 
 class GuildConfig(Model):
-    id = fields.BigIntField(pk=True, generated=False)
-    log_channel = fields.BigIntField(default=None, null=True)
+    id: int = fields.BigIntField(pk=True, generated=False)
+    log_channel: int | None = fields.BigIntField(default=None, null=True)
 
     def __repr__(self):
         return "GuildConfig(id={0.id!r}, log_channel={0.log_channel!r})".format(self)
@@ -18,7 +19,6 @@ class GuildConfig(Model):
     if typing.TYPE_CHECKING:
         log_features: fields.ReverseRelation["GuildLogFeatures"]
         audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
-        user_history: fields.ReverseRelation["UserHistory"]
         self_roles: fields.ReverseRelation["SelfRoleMenu"]
         nickname_moderation: fields.ReverseRelation["GuildNickNameModeration"]
         starboard: fields.ReverseRelation["StarboardConfig"]
@@ -28,15 +28,15 @@ GuildConfigPydantic = pydantic_model_creator(GuildConfig, name="GuildConfig")
 
 
 class GuildNickNameModeration(Model):
-    id = fields.UUIDField(pk=True)
+    id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="nickname_moderation", on_delete=fields.CASCADE
     )
-    hate = fields.BooleanField(default=False)
-    harassment = fields.BooleanField(default=False)
-    self_harm = fields.BooleanField(default=False)
-    sexual = fields.BooleanField(default=False)
-    violence = fields.BooleanField(default=False)
+    hate: bool = fields.BooleanField(default=False)
+    harassment: bool = fields.BooleanField(default=False)
+    self_harm: bool = fields.BooleanField(default=False)
+    sexual: bool = fields.BooleanField(default=False)
+    violence: bool = fields.BooleanField(default=False)
 
     CATEGORIES = {
         "hate": "Content that expresses, incites, or promotes hate based on protected characteristics.",
@@ -73,59 +73,45 @@ class GuildLogFeatures(Model):
         "server.channel.create",
         "server.channel.delete",
     ]
-    id = fields.UUIDField(pk=True)
+    id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation["GuildConfig"] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="log_features", on_delete=fields.CASCADE
     )
 
-    name = fields.CharField(min_length=1, max_length=32, index=True)
-    enabled = fields.BooleanField(default=True)
-    updated = fields.DatetimeField(auto_now=True)
+    name: str = fields.CharField(min_length=1, max_length=32, index=True)
+    enabled: bool = fields.BooleanField(default=True)
+    updated: datetime.datetime = fields.DatetimeField(auto_now=True)
 
 
 GuildLogFeaturesPydantic = pydantic_model_creator(GuildLogFeatures, name="GuildLogFeatures")
 
 
 class GuildAuditLogEntry(Model):
-    id = fields.UUIDField(pk=True)
+    id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="audit_log_entries", on_delete=fields.CASCADE
     )
-    author = fields.BigIntField()
-    namespace = fields.CharField(min_length=1, max_length=128)
-    action = fields.CharField(min_length=1, max_length=128)
-    description = fields.TextField()
-    created_at = fields.DatetimeField(auto_now=True)
+    author: int = fields.BigIntField()
+    namespace: str = fields.CharField(min_length=1, max_length=128)
+    action: str = fields.CharField(min_length=1, max_length=128)
+    description: str = fields.TextField()
+    created_at: datetime.datetime = fields.DatetimeField(auto_now=True)
 
 
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")
 
 
-class UserHistory(Model):
-    id = fields.UUIDField(pk=True)
-    user_id = fields.BigIntField()
-    username = fields.CharField(min_length=2, max_length=32)
-    nickname = fields.CharField(min_length=1, max_length=32, default=None, null=True)
-    avatar_hash = fields.CharField(max_length=255, default=None, null=True)
-    guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
-        "models.GuildConfig", related_name="user_history", on_delete=fields.CASCADE
-    )
-
-
-UserHistoryPydantic = pydantic_model_creator(UserHistory, name="UserHistory")
-
-
 class SelfRoleMenu(Model):
-    id = fields.UUIDField(pk=True)
+    id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="self_roles", on_delete=fields.CASCADE
     )
-    name = fields.CharField(min_length=1, max_length=32)
-    channel = fields.BigIntField()
-    message = fields.BigIntField()
-    mode = fields.SmallIntField()
-    roles = fields.JSONField(default=[])
-    maximum = fields.SmallIntField(default=25)
+    name: str = fields.CharField(min_length=1, max_length=32)
+    channel: int = fields.BigIntField()
+    message: int = fields.BigIntField()
+    mode: int = fields.SmallIntField()
+    roles: list = fields.JSONField(default=[])
+    maximum: int = fields.SmallIntField(default=25)
 
     def __repr__(self):
         return (
@@ -153,28 +139,28 @@ class StarboardMode(enum.IntEnum):
 
 
 class StarboardConfig(Model):
-    id = fields.UUIDField(pk=True)
+    id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="starboard", on_delete=fields.CASCADE
     )
-    channel_id = fields.BigIntField(unique=True)
-    minimum_stars = fields.SmallIntField(default=1)
-    star_mode = fields.IntEnumField(StarboardMode, default=StarboardMode.COUNT)
-    allow_self_star = fields.BooleanField(default=False)
-    mirror_edits = fields.BooleanField(default=False)
-    mirror_deletes = fields.BooleanField(default=False)
-    allow_bot_messages = fields.BooleanField(default=True)
-    star_emoji = fields.CharField(max_length=64, default="\N{WHITE MEDIUM STAR}")
+    channel_id: int = fields.BigIntField(unique=True)
+    minimum_stars: int = fields.SmallIntField(default=1)
+    star_mode: StarboardMode = fields.IntEnumField(StarboardMode, default=StarboardMode.COUNT)
+    allow_self_star: bool = fields.BooleanField(default=False)
+    mirror_edits: bool = fields.BooleanField(default=False)
+    mirror_deletes: bool = fields.BooleanField(default=False)
+    allow_bot_messages: bool = fields.BooleanField(default=True)
+    star_emoji: str = fields.CharField(max_length=64, default="\N{WHITE MEDIUM STAR}")
 
 
 StarboardConfigPydantic = pydantic_model_creator(StarboardConfig, name="StarboardConfig")
 
 
 class StarboardEntry(Model):
-    id = fields.UUIDField(pk=True)
-    source_message_id = fields.BigIntField()
-    starboard_message_id = fields.BigIntField()
-    source_channel_id = fields.BigIntField()
+    id: uuid.UUID = fields.UUIDField(pk=True)
+    source_message_id: int = fields.BigIntField()
+    starboard_message_id: int = fields.BigIntField()
+    source_channel_id: int = fields.BigIntField()
     config: fields.ForeignKeyRelation[StarboardConfig] = fields.ForeignKeyField(
         "models.StarboardConfig", related_name="entries", on_delete=fields.CASCADE
     )
@@ -234,3 +220,4 @@ class Premium(Model):
     async def delete(self, *args) -> None:
         if self.is_trial:
             raise RuntimeError("Premium trial objects cannot be deleted.")
+        await super().delete(*args)
