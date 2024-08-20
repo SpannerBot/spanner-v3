@@ -1,9 +1,10 @@
-http://:8081 {
-	reverse_proxy localhost:1237
-}
-
-http://:8080 {
-	handle_path /spanner/v3/* {
-		reverse_proxy localhost:1237
-	}
+mydomain.example {
+    encode zstd gzip
+    reverse_proxy /api/* localhost:1237
+    file_server /docs/* {
+        root ./site/
+    }
+    file_server {
+        root ./spanner-v3-webdash/_build
+    }
 }

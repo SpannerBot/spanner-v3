@@ -3,6 +3,7 @@ import logging
 import os
 import time
 import asyncio
+from pathlib import Path
 from typing import Awaitable, Callable
 from urllib.parse import urlparse
 
@@ -44,11 +45,18 @@ def _get_root_path():
 log = logging.getLogger("spanner.api")
 log.info("Base path is set to %r", _get_root_path())
 
-app = BotFastAPI(debug=True, root_path=_get_root_path(), default_response_class=JSONResponse)
+app = BotFastAPI(
+    debug=True,
+    root_path=_get_root_path(),
+    default_response_class=JSONResponse,
+    title="Spanner API",
+    docs_url="/api/docs"
+)
 app.include_router(guilds_api)
 app.include_router(oauth_api)
 app.include_router(bot_api)
-app.mount("/assets", StaticFiles(directory="./assets", html=True), name="assets")
+p = Path(__file__).parent.parent / "assets"
+app.mount("/assets", StaticFiles(directory=p, html=True), name="assets")
 ratelimits = {}
 
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=9)
@@ -123,7 +131,8 @@ def health_check():
 
 
 if os.path.exists("./docs"):
-    app.mount("/", StaticFiles(directory="./assets/docs", html=True), name="docs")
+    p = Path(__file__).parent.parent / "assets" / "docs"
+    app.mount("/", StaticFiles(directory=p, html=True), name="docs")
 else:
     pwd = os.getcwd()
     log.warning(f"Docs have not been built - run `mkdocs build -d {pwd}/assets/docs` to generate them.")

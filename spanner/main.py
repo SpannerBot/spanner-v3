@@ -8,7 +8,7 @@ from pathlib import Path
 
 import discord
 import uvicorn
-from _generate_version_info import gather_version_info, should_write, write_version_file
+from ._generate_version_info import gather_version_info, should_write, write_version_file
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
 

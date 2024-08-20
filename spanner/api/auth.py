@@ -4,6 +4,8 @@ from typing import Annotated
 import discord
 import jwt
 from fastapi import Cookie, Depends, HTTPException, Header, Path, Request, status
+from fastapi.openapi.models import SecurityBase
+from fastapi.security import APIKeyCookie, APIKeyHeader, HTTPBearer
 
 from spanner.api.vars import ALGORITHM, SECRET_KEY
 from spanner.share.database import DiscordOauthUser
@@ -15,18 +17,38 @@ __all__ = (
     "user_has_permissions",
 )
 
+
+bearer_scheme = HTTPBearer(auto_error=False)
+cookie_scheme = APIKeyCookie(name="_token", auto_error=False)
+
+
+def bearer_or_cookie_or_none(
+        bearer: str | None = Depends(bearer_scheme), cookie: str | None = Depends(cookie_scheme)
+) -> str | None:
+    return bearer or cookie
+
+
+def bearer_or_cookie(
+    bearer: str | None = Depends(bearer_scheme), cookie: str | None = Depends(cookie_scheme)
+) -> str:
+    key = bearer or cookie
+    if not key:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return key
+
+
 STATE_KEYS = {}
 
 
 async def logged_in_user(
-    req: Request, token: str = Cookie(None, alias="_token"), x_session: str = Header(None, alias="X-Session")
+    req: Request, token: str = Depends(bearer_or_cookie)
 ) -> DiscordOauthUser:
     url = req.url_for("discord_authorise").include_query_params(from_url=req.url.path)
-    reauth = HTTPException(status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": str(url)})
-    token = token or x_session
-    if not token:
-        reauth.detail = "Please log in with discord: %s" % str(url)
-        raise reauth
+    reauth = HTTPException(401, "Not authenticated", headers={"WWW-Authenticate": "Bearer"})
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

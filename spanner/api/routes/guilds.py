@@ -21,7 +21,7 @@ from spanner.share.database import (
 
 from ..auth import user_has_permissions
 
-api = APIRouter(prefix="/api/guilds", tags=["Guilds"])
+api = APIRouter(prefix="/guilds", tags=["Guilds"])
 templates = Jinja2Templates(directory="./assets/templates")
 
 

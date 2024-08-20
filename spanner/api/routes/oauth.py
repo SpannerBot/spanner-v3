@@ -13,7 +13,7 @@ from spanner.share.database import DiscordOauthUser
 from ..auth import STATE_KEYS
 from ..vars import ACCESS_TOKEN_EXPIRE_SECONDS, ALGORITHM, CLIENT_SECRET, OAUTH_URL, SECRET_KEY
 
-api = APIRouter(prefix="/api/oauth", tags=["OAuth"])
+api = APIRouter(prefix="/oauth", tags=["OAuth"])
 log = logging.getLogger("spanner.api.oauth")
 
 
@@ -36,7 +36,7 @@ async def discord_authorise(req: Request, code: str = None, state: str = None, f
         r = RedirectResponse(
             url=OAUTH_URL.format(
                 client_id=req.app.bot.user.id,
-                redirect_uri=str(req.base_url) + "api/oauth/callback/discord",
+                redirect_uri=str(req.base_url) + "oauth/callback/discord",
                 state=state_key,
             )
             + "&prompt=none"

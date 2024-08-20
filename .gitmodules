@@ -1,0 +1,3 @@
+[submodule "spanner-v3-webdash"]
+	path = spanner-v3-webdash
+	url = https://github.com/nexy7574/spanner-v3-webdash.git

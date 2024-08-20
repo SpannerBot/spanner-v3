@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import click
 import discord
 
@@ -6,6 +9,14 @@ import discord
 def cli():
     """Spanner CLI. Mostly utility."""
     pass
+
+
+@cli.command(name="generate-token")
+def generate_token():
+    """Generates a token, for use in JWT, etc."""
+    import secrets
+
+    click.secho(secrets.token_hex(), fg="cyan")
 
 
 @cli.command()
@@ -70,6 +81,14 @@ def intents(as_table: bool):
 @cli.command()
 def run():
     """Runs the bot."""
+    from ._generate_version_info import should_write, gather_version_info, write_version_file
+
+    if (Path.cwd() / "spanner").exists():
+        os.chdir("spanner")
+    if should_write():
+        click.secho("No version metadata found - writing...", fg="yellow")
+        write_version_file(*gather_version_info())
+
     from spanner.main import run as run_bot
 
     click.secho("Starting bot...", fg="green")

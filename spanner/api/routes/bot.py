@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from spanner.bot import CustomBridgeBot
 
 
-api = APIRouter(prefix="/api/bot", tags=["Meta"])
+api = APIRouter(prefix="/bot", tags=["Meta"])
 
 
 @api.get("/ping", response_model=Ping)
