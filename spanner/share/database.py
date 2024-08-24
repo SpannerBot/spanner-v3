@@ -124,11 +124,13 @@ SelfRoleMenuPydantic = pydantic_model_creator(SelfRoleMenu, name="SelfRoleMenu")
 
 
 class DiscordOauthUser(Model):
-    id = fields.BigIntField(pk=True, generated=False)
-    access_token = fields.CharField(max_length=255)
+    guid: uuid.UUID = fields.UUIDField(pk=True)
+    user_id = fields.BigIntField(index=True)
+    access_token = fields.CharField(max_length=255, index=True)
     refresh_token = fields.CharField(max_length=255)
     expires_at = fields.FloatField()
     session = fields.CharField(max_length=1024, default=None, null=True)
+    scope: str = fields.TextField()
 
 
 class StarboardMode(enum.IntEnum):

@@ -1,6 +1,6 @@
 [spanner]
-token = "..."
-openai_token = "..."  # currently only used for moderation, which is free.
+token = "..."  # The bot's token
+openai_token = "..."  # currently only used for moderation, which is free. Can be safely omitted.
 debug_guilds = [982308600896704593]  # set to your server IDs, or omit for global commands.
 
 [web]
@@ -11,7 +11,19 @@ base_url = "https://bots.nexy7574.co.uk/spanner/v3"  # the public facing URL of 
 # However that's not recommended.
 jwt_secret_key = "..."  # set to a random string. This is used to sign JWTs. You should keep this in a secure
 # environment variable ($JWT_SECRET_KEY) though.
+discord_client_secret = "..."  # set to your Discord client secret. This is used for OAuth2.
 forwarded_allow_ips = "*"  # set to the IP address of your reverse proxy, or "*" to allow all.
+
+[web.cors]
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+allow_origins = [
+    "https://bots.nexy7574.co.uk",
+    "http://localhost:1237",
+    "http://127.0.0.1:1237"
+]  # set to your allowed origins. Can be "*" to allow all.
+allow_credentials = true  # set to `true` to allow credentials (Authorization). Recommended.
+allow_methods = ["GET", "POST", "PUT", "DELETE"]  # set to your allowed methods.
+allow_headers = ["Authorization", "Content-Type"]  # set to your allowed headers.
 
 [skus]
 subscription_id = 0  # Set to the SKU ID of the subscription (type 5). This is used for premium.

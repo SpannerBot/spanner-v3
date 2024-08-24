@@ -1,67 +1,41 @@
-import logging
 import os
+import hashlib
 import platform
-
-import uvicorn
-from fastapi import FastAPI
-import psutil
+from typing import Any, Callable
 
 from spanner.share.config import load_config
 
-__all__ = (
-    "HOST_DATA",
-    "PROCESS_EPOCH",
-    "SECRET_KEY",
-    "ALGORITHM",
-    "ACCESS_TOKEN_EXPIRE_SECONDS",
-    "OAUTH_URL",
-    "CLIENT_SECRET",
-    "BotFastAPI",
+
+def _get_item(_from: dict, name: str, default: Any = None, cast: Callable = None) -> Any:
+    cast = cast or (lambda x: x)
+    return cast(os.getenv(name.upper(), _from.get(name, default)))
+
+
+CONFIG: dict = load_config()
+BOT_TOKEN: str = _get_item(CONFIG["spanner"], "token", None, str)
+WEB_CONFIG: dict = load_config()["web"]
+WEB_CONFIG.setdefault("cors", {})
+CORS_CONFIG = WEB_CONFIG["cors"]
+
+
+HOST = _get_item(WEB_CONFIG, "host", "127.0.0.1", str)
+PORT = _get_item(WEB_CONFIG, "port", 1237, int)
+BASE_URL = _get_item(WEB_CONFIG, "base_url", f"http://{HOST}:{PORT}", str)
+JWT_SECRET_KEY = _get_item(
+    WEB_CONFIG,
+    "jwt_secret_key",
+    hashlib.sha256(platform.node().encode()).hexdigest(),
+    str
 )
+DISCORD_CLIENT_SECRET = _get_item(WEB_CONFIG, "discord_client_secret", None, str)
+DISCORD_CLIENT_ID = _get_item(WEB_CONFIG, "discord_client_id", None)
+if DISCORD_CLIENT_ID:
+    DISCORD_CLIENT_ID = str(DISCORD_CLIENT_ID)
+DISCORD_API_VERSION = _get_item(WEB_CONFIG, "discord_api_version", 10, int)
+DISCORD_API_BASE_URL = f"https://discord.com/api/v{DISCORD_API_VERSION}"
+FORWARDED_ALLOW_IPS = _get_item(WEB_CONFIG, "forwarded_allow_ips", "*", str)
 
-log = logging.getLogger("spanner.api.vars")
-
-HOST_DATA = {
-    "architecture": platform.machine(),
-    "platform": platform.platform(terse=True),
-    "python": platform.python_version(),
-    "system": {"name": platform.system(), "version": platform.version()},
-    "docker": os.path.exists("/.dockerenv"),
-    "cpus": os.cpu_count(),
-}
-PROCESS_EPOCH = psutil.Process(os.getpid()).create_time()
-_DEFAULT_JWT = "2f7c204ac7d45f684aae0647745a4d2f986037ccb2e60d5b3c95f2690728821c"
-SECRET_KEY = (
-    os.getenv(
-        "JWT_SECRET_KEY",
-        load_config()["web"].get("jwt_secret_key", ""),
-    )
-    or _DEFAULT_JWT
-)
-if SECRET_KEY == _DEFAULT_JWT:
-    log.critical("Using default JWT secret key. change it! set $JWT_SECRET_KEY or set config.toml[web.jwt_secret_key]")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_SECONDS = 806400  # 1 week, same length as discord token
-OAUTH_URL = (
-    "https://discord.com/oauth2/authorize?"
-    "client_id={client_id}"
-    "&response_type=code"
-    "&redirect_uri={redirect_uri}"
-    "&scope=identify+guilds"
-    "&state={state}"
-)
-CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", load_config()["web"].get("discord_client_secret"))
-if not CLIENT_SECRET:
-    log.critical(
-        "No client secret passed to API (either $DISCORD_CLIENT_SECRET or config.toml[web.discord_client_secret])."
-        " Authorised endpoints will be unavailable."
-    )
-
-
-class BotFastAPI(FastAPI):
-    server: uvicorn.Server | None = None
-
-    def __init__(self, *args, **kwargs):
-        _b = kwargs.pop("bot", None)
-        super().__init__(*args, **kwargs)
-        self.bot = _b
+CORS_ALLOW_ORIGINS = _get_item(CORS_CONFIG, "allow_origins", ["*"])
+CORS_ALLOW_METHODS = _get_item(CORS_CONFIG, "allow_methods", ["GET", "POST"])
+CORS_ALLOW_CREDENTIALS = _get_item(CORS_CONFIG, "allow_credentials", True)
+CORS_ALLOW_HEADERS = _get_item(CORS_CONFIG, "allow_headers", ["*"])

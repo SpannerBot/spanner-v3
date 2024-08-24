@@ -24,7 +24,7 @@ class SettingsCog(commands.Cog):
 
     @staticmethod
     async def _ensure_guild_config(guild_id: int):
-        config, _ = await GuildConfig.get_or_create(guild_id=guild_id)
+        config, _ = await GuildConfig.get_or_create(id=guild_id)
         return config
 
     @settings.command(name="set-log-channel")

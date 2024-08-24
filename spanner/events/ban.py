@@ -29,7 +29,7 @@ class BanEvents(commands.Cog):
                             await values["message"].edit(embed=values["embed"])
                         except discord.HTTPException:
                             pass
-                        self.awaiting_audit_log.pop(values["message"].id)
+                        self.awaiting_audit_log.pop(values["message"].user_id)
                     elif values["type"] == "unban" and entry.action == discord.AuditLogAction.unban:
                         values["embed"].set_author(
                             name="Moderator: %s" % entry.user.display_name, icon_url=entry.user.display_avatar.url
@@ -41,7 +41,7 @@ class BanEvents(commands.Cog):
                             await values["message"].edit(embed=values["embed"])
                         except discord.HTTPException:
                             pass
-                        self.awaiting_audit_log.pop(values["message"].id)
+                        self.awaiting_audit_log.pop(values["message"].user_id)
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild: discord.Guild, user: discord.User | discord.Member):

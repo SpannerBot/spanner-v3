@@ -8,7 +8,7 @@ from pathlib import Path
 
 import discord
 import uvicorn
-from ._generate_version_info import gather_version_info, should_write, write_version_file
+from _generate_version_info import gather_version_info, should_write, write_version_file
 from discord.ext import bridge, commands
 from rich.logging import RichHandler
 
@@ -186,7 +186,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
         support = bot.get_application_command("support")
         return await ctx.respond(
             f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified."
-            f" If you want help, try running </support:{support.id}>.",
+            f" If you want help, try running </support:{support.user_id}>.",
             ephemeral=True,
         )
 
