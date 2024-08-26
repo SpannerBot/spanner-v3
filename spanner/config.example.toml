@@ -9,6 +9,10 @@ host = "0.0.0.0"
 port = 1237
 base_url = "https://bots.nexy7574.co.uk/spanner/v3"  # the public facing URL of your API. can be omitted for automatic,
 # However that's not recommended.
+root_path = "/api"  # if running behind an API with a subdirectory, set this to the prefix
+# e.g.
+# /api/* -> localhost:1237/ = root_path="/api"
+# / -> localhost:3000
 jwt_secret_key = "..."  # set to a random string. This is used to sign JWTs. You should keep this in a secure
 # environment variable ($JWT_SECRET_KEY) though.
 discord_client_secret = "..."  # set to your Discord client secret. This is used for OAuth2.
