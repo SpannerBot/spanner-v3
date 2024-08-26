@@ -1,19 +1,17 @@
-import asyncio
-import math
-import time
+
+from typing import Annotated
 
 import discord.utils
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Cookie, Query
-from typing import Annotated
-from spanner.share.database import DiscordOauthUser
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
-from ..models.discord_ import User, PartialGuild, BasicChannelInformation
-from .oauth2 import is_logged_in
-from ..vars import DISCORD_API_BASE_URL
 from spanner.bot import bot
+from spanner.share.database import DiscordOauthUser
 
+from ..models.discord_ import BasicChannelInformation, PartialGuild, User
+from ..vars import DISCORD_API_BASE_URL
+from .oauth2 import is_logged_in
 
 router = APIRouter(tags=["Discord API Proxy"])
 RATELIMITER: dict[str, dict[str, tuple[int, int]]] = {}
@@ -25,18 +23,13 @@ async def get_me(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONRespo
     if "identify" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: identify")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
-        response = await client.get(
-            "/users/@me",
-            headers={"Authorization": f"Bearer {user.access_token}"}
-        )
+        response = await client.get("/users/@me", headers={"Authorization": f"Bearer {user.access_token}"})
         response.raise_for_status()
         return User.model_validate(response.json())
 
 
 @router.get("/users/@me/guilds")
-async def get_my_guilds(
-    user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
-) -> list[PartialGuild]:
+async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> list[PartialGuild]:
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -50,11 +43,7 @@ async def get_my_guilds(
 
 
 @router.get("/guilds/{guild_id}")
-async def get_guild(
-        guild_id: int,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        res: JSONResponse
-) -> PartialGuild:
+async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> PartialGuild:
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -72,12 +61,12 @@ async def get_guild(
 
 @router.get("/guilds/{guild_id}/channels")
 async def get_guild_channels(
-        res: JSONResponse,
-        guild_id: int,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        channel_types: list[int] = Query(None, alias="types"),
-        minimum_user_permissions: int = Query(0),
-        minimum_bot_permissions: int = Query(0)
+    res: JSONResponse,
+    guild_id: int,
+    user: Annotated[DiscordOauthUser, is_logged_in],
+    channel_types: list[int] = Query(None, alias="types"),
+    minimum_user_permissions: int = Query(0),
+    minimum_bot_permissions: int = Query(0),
 ) -> list[BasicChannelInformation]:
     if not bot.is_ready():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot is not ready.")
@@ -111,7 +100,7 @@ async def get_guild_channels(
                         name=channel.name,
                         user_permissions=str(user_perms.value),
                         bot_permissions=bot_perms.value,
-                        flags=channel.flags.value
+                        flags=channel.flags.value,
                     )
                 )
     else:
@@ -125,7 +114,7 @@ async def get_guild_channels(
                     name=channel.name,
                     user_permissions=str(user_perms.value),
                     bot_permissions=bot_perms.value,
-                    flags=channel.flags.value
+                    flags=channel.flags.value,
                 )
             )
     return resolved_channels
@@ -133,9 +122,7 @@ async def get_guild_channels(
 
 @router.get("/users/@me/guilds/{guild_id}/member")
 async def get_my_guild_member(
-    guild_id: int,
-    user: Annotated[DiscordOauthUser, is_logged_in],
-    res: JSONResponse
+    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
 ) -> User:
     if "guilds.members.read" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds.members.read")

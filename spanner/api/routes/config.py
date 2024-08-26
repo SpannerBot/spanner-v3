@@ -1,17 +1,27 @@
 import datetime
-
-import discord.utils
 import hashlib
-from fastapi import APIRouter, HTTPException, status, Depends, Query, Header
-from pydantic import BaseModel
 from typing import Annotated
 
-from starlette.responses import Response, JSONResponse
+import discord.utils
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
+from pydantic import BaseModel
+from starlette.responses import JSONResponse, Response
 
-from .oauth2 import is_logged_in
+from spanner.bot import CustomBridgeBot, bot as __bot
+from spanner.share.database import (
+    DiscordOauthUser,
+    GuildAuditLogEntry,
+    GuildAuditLogEntryPydantic,
+    GuildConfig,
+    GuildConfigPydantic,
+    GuildLogFeatures,
+    GuildLogFeaturesPydantic,
+    GuildNickNameModeration,
+    GuildNickNameModerationPydantic,
+)
+
 from ..models.config import GuildAuditLogEntryResponse, NicknameModerationUpdateBody
-from spanner.share.database import DiscordOauthUser, GuildConfig, GuildConfigPydantic, GuildNickNameModerationPydantic, GuildNickNameModeration, GuildLogFeaturesPydantic, GuildLogFeatures, GuildAuditLogEntry, GuildAuditLogEntryPydantic
-from spanner.bot import bot as __bot, CustomBridgeBot
+from .oauth2 import is_logged_in
 
 
 class _FeatureToggle(BaseModel):
@@ -23,6 +33,7 @@ def bot_is_ready():
         if not __bot.is_ready():
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot is not ready.")
         return __bot
+
     return Depends(inner)
 
 
@@ -31,9 +42,7 @@ router = APIRouter(tags=["Configuration"])
 
 @router.get("/{guild_id}")
 async def get_guild_config(
-    guild_id: int,
-    user: Annotated[DiscordOauthUser, is_logged_in],
-    bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], bot: Annotated[CustomBridgeBot, bot_is_ready]
 ) -> GuildConfigPydantic:
     """
     Get the configuration for the given guild.
@@ -54,10 +63,7 @@ async def get_guild_config(
 
 
 @router.get("/{guild_id}/presence", status_code=status.HTTP_204_NO_CONTENT)
-async def get_guild_presence(
-        guild_id: int,
-        bot: Annotated[CustomBridgeBot, bot_is_ready]
-):
+async def get_guild_presence(guild_id: int, bot: Annotated[CustomBridgeBot, bot_is_ready]):
     """Checks that the bot is in the target server."""
     if not bot.is_ready():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot is not ready.")
@@ -70,9 +76,7 @@ async def get_guild_presence(
 
 @router.get("/{guild_id}/nickname-moderation")
 async def get_nickname_moderation(
-    guild_id: int,
-    user: Annotated[DiscordOauthUser, is_logged_in],
-    bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], bot: Annotated[CustomBridgeBot, bot_is_ready]
 ) -> GuildNickNameModerationPydantic:
     """
     Get the nickname moderation configuration for the given guild.
@@ -95,10 +99,10 @@ async def get_nickname_moderation(
 
 @router.patch("/{guild_id}/nickname-moderation")
 async def set_nickname_moderation(
-        guild_id: int,
-        body: NicknameModerationUpdateBody,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int,
+    body: NicknameModerationUpdateBody,
+    user: Annotated[DiscordOauthUser, is_logged_in],
+    bot: Annotated[CustomBridgeBot, bot_is_ready],
 ):
     """
     Update the nickname moderation configuration for the given guild.
@@ -128,9 +132,7 @@ async def set_nickname_moderation(
 
 @router.delete("/{guild_id}/nickname-moderation", status_code=status.HTTP_204_NO_CONTENT)
 async def disable_nickname_moderation(
-        guild_id: int,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], bot: Annotated[CustomBridgeBot, bot_is_ready]
 ):
     """
     Disables nickname moderation for the guild, destroying the configuration.
@@ -158,9 +160,8 @@ async def get_logging_features(
     user: Annotated[DiscordOauthUser, is_logged_in],
     bot: Annotated[CustomBridgeBot, bot_is_ready],
     enabled: bool | None = Query(
-        None,
-        description="Whether to only return enabled/disabled (true/false) features. None returns all."
-    )
+        None, description="Whether to only return enabled/disabled (true/false) features. None returns all."
+    ),
 ) -> GuildConfigPydantic:
     """
     Get the logging features configuration for the given guild.
@@ -205,11 +206,7 @@ def get_all_log_features(res: JSONResponse, guild_id: int, if_none_match: str | 
 
 
 @router.put("/{guild_id}/logging-features/{feature}")
-async def set_log_feature(
-        guild_id: int,
-        feature: str,
-        body: _FeatureToggle
-):
+async def set_log_feature(guild_id: int, feature: str, body: _FeatureToggle):
     """
     Enable or disable a specific logging feature for the given guild.
 
@@ -230,10 +227,10 @@ async def set_log_feature(
 
 @router.delete("/{guild_id}/logging-features/{feature}")
 async def delete_log_feature(
-        guild_id: int,
-        feature: str,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int,
+    feature: str,
+    user: Annotated[DiscordOauthUser, is_logged_in],
+    bot: Annotated[CustomBridgeBot, bot_is_ready],
 ):
     """
     Disable a specific logging feature for the given guild.
@@ -264,16 +261,16 @@ async def delete_log_feature(
 
 @router.get("/{guild_id}/audit-log")
 async def get_guild_audit_logs(
-        guild_id: int,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        bot: Annotated[CustomBridgeBot, bot_is_ready],
-        before: datetime.datetime | None = Query(None),
-        after: datetime.datetime | None = Query(None),
-        limit: int = Query(100, le=100, ge=1),
-        offset: int = Query(0, ge=0),
-        author: int | None = Query(None),
-        namespace: str | None = Query(None),
-        action: str | None = Query(None),
+    guild_id: int,
+    user: Annotated[DiscordOauthUser, is_logged_in],
+    bot: Annotated[CustomBridgeBot, bot_is_ready],
+    before: datetime.datetime | None = Query(None),
+    after: datetime.datetime | None = Query(None),
+    limit: int = Query(100, le=100, ge=1),
+    offset: int = Query(0, ge=0),
+    author: int | None = Query(None),
+    namespace: str | None = Query(None),
+    action: str | None = Query(None),
 ):
     """
     Get the audit logs for the given guild.
@@ -286,7 +283,8 @@ async def get_guild_audit_logs(
     * If `limit` is specified, UP TO this many entries will be returned.
     * `Offset` must be specified to properly paginate. It may not be required if less than LIMIT entries are returned.
     * If `author` is specified, only entries created by the given user ID will be returned.
-    * If `namespace` is specified, only entries for this specific namespace (e.g. `settings.logging.features`) will be returned.
+    * If `namespace` is specified, only entries for this specific namespace (e.g. `settings.logging.features`)
+    will be returned.
     * If `action` is specified, only entries using this specific action (e.g. `toggle`) are returned.
 
     If any of these are omitted or nullified, excluding `offset` (default 0), and `limit` (default 100)
@@ -296,29 +294,19 @@ async def get_guild_audit_logs(
     user ID.
     """
     if before and after and before >= after:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "Before must be a time predating after"
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Before must be a time predating after")
     elif after and after > discord.utils.utcnow():
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "After must be a time in the past, I cannot predict the future."
+            status.HTTP_400_BAD_REQUEST, "After must be a time in the past, I cannot predict the future."
         )
     elif before.timestamp() < 1715026768:  # spanner creation timestamp
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "Before time predates spanner's existence."
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Before time predates spanner's existence.")
     if author == 0:
         author = user.user_id
     elif author == 1:
         author = bot.user.id
     elif author > discord.utils.generate_snowflake():
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            "Author snowflake does not exist yet."
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Author snowflake does not exist yet.")
 
     guild = bot.get_guild(guild_id)
     if not guild:
@@ -348,7 +336,5 @@ async def get_guild_audit_logs(
     count = await query.count()
     query = query.order_by("-created_at").limit(limit).offset(offset)
     return GuildAuditLogEntryResponse(
-        total=count,
-        offset=offset,
-        entries=await GuildAuditLogEntryPydantic.from_queryset(query)
+        total=count, offset=offset, entries=await GuildAuditLogEntryPydantic.from_queryset(query)
     )

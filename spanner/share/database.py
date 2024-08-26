@@ -232,6 +232,7 @@ class Premium(Model):
 
 class AutoRole(Model):
     """Roles to automatically grant new members"""
+
     id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
         "models.GuildConfig", related_name="auto_roles", on_delete=fields.CASCADE

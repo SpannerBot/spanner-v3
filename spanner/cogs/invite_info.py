@@ -1,24 +1,24 @@
 import asyncio
 import copy
 import os
-from typing import Callable, Awaitable, Any
+from typing import Any, Awaitable, Callable
 
 import discord
 from discord.ext import commands
 
+from spanner.cogs.channel_info import ChannelInfoCog
+from spanner.cogs.server_info import ServerInfoCog
 from spanner.share.data import verification_levels
 from spanner.share.utils import get_bool_emoji
 from spanner.share.views import GenericLabelledEmbedView
-from spanner.cogs.server_info import ServerInfoCog
-from spanner.cogs.channel_info import ChannelInfoCog
 
 
 class ViewInfoButton(discord.ui.Button):
     def __init__(
-            self,
-            context: discord.ApplicationContext,
-            callback: Callable[[discord.ApplicationContext, discord.Interaction], Awaitable[Any]],
-            **kwargs
+        self,
+        context: discord.ApplicationContext,
+        callback: Callable[[discord.ApplicationContext, discord.Interaction], Awaitable[Any]],
+        **kwargs,
     ):
         self._callback = callback
         self.one_time = kwargs.pop("one_time", True)
@@ -148,20 +148,18 @@ class InviteInfo(commands.Cog):
                 embeds["Overview"].set_image(url=ctx.guild.banner.url)
 
             new_view = GenericLabelledEmbedView(ctx, **embeds)
-            btn = discord.ui.Button(
-                label="Back",
-                emoji="\U000025c0\U0000fe0f",
-                custom_id="back"
-            )
+            btn = discord.ui.Button(label="Back", emoji="\U000025c0\U0000fe0f", custom_id="back")
 
             async def _callback(i: discord.Interaction):
                 await i.response.defer(invisible=True)
                 btn.view.stop()
+
             btn.callback = _callback
             new_view.add_item(btn)
             await interaction.edit_original_response(embed=new_view.current_embed, view=new_view)
             await new_view.wait()
             await interaction.edit_original_response(embed=original_view.embeds["Overview"], view=original_view)
+
         return inner
 
     def ii_channel_callback(self, original_view: GenericLabelledEmbedView, channel: discord.abc.GuildChannel):
@@ -170,20 +168,18 @@ class InviteInfo(commands.Cog):
             embeds = await ChannelInfoCog(self.bot).get_channel_info(channel)
 
             new_view = GenericLabelledEmbedView(ctx, **embeds)
-            btn = discord.ui.Button(
-                label="Back",
-                emoji="\U000025c0\U0000fe0f",
-                custom_id="back"
-            )
+            btn = discord.ui.Button(label="Back", emoji="\U000025c0\U0000fe0f", custom_id="back")
 
             async def _callback(i: discord.Interaction):
                 await i.response.defer(invisible=True)
                 btn.view.stop()
+
             btn.callback = _callback
             new_view.add_item(btn)
             await interaction.edit_original_response(embed=new_view.current_embed, view=new_view)
             await new_view.wait()
             await interaction.edit_original_response(embed=original_view.embeds["Overview"], view=original_view)
+
         return inner
 
     @commands.slash_command(
@@ -204,10 +200,7 @@ class InviteInfo(commands.Cog):
         _guild = self.bot.get_guild(invite.guild.id)
         if _guild:
             btn = ViewInfoButton(
-                ctx,
-                self.ii_guild_callback(view, _guild),
-                label="View Server Info",
-                style=discord.ButtonStyle.secondary
+                ctx, self.ii_guild_callback(view, _guild), label="View Server Info", style=discord.ButtonStyle.secondary
             )
             view.add_item(btn)
         _channel = discord.utils.get(set(self.bot.get_all_channels()), id=invite.channel.id)
@@ -216,14 +209,12 @@ class InviteInfo(commands.Cog):
                 ctx,
                 self.ii_channel_callback(view, _channel),
                 label="View Channel Info",
-                style=discord.ButtonStyle.secondary
+                style=discord.ButtonStyle.secondary,
             )
             view.add_item(btn)
         if not ctx.interaction.authorizing_integration_owners.guild_id:
             for embed in embeds.values():
-                embed.set_footer(
-                    text="This information may be incomplete as I am not in the server."
-                )
+                embed.set_footer(text="This information may be incomplete as I am not in the server.")
         await ctx.respond(embed=embeds["Overview"], view=view, ephemeral=True)
 
 

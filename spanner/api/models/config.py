@@ -1,11 +1,8 @@
 from pydantic import BaseModel
+
 from spanner.share.database import GuildAuditLogEntryPydantic
 
-
-__all__ = (
-    "GuildAuditLogEntryResponse",
-    "NicknameModerationUpdateBody"
-)
+__all__ = ("GuildAuditLogEntryResponse", "NicknameModerationUpdateBody")
 
 
 class GuildAuditLogEntryResponse(BaseModel):

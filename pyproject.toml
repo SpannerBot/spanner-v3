@@ -15,7 +15,7 @@ respect-gitignore = true
 
 [tool.ruff.lint]
 fixable = ["ALL"]
-ignore =   ["F403", "F405"]
+ignore =   ["F403", "F405", "E731"]
 select = [
     "E",     # pycodestyle
     "F",     # Pyflakes

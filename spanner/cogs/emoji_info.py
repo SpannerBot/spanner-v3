@@ -149,9 +149,7 @@ class EmojiInfoCog(commands.Cog):
         embed = embeds["Overview"]
         if not ctx.interaction.authorizing_integration_owners.guild_id:
             for embed in embeds.values():
-                embed.set_footer(
-                    text="This information may be incomplete as I am not in the server."
-                )
+                embed.set_footer(text="This information may be incomplete as I am not in the server.")
         button = EmojiStealButton(emoji)
         if ctx.guild and ctx.guild.me and len(ctx.guild.emojis) < ctx.guild.emoji_limit:
             if ctx.user.guild_permissions.manage_emojis and ctx.me.guild_permissions.manage_emojis:
@@ -181,7 +179,7 @@ class EmojiInfoCog(commands.Cog):
         if ctx.guild.me is None:
             return await ctx.respond(
                 ":x: I need to be in the server to manage emojis (I can't see any of the guild's emojis otherwise).",
-                ephemeral=True
+                ephemeral=True,
             )
         await ctx.defer(ephemeral=True)
         emoji = discord.PartialEmoji.from_str(emoji)

@@ -259,7 +259,10 @@ class PersistentSelfRoleView(discord.ui.View):
             )
             self.pre_options = [
                 discord.SelectOption(
-                    label="@" + role.name, value=str(role.user_id), description=role.name, default=role in source.user.roles
+                    label="@" + role.name,
+                    value=str(role.user_id),
+                    description=role.name,
+                    default=role in source.user.roles,
                 )
                 for role in self.real_roles
             ]

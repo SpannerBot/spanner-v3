@@ -1,8 +1,6 @@
-import re
 
 import discord
 from discord.ext import commands
-
 
 CHAR = "\U000017b5"
 

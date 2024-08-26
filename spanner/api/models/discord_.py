@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, computed_field, HttpUrl
+from pydantic import BaseModel, HttpUrl, computed_field
 
 
 class AccessTokenResponse(BaseModel):

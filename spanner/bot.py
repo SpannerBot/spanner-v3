@@ -1,5 +1,4 @@
 import asyncio
-import signal
 import sys
 
 sys.path.extend([".", ".."])
@@ -13,8 +12,8 @@ from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from spanner.share.config import load_config
-from spanner.share.views.self_roles import PersistentSelfRoleView
 from spanner.share.database import GuildConfig
+from spanner.share.views.self_roles import PersistentSelfRoleView
 
 TORTOISE_ORM = {
     "connections": {"default": load_config()["database"]["uri"]},

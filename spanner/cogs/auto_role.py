@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
 
-from spanner.share.database import GuildAuditLogEntry, GuildConfig
+from spanner.share.database import GuildAuditLogEntry
 
 
 class AutoRoleConfig(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
 
     auto_roles = discord.SlashCommandGroup(
         name="auto-roles",

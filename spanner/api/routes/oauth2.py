@@ -5,19 +5,16 @@ from typing import Annotated
 
 import discord.utils
 import httpx
-
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Cookie, Query
-from fastapi.responses import RedirectResponse, PlainTextResponse
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, status
+from fastapi.responses import RedirectResponse
 from fastapi.security.api_key import APIKeyCookie, APIKeyHeader
-from ..vars import DISCORD_CLIENT_SECRET, DISCORD_CLIENT_ID, BASE_URL
+
 from spanner.share.database import DiscordOauthUser
+
 from ..models.discord_ import AccessTokenResponse, User
+from ..vars import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET
 
-
-__all__ = (
-    "router",
-    "is_logged_in"
-)
+__all__ = ("router", "is_logged_in")
 
 
 router = APIRouter(tags=["OAuth2"])
@@ -30,8 +27,7 @@ bearer_scheme = APIKeyHeader(name="X-Spanner-Session", auto_error=False)
 
 
 async def _is_authenticated(
-        session_cookie: str | None = Depends(cookie_scheme),
-        session_header: str | None = Depends(bearer_scheme)
+    session_cookie: str | None = Depends(cookie_scheme), session_header: str | None = Depends(bearer_scheme)
 ) -> DiscordOauthUser:
     session_token = session_header or session_cookie
     if session_token is None:
@@ -40,8 +36,7 @@ async def _is_authenticated(
     user = await DiscordOauthUser.get_or_none(session=session_token)
     if user is None:
         raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            detail=f"Invalid session {session_token!r}. Clear your cookies and try again."
+            status.HTTP_403_FORBIDDEN, detail=f"Invalid session {session_token!r}. Clear your cookies and try again."
         )
 
     if user.expires_at < discord.utils.utcnow().timestamp():
@@ -49,6 +44,7 @@ async def _is_authenticated(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Expired session. Clear your cookies and try again.")
 
     return user
+
 
 is_logged_in = Depends(_is_authenticated)
 
@@ -67,7 +63,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limited. Try again later.",
-            headers={"Retry-After": str(round(expires - time.time()))}
+            headers={"Retry-After": str(round(expires - time.time()))},
         )
 
     if expires > time.time():
@@ -78,15 +74,13 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
     state = secrets.token_urlsafe()
     STATES[state] = return_to
 
-    url_base = ("https://discord.com/api/oauth2/authorize?"
-                "client_id={!s}&redirect_uri={!s}&response_type=code&scope=identify guilds guilds.members.read"
-                "&state={!s}&prompt=none")
-    cb = req.url_for("callback")
-    url = url_base.format(
-        DISCORD_CLIENT_ID,
-        cb,
-        state
+    url_base = (
+        "https://discord.com/api/oauth2/authorize?"
+        "client_id={!s}&redirect_uri={!s}&response_type=code&scope=identify guilds guilds.members.read"
+        "&state={!s}&prompt=none"
     )
+    cb = req.url_for("callback")
+    url = url_base.format(DISCORD_CLIENT_ID, cb, state)
     res = RedirectResponse(url)
     res.set_cookie("state", state)
     return res
@@ -94,10 +88,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
 
 @router.get("/callback")
 async def callback(
-        req: Request,
-        code: str,
-        state: str = Query(...),
-        state_cookie: str = Cookie(..., alias="state")
+    req: Request, code: str, state: str = Query(...), state_cookie: str = Cookie(..., alias="state")
 ) -> RedirectResponse:
     """
     Callback for the oauth2 login flow, redirects to the return_to URL.
@@ -122,19 +113,14 @@ async def callback(
                 "redirect_uri": req.url_for("callback"),
             },
             auth=(DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET),
-            headers = {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         code_grant.raise_for_status()
         code_payload = AccessTokenResponse.model_validate(code_grant.json())
         if not all(x in code_payload.scope_array for x in ("identify", "guilds")):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required scopes")
 
-        user_data = await client.get(
-            "/users/@me",
-            headers={"Authorization": f"Bearer {code_payload.access_token}"}
-        )
+        user_data = await client.get("/users/@me", headers={"Authorization": f"Bearer {code_payload.access_token}"})
         user_data.raise_for_status()
         user_data = User.model_validate(user_data.json())
 
@@ -144,7 +130,7 @@ async def callback(
             refresh_token=code_payload.refresh_token,
             expires_at=(discord.utils.utcnow() + datetime.timedelta(seconds=code_payload.expires_in)).timestamp(),
             session=secrets.token_urlsafe(),
-            scope=code_payload.scope
+            scope=code_payload.scope,
         )
 
     res = RedirectResponse(return_to)
@@ -156,10 +142,7 @@ async def callback(
 async def whoami(user: Annotated[DiscordOauthUser, is_logged_in]) -> User:
     """Fetches the current logged-in user's discord details"""
     async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
-        res = await client.get(
-            "/users/@me",
-            headers={"Authorization": f"Bearer {user.access_token}"}
-        )
+        res = await client.get("/users/@me", headers={"Authorization": f"Bearer {user.access_token}"})
         res.raise_for_status()
         return User.model_validate(res.json())
 

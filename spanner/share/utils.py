@@ -16,7 +16,6 @@ from jinja2 import Template
 from .data import boolean_emojis
 from .database import GuildLogFeatures, Premium
 
-
 __all__ = [
     "get_bool_emoji",
     "first_line",
@@ -192,9 +191,9 @@ def format_template(template: str, **kwargs) -> str:
 
 
 async def entitled_to_premium(
-        interaction: discord.Interaction | discord.Guild,
-        *,
-        allow_trial: bool = True,
+    interaction: discord.Interaction | discord.Guild,
+    *,
+    allow_trial: bool = True,
 ) -> bool:
     """
     Checks if the current interaction is entitled to premium.
@@ -203,6 +202,7 @@ async def entitled_to_premium(
     :param allow_trial: Whether to allow premium trials
     :returns: bool - Whether the interaction is entitled to premium
     """
+
     def iter_(ens: Iterable[discord.Entitlement], g: discord.Guild | None):
         for e in ens:
             if e.deleted:
@@ -212,6 +212,7 @@ async def entitled_to_premium(
             if g and g.id == e.guild_id:
                 return True
         return False
+
     if isinstance(interaction, discord.Interaction):
         guild = interaction.guild
     elif isinstance(interaction, discord.Guild):

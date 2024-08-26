@@ -60,9 +60,10 @@ class MetaCog(commands.Cog):
     @commands.command()
     async def version(self, ctx: commands.Context):
         """Gets the spanner version."""
-        from spanner.share.version import __build_time__, __sha__, __sha_short__
         from discord import __version__ as discord_version
         from fastapi import __version__ as fastapi_version
+
+        from spanner.share.version import __build_time__, __sha__, __sha_short__
 
         base_url = "https://github.com/nexy7574/spanner-v3/tree/{}"
         url = base_url.format(__sha__)
@@ -127,7 +128,6 @@ class MetaCog(commands.Cog):
 
         paginator = commands.Paginator("", "", 2000)
         for n, commit in enumerate(changes, 1):
-            commit_no = len(changes) - n + 1
             paginator.add_line(
                 f"* [{commit['message']} ({commit['sha'][:7]})](<{commit['url']}>) by "
                 f"[{commit['author']['name']}](<{commit['author']['url']}>)"

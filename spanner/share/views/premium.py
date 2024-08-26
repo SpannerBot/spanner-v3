@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+
 from spanner.share.config import load_config
 
 
@@ -17,9 +18,7 @@ class PremiumRequired(discord.ui.View):
     @discord.ui.button(label="Restore Purchases", style=discord.ButtonStyle.secondary, custom_id="restore_purchases")
     async def _restore_purchases(self, button: discord.ui.Button, interaction: discord.Interaction):
         if not interaction.guild:
-            await interaction.response.send_message(
-                "\N{cross mark} You can only use this in a server.", ephemeral=True
-            )
+            await interaction.response.send_message("\N{CROSS MARK} You can only use this in a server.", ephemeral=True)
 
         button.disabled = True
         await interaction.response.defer(ephemeral=True)
@@ -32,13 +31,10 @@ class PremiumRequired(discord.ui.View):
         else:
             sku = discord.Object(_sku_id)
             sku_check = lambda e: e.sku_id == sku.id
-        entitlements = await interaction.guild.entitlements(
-            skus=[sku] if sku else None,
-            exclude_ended=True
-        ).flatten()
+        entitlements = await interaction.guild.entitlements(skus=[sku] if sku else None, exclude_ended=True).flatten()
         if not entitlements:
             await interaction.followup.send(
-                "\N{cross mark} No active premium subscription for this server found.",
+                "\N{CROSS MARK} No active premium subscription for this server found.",
             )
             await interaction.edit_original_response(view=self)
             return
@@ -47,17 +43,17 @@ class PremiumRequired(discord.ui.View):
             if entitlement.guild_id == interaction.guild.id and sku_check(entitlement):
                 await Premium.from_entitlement(entitlement)
                 await interaction.followup.send(
-                    "\N{white heavy check mark} Premium restored successfully. Re-try your previous action.",
+                    "\N{WHITE HEAVY CHECK MARK} Premium restored successfully. Re-try your previous action.",
                 )
                 return
 
         support = self.ctx.bot.get_application_command("support")
         if support:
-            support = f"</support:%d>" % support.id
+            support = "</support:%d>" % support.id
         else:
             support = "support"
         await interaction.followup.send(
-            "\N{cross mark} No valid premium subscription for this server found. If you think this is incorrect,"
+            "\N{CROSS MARK} No valid premium subscription for this server found. If you think this is incorrect,"
             f"please contact {support}.",
         )
 

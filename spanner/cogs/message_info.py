@@ -160,9 +160,7 @@ class MessageInfoCog(commands.Cog):
         embeds = await self.get_message_info(message)
         if not ctx.interaction.authorizing_integration_owners.guild_id:
             for embed in embeds.values():
-                embed.set_footer(
-                    text="This information may be incomplete as I am not in the server."
-                )
+                embed.set_footer(text="This information may be incomplete as I am not in the server.")
         await ctx.respond(
             embed=embeds["Overview"],
             view=GenericLabelledEmbedView(ctx, **embeds),

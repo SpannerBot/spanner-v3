@@ -21,49 +21,31 @@ def generate_token():
 
 @cli.command()
 @click.option(
-    "--as-table",
-    "-T",
-    is_flag=True,
-    help="Prints the intents as a TOML table, instead of raw bitfield value."
+    "--as-table", "-T", is_flag=True, help="Prints the intents as a TOML table, instead of raw bitfield value."
 )
 def intents(as_table: bool):
     """Generates a value for intents, to put in your configuration."""
     base = discord.Intents.default()
-    if click.confirm(
-        "Do you want to configure the default (non-privileged) intents? (not recommended)",
-        default=False
-    ):
+    if click.confirm("Do you want to configure the default (non-privileged) intents? (not recommended)", default=False):
         for intent, enabled in base:
             if intent in {"message_content", "members", "presences"}:
                 continue  # skip
-            setattr(
-                base,
-                intent,
-                click.confirm(
-                    f"Do you want to enable {intent!r}?", default=enabled
-                )
-            )
+            setattr(base, intent, click.confirm(f"Do you want to enable {intent!r}?", default=enabled))
 
     base.message_content = click.confirm(
-        "Do you want to enable the %s intent? (%s)" % (
-            click.style("message content", bold=True),
-            click.style("you may need approval", fg="red")
-        ),
-        default=False
+        "Do you want to enable the %s intent? (%s)"
+        % (click.style("message content", bold=True), click.style("you may need approval", fg="red")),
+        default=False,
     )
     base.members = click.confirm(
-        "Do you want to enable the %s intent? (%s)" % (
-            click.style("members", bold=True),
-            click.style("you may need approval", fg="red")
-        ),
-        default=False
+        "Do you want to enable the %s intent? (%s)"
+        % (click.style("members", bold=True), click.style("you may need approval", fg="red")),
+        default=False,
     )
     base.presences = click.confirm(
-        "Do you want to enable the %s intent? (%s)" % (
-            click.style("presences", bold=True),
-            click.style("you may need approval", fg="red")
-        ),
-        default=False
+        "Do you want to enable the %s intent? (%s)"
+        % (click.style("presences", bold=True), click.style("you may need approval", fg="red")),
+        default=False,
     )
 
     click.echo("Your intents value is: ", nl=False)
@@ -81,7 +63,7 @@ def intents(as_table: bool):
 @cli.command()
 def run():
     """Runs the bot."""
-    from ._generate_version_info import should_write, gather_version_info, write_version_file
+    from ._generate_version_info import gather_version_info, should_write, write_version_file
 
     if (Path.cwd() / "spanner").exists():
         os.chdir("spanner")
