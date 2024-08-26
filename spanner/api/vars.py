@@ -21,6 +21,7 @@ CORS_CONFIG = WEB_CONFIG["cors"]
 HOST = _get_item(WEB_CONFIG, "host", "127.0.0.1", str)
 PORT = _get_item(WEB_CONFIG, "port", 1237, int)
 BASE_URL = _get_item(WEB_CONFIG, "base_url", f"http://{HOST}:{PORT}", str)
+ROOT_PATH: str | None = _get_item(WEB_CONFIG, "root_path", "/", str)
 JWT_SECRET_KEY = _get_item(WEB_CONFIG, "jwt_secret_key", hashlib.sha256(platform.node().encode()).hexdigest(), str)
 DISCORD_CLIENT_SECRET = _get_item(WEB_CONFIG, "discord_client_secret", None, str)
 DISCORD_CLIENT_ID = _get_item(WEB_CONFIG, "discord_client_id", None)

@@ -4,9 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes.config import router as config_router
 from .routes.discord_api import router as discord_router
 from .routes.oauth2 import router as oauth2_router
-from .vars import CORS_ALLOW_CREDENTIALS, CORS_ALLOW_HEADERS, CORS_ALLOW_METHODS, CORS_ALLOW_ORIGINS
+from .vars import CORS_ALLOW_CREDENTIALS, CORS_ALLOW_HEADERS, CORS_ALLOW_METHODS, CORS_ALLOW_ORIGINS, ROOT_PATH
 
-app = FastAPI(debug=True, title="Spanner API", version="3.0.0a1.dev1")
+app = FastAPI(
+    debug=True,
+    title="Spanner API",
+    version="3.0.0a1.dev1",
+    root_path=ROOT_PATH
+)
 app.include_router(oauth2_router, prefix="/oauth2")
 app.include_router(discord_router, prefix="/_discord")
 app.include_router(config_router, prefix="/config")

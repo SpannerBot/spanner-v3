@@ -79,7 +79,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
         "client_id={!s}&redirect_uri={!s}&response_type=code&scope=identify guilds guilds.members.read"
         "&state={!s}&prompt=none"
     )
-    cb = req.url_for("callback")
+    cb = str(req.url_for("callback").replace(scheme="https"))
     url = url_base.format(DISCORD_CLIENT_ID, cb, state)
     res = RedirectResponse(url)
     res.set_cookie("state", state)
@@ -110,12 +110,13 @@ async def callback(
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": req.url_for("callback"),
+                "redirect_uri": str(req.url_for("callback").replace(scheme="https")),
             },
             auth=(DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET),
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-        code_grant.raise_for_status()
+        if code_grant.status_code != 200:
+            raise HTTPException(status_code=code_grant.status_code, detail=code_grant.text)
         code_payload = AccessTokenResponse.model_validate(code_grant.json())
         if not all(x in code_payload.scope_array for x in ("identify", "guilds")):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required scopes")
