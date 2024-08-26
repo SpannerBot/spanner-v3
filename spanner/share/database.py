@@ -33,10 +33,15 @@ class GuildNickNameModeration(Model):
         "models.GuildConfig", related_name="nickname_moderation", on_delete=fields.CASCADE
     )
     hate: bool = fields.BooleanField(default=False)
+    """Content that expresses, incites, or promotes hate based on protected characteristics."""
     harassment: bool = fields.BooleanField(default=False)
+    """Content that expresses, incites, or promotes harassing language towards any target."""
     self_harm: bool = fields.BooleanField(default=False)
+    """Content that promotes, encourages, or depicts acts of self-harm."""
     sexual: bool = fields.BooleanField(default=False)
+    """Content meant to arouse, such as the description of sexual activity, or that promotes sex services."""
     violence: bool = fields.BooleanField(default=False)
+    """Content that depicts death, violence, or physical injury."""
 
     CATEGORIES = {
         "hate": "Content that expresses, incites, or promotes hate based on protected characteristics.",
