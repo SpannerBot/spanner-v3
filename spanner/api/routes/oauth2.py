@@ -109,6 +109,8 @@ async def callback(
         code_grant = await client.post(
             "/oauth2/token",
             data={
+                "client_id": DISCORD_CLIENT_ID,
+                "client_secret": DISCORD_CLIENT_SECRET,
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": DISCORD_OAUTH_CALLBACK,
