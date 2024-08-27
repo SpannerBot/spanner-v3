@@ -21,7 +21,7 @@ TORTOISE_ORM = {
     "connections": {"default": load_config()["database"]["uri"]},
     "apps": {
         "models": {
-            "models": ["spanner.share.database"],
+            "models": ["spanner.share.database", "aerich.models"],
             "default_connection": "default",
         },
     },

@@ -20,6 +20,7 @@ httpx = "*"
 
 [dev-packages]
 ruff = "*"
+aerich = "*"
 
 [requires]
 python_version = "3.12"
