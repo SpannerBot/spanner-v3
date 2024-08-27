@@ -27,6 +27,7 @@ DISCORD_CLIENT_SECRET = _get_item(WEB_CONFIG, "discord_client_secret", None, str
 DISCORD_CLIENT_ID = _get_item(WEB_CONFIG, "discord_client_id", None)
 if DISCORD_CLIENT_ID:
     DISCORD_CLIENT_ID = str(DISCORD_CLIENT_ID)
+DISCORD_OAUTH_CALLBACK = _get_item(WEB_CONFIG, "discord_oauth_callback", f"{BASE_URL}/oauth2/callback", str)
 DISCORD_API_VERSION = _get_item(WEB_CONFIG, "discord_api_version", 10, int)
 DISCORD_API_BASE_URL = f"https://discord.com/api/v{DISCORD_API_VERSION}"
 FORWARDED_ALLOW_IPS = _get_item(WEB_CONFIG, "forwarded_allow_ips", "*", str)

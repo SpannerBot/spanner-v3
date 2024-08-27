@@ -12,7 +12,7 @@ from fastapi.security.api_key import APIKeyCookie, APIKeyHeader
 from spanner.share.database import DiscordOauthUser
 
 from ..models.discord_ import AccessTokenResponse, User
-from ..vars import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET
+from ..vars import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK
 
 __all__ = ("router", "is_logged_in")
 
@@ -56,6 +56,8 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
 
     `:return_to` should be a URL to return the user to after successfully authenticating.
     """
+    if not all((DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK)):
+        raise HTTPException(503, "Oauth2 is misconfigured.")
     RATELIMITER.setdefault(req.client.host, (0, 0))
     count, expires = RATELIMITER[req.client.host]
 
@@ -79,8 +81,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
         "client_id={!s}&redirect_uri={!s}&response_type=code&scope=identify guilds guilds.members.read"
         "&state={!s}&prompt=none"
     )
-    cb = str(req.url_for("callback").replace(scheme="https"))
-    url = url_base.format(DISCORD_CLIENT_ID, cb, state)
+    url = url_base.format(DISCORD_CLIENT_ID, DISCORD_OAUTH_CALLBACK, state)
     res = RedirectResponse(url)
     res.set_cookie("state", state)
     return res
@@ -110,7 +111,7 @@ async def callback(
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": str(req.url_for("callback").replace(scheme="https")),
+                "redirect_uri": DISCORD_OAUTH_CALLBACK,
             },
             auth=(DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET),
             headers={"Content-Type": "application/x-www-form-urlencoded"},

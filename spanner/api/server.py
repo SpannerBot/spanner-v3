@@ -19,7 +19,7 @@ app.include_router(config_router, prefix="/config")
 if CORS_ALLOW_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:1237", "http://localhost:3000"],
+        allow_origins=CORS_ALLOW_ORIGINS or ["http://localhost:1237", "http://localhost:3000"],
         allow_methods=CORS_ALLOW_METHODS,
         allow_headers=CORS_ALLOW_HEADERS,
         allow_credentials=CORS_ALLOW_CREDENTIALS,
