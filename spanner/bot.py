@@ -1,5 +1,7 @@
 import asyncio
 import sys
+import time
+
 
 sys.path.extend([".", ".."])
 
@@ -46,6 +48,7 @@ class CustomBridgeBot(bridge.Bot):
         else:
             raise ValueError("Invalid intents configuration. Must be bitfield value, or table.")
         kwargs["intents"] = intents
+        self.epoch = time.time()
 
         super().__init__(*args, **kwargs)
 
@@ -73,6 +76,7 @@ class CustomBridgeBot(bridge.Bot):
             try:
                 if load_config()["web"].get("enabled", True) is True:
                     self.web = asyncio.create_task(self.web_server.serve())
+                self.epoch = time.time()
                 await super().start(token, reconnect=reconnect)
             finally:
                 await Tortoise.close_connections()

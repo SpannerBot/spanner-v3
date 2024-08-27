@@ -87,6 +87,45 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
     return res
 
 
+@router.get("/invite", include_in_schema=False)
+async def invite(
+        req: Request,
+        guild_id: int | None = None,
+        return_to: str | None = None
+) -> RedirectResponse:
+    if not all((DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK)):
+        raise HTTPException(503, "Oauth2 is misconfigured.")
+    RATELIMITER.setdefault(req.client.host, (0, 0))
+    count, expires = RATELIMITER[req.client.host]
+
+    if count >= 5 and expires > time.time():
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limited. Try again later.",
+            headers={"Retry-After": str(round(expires - time.time()))},
+        )
+
+    if expires > time.time():
+        RATELIMITER[req.client.host] = (count + 1, expires)
+    else:
+        RATELIMITER[req.client.host] = (1, time.time() + 30)
+
+    state = secrets.token_urlsafe()
+    STATES[state] = return_to
+    res = RedirectResponse(
+        discord.utils.oauth_url(
+            DISCORD_CLIENT_ID,
+            permissions=discord.Permissions(9896105209073),
+            guild=discord.Object(guild_id) if guild_id else None,
+            scopes=["bot", "identify", "guilds", "guilds.members.read"],
+            disable_guild_select=guild_id is not None,
+            redirect_uri=DISCORD_OAUTH_CALLBACK,
+        ) + "&state=" + state
+    )
+    res.set_cookie("state", state)
+    return res
+
+
 @router.get("/callback")
 async def callback(
     req: Request, code: str, state: str = Query(...), state_cookie: str = Cookie(..., alias="state")

@@ -1,3 +1,7 @@
+import time
+import platform
+
+from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,10 +17,49 @@ app = FastAPI(
     root_path=ROOT_PATH
 )
 
+
+class HealthZResponse(BaseModel):
+    class GuildsPart(BaseModel):
+        total: int
+        unavailable: list[str]
+        """A list of guild IDs that are unavailable"""
+    class UserPart(BaseModel):
+        """All fields may be None if the bot is not ready"""
+        id: str | None
+        name: str | None
+        avatar: str | None
+        """Avatar hash if any"""
+    status: str
+    """"ok" if the bot is ready, "offline" if not"""
+    online: bool
+    """If the bot is online and connected to discord"""
+    uptime: int
+    """The number of seconds the bot has been online"""
+    guilds: GuildsPart
+    host: str
+    """Server hostname"""
+    user: dict
+
 @app.get("/healthz")
-async def health():
+async def health() -> HealthZResponse:
     """Gets the health status of the bot and API."""
-    return {"status": "ok"}
+    from spanner.bot import bot
+
+    return HealthZResponse(
+        status={True: "ok", False: "offline"}[bot.is_ready()],
+        online=bot.is_ready() and not bot.is_closed(),
+        uptime=round(time.time() - bot.epoch),
+        guilds=HealthZResponse.GuildsPart(
+            total=len(bot.guilds),
+            unavailable=[str(g.id) for g in bot.guilds if g.unavailable]
+        ),
+        host=platform.node() or "unknown",
+        user={
+            "id": str(bot.user.id) if bot.user else None,
+            "name": bot.user.name if bot.user else None,
+            "avatar": bot.user.avatar.key if bot.user else None
+        }
+    )
 
 app.include_router(oauth2_router, prefix="/oauth2")
 app.include_router(discord_router, prefix="/_discord")

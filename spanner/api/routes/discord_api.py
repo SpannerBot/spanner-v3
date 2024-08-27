@@ -16,6 +16,7 @@ from .oauth2 import is_logged_in
 
 router = APIRouter(tags=["Discord API Proxy"])
 RATELIMITER: dict[str, dict] = {}
+DISCORD_RATELIMITER = {}
 
 
 def handle_ratelimit(req: Request):
@@ -53,6 +54,7 @@ async def get_me(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONRespo
 async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> list[PartialGuild]:
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
+
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
         response = await client.get(
             "/users/@me/guilds",
