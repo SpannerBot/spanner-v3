@@ -73,7 +73,7 @@ async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_i
             data = {
                 "id": str(guild.id),
                 "name": guild.name,
-                "icon": guild.icon,
+                "icon": guild.icon.key if guild.icon else None,
                 "owner": guild.owner_id == user.user_id,
                 "permissions": str(member.guild_permissions.value),
                 "features": guild.features,
