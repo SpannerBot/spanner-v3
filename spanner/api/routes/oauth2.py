@@ -106,6 +106,15 @@ async def callback(
     del STATES[state]
 
     async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
+        print(
+            "Fetching token using code %r (state %r), with client ID %r, secret %r, and redirect %r" % (
+                code,
+                state,
+                DISCORD_CLIENT_ID,
+                DISCORD_CLIENT_SECRET,
+                DISCORD_OAUTH_CALLBACK,
+            )
+        )
         code_grant = await client.post(
             "/oauth2/token",
             data={
@@ -119,7 +128,14 @@ async def callback(
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         if code_grant.status_code != 200:
-            raise HTTPException(status_code=code_grant.status_code, detail=code_grant.text)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": "Failed to fetch token from upstream",
+                    "status": code_grant.status_code,
+                    "response": code_grant.json(),
+                }
+            )
         code_payload = AccessTokenResponse.model_validate(code_grant.json())
         if not all(x in code_payload.scope_array for x in ("identify", "guilds")):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required scopes")
@@ -139,6 +155,7 @@ async def callback(
 
     res = RedirectResponse(return_to)
     res.set_cookie("session", obj.session, expires=code_payload.expires_in, samesite="lax")
+    res.delete_cookie("state")
     return res
 
 
