@@ -33,7 +33,7 @@ class User(BaseModel):
 
     @computed_field
     @property
-    def avatar_url(self) -> Annotated[HttpUrl, str]:
+    def avatar_url(self) -> str:
         """Calculates the avatar URL for the user."""
         if self.avatar is None:
             return f"https://cdn.discordapp.com/embed/avatars/{(int(self.id) >> 22) % 6}.png?size=512"
@@ -51,7 +51,7 @@ class PartialGuild(BaseModel):
 
     @computed_field
     @property
-    def icon_url(self) -> Annotated[HttpUrl, str]:
+    def icon_url(self) -> str:
         """Calculates the icon URL for the guild."""
         if self.icon is None:
             return f"https://cdn.discordapp.com/embed/avatars/{(int(self.id) >> 22) % 6}.png?size=512"

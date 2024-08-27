@@ -2,6 +2,10 @@ import datetime
 import enum
 import typing
 import uuid
+try:
+    import aerich.models
+except ImportError:
+    raise RuntimeError("Aerich is not installed. Please install it by running `pip install aerich`.")
 
 import discord
 from tortoise import fields
