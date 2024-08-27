@@ -29,6 +29,12 @@ class HealthZResponse(BaseModel):
         name: str | None
         avatar: str | None
         """Avatar hash if any"""
+    class LatencyPart(BaseModel):
+        now: int
+        """Current latency in milliseconds"""
+        history: list[int]
+        """Up to the last 1440 latencies in milliseconds"""
+
     status: str
     """"ok" if the bot is ready, "offline" if not"""
     online: bool
@@ -38,7 +44,11 @@ class HealthZResponse(BaseModel):
     guilds: GuildsPart
     host: str
     """Server hostname"""
-    user: dict
+    user: UserPart
+    """Bot user information"""
+    latency: LatencyPart
+    """Bot latency information"""
+
 
 @app.get("/healthz")
 async def health() -> HealthZResponse:
@@ -54,11 +64,15 @@ async def health() -> HealthZResponse:
             unavailable=[str(g.id) for g in bot.guilds if g.unavailable]
         ),
         host=platform.node() or "unknown",
-        user={
-            "id": str(bot.user.id) if bot.user else None,
-            "name": bot.user.name if bot.user else None,
-            "avatar": bot.user.avatar.key if bot.user else None
-        }
+        user=HealthZResponse.UserPart(
+            id=str(bot.user.id) if bot.user else None,
+            name=bot.user.name if bot.user else None,
+            avatar=bot.user.avatar.key if bot.user and bot.user.avatar else None
+        ),
+        latency=HealthZResponse.LatencyPart(
+            now=round(bot.latency * 1000),
+            history=list(map(lambda s: round(s*1000), bot.latency_history))
+        )
     )
 
 app.include_router(oauth2_router, prefix="/oauth2")

@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import time
+from collections import deque
 
 
 sys.path.extend([".", ".."])
@@ -9,7 +10,7 @@ import logging
 
 import discord
 import uvicorn
-from discord.ext import bridge, commands
+from discord.ext import bridge, commands, tasks
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
@@ -49,8 +50,17 @@ class CustomBridgeBot(bridge.Bot):
             raise ValueError("Invalid intents configuration. Must be bitfield value, or table.")
         kwargs["intents"] = intents
         self.epoch = time.time()
+        self.latency_history = deque(maxlen=1440)
+        self.last_latency_sample = 0
 
         super().__init__(*args, **kwargs)
+
+    @tasks.loop(minutes=1)
+    async def update_latency(self):
+        if not bot.is_ready():
+            await bot.wait_until_ready()
+        bot.latency_history.append(bot.latency)
+        bot.last_latency_sample = time.time()
 
     async def close(self) -> None:
         if self.web is not None:
@@ -61,6 +71,7 @@ class CustomBridgeBot(bridge.Bot):
                 await self.web
             except asyncio.CancelledError:
                 pass
+        self.update_latency.stop()
         await super().close()
 
     async def start(self, token: str, *, reconnect: bool = True) -> None:
@@ -77,6 +88,7 @@ class CustomBridgeBot(bridge.Bot):
                 if load_config()["web"].get("enabled", True) is True:
                     self.web = asyncio.create_task(self.web_server.serve())
                 self.epoch = time.time()
+                self.update_latency.start()
                 await super().start(token, reconnect=reconnect)
             finally:
                 await Tortoise.close_connections()
