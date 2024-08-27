@@ -70,18 +70,19 @@ async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_i
     if bot.is_ready():
         # fetch from bot instead of API
         guild = bot.get_guild(guild_id)
-        member = await discord.utils.get_or_fetch(guild, "member", user.user_id)
-        if guild and member:
-            data = {
-                "id": str(guild.id),
-                "name": guild.name,
-                "icon": guild.icon.key if guild.icon else None,
-                "owner": guild.owner_id == user.user_id,
-                "permissions": str(member.guild_permissions.value),
-                "features": guild.features,
-            }
-            res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
-            return PartialGuild.model_validate(data)
+        if guild:
+            member = await discord.utils.get_or_fetch(guild, "member", user.user_id)
+            if member:
+                data = {
+                    "id": str(guild.id),
+                    "name": guild.name,
+                    "icon": guild.icon.key if guild.icon else None,
+                    "owner": guild.owner_id == user.user_id,
+                    "permissions": str(member.guild_permissions.value),
+                    "features": guild.features,
+                }
+                res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
+                return PartialGuild.model_validate(data)
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
