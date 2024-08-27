@@ -12,6 +12,12 @@ app = FastAPI(
     version="3.0.0a1.dev1",
     root_path=ROOT_PATH
 )
+
+@app.get("/healthz")
+async def health():
+    """Gets the health status of the bot and API."""
+    return {"status": "ok"}
+
 app.include_router(oauth2_router, prefix="/oauth2")
 app.include_router(discord_router, prefix="/_discord")
 app.include_router(config_router, prefix="/config")

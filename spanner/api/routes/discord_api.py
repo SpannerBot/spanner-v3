@@ -1,3 +1,4 @@
+import math
 import time
 from typing import Annotated
 
@@ -25,7 +26,8 @@ def handle_ratelimit(req: Request):
                 status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You are being ratelimited. Please try again later.",
                 headers={
-                    "Retry-After": str(round(RATELIMITER[req.client.host]["reset"] - time.time())),
+                    "Retry-After": str(math.ceil(RATELIMITER[req.client.host]["reset"] - time.time())),
+                    "X-Ratelimit-Source": "Internal"
                 }
             )
         RATELIMITER[req.client.host]["remaining"] = 10
@@ -63,6 +65,21 @@ async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JS
 
 @router.get("/guilds/{guild_id}", dependencies=[ratelimit])
 async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> PartialGuild:
+    if bot.is_ready():
+        # fetch from bot instead of API
+        guild = bot.get_guild(guild_id)
+        member = await discord.utils.get_or_fetch(guild, "member", user.user_id)
+        if guild and member:
+            data = {
+                "id": str(guild.id),
+                "name": guild.name,
+                "icon": guild.icon,
+                "owner": guild.owner_id == user.user_id,
+                "permissions": str(member.guild_permissions.value),
+                "features": guild.features,
+            }
+            res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
+            return PartialGuild.model_validate(data)
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -153,6 +170,37 @@ async def get_my_guild_member(
         response.raise_for_status()
         res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
         return response.json()
+
+
+@router.get("/users/@me/guilds/{guild_id}/bot", dependencies=[ratelimit])
+async def get_my_guild_bot(
+    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
+):
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Guild not found.")
+    me = guild.me
+    data = {
+        "user": {
+            "id": str(me.id),
+            "username": me.name,
+            "discriminator": me.discriminator,
+            "global_name": me.global_name,
+            "avatar": me.avatar,
+            "bot": me.bot,
+            "system": me.system,
+            "flags": me.flags.value,
+            "public_flags": me.public_flags.value,
+        },
+        "nick": me.nick,
+        "roles": list(map(lambda r: str(r.id), me.roles)),
+        "joined_at": me.joined_at.isoformat(),
+        "mute": me.mute,
+        "deaf": me.deaf,
+        "flags": me.flags.value,
+        "permissions": str(me.guild_permissions.value)
+    }
+    return data
 
 
 @router.get("/users/@me/guilds/{guild_id}/permissions", dependencies=[ratelimit])
