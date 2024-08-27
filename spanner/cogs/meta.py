@@ -139,7 +139,7 @@ class MetaCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        await GuildConfig.filter(guild_id=guild.id).delete()
+        await GuildConfig.filter(id=guild.id).delete()
 
 
 def setup(bot: commands.Bot):
