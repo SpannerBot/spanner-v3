@@ -17,10 +17,10 @@ orjson = "*"
 mkdocs = "*"
 pymdown-extensions = "*"
 httpx = "*"
+aerich = "*"
 
 [dev-packages]
 ruff = "*"
-aerich = "*"
 
 [requires]
 python_version = "3.12"
