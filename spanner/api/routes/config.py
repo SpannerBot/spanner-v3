@@ -1,7 +1,5 @@
 import datetime
 import hashlib
-import json
-import typing
 from typing import Annotated
 
 import discord.utils
@@ -15,14 +13,13 @@ from spanner.share.database import (
     GuildAuditLogEntry,
     GuildAuditLogEntryPydantic,
     GuildConfig,
-    GuildConfigPydantic,
     GuildLogFeatures,
     GuildLogFeaturesPydantic,
     GuildNickNameModeration,
     GuildNickNameModerationPydantic,
 )
 
-from ..models.config import GuildAuditLogEntryResponse, NicknameModerationUpdateBody
+from ..models.config import GuildAuditLogEntryResponse
 from .oauth2 import is_logged_in
 
 

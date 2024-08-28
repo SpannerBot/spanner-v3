@@ -110,7 +110,6 @@ class GuildAuditLogEntry(Model):
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")
 
 
-
 class SelfRoleMenu(Model):
     id: uuid.UUID = fields.UUIDField(pk=True)
     guild: fields.ForeignKeyRelation[GuildConfig] = fields.ForeignKeyField(
