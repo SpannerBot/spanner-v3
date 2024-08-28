@@ -14,8 +14,6 @@ uvicorn = "~=0.30"
 pyjwt = "~=2.8"
 psutil = "~=6.0"
 orjson = "*"
-mkdocs = "*"
-pymdown-extensions = "*"
 httpx = "*"
 aerich = "*"
 

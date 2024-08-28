@@ -17,9 +17,6 @@ RUN pipenv requirements > /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 COPY ./spanner/ /spanner/
-COPY mkdocs.yml .
-COPY ./docs/ docs/
-RUN python3 -m mkdocs build -d /spanner/assets/docs/
 COPY .git/ /.git/
 # ^ actions/checkout does a treeless-copy of .git anyway.
 RUN python _generate_version_info.py
