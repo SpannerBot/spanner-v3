@@ -60,7 +60,13 @@ class CustomBridgeBot(bridge.Bot):
         await asyncio.sleep(seconds_util_next_full_minute)
         if not bot.is_ready():
             await bot.wait_until_ready()
-        bot.latency_history.append({"timestamp_ms": int(time.time() * 1000), "latency": round(bot.latency * 1000, 2)})
+
+        try:
+            latency = round(bot.latency * 1000, 2)
+        except (AttributeError, OverflowError, ZeroDivisionError):
+            latency = 3600000
+        latency = max(-3600000, min(3600000, latency))
+        bot.latency_history.append({"timestamp_ms": int(time.time() * 1000), "latency": latency})
 
     async def close(self) -> None:
         if self.web is not None:

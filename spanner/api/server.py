@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pypika import Array
 from starlette.responses import RedirectResponse
 
 from .routes.config import router as config_router
@@ -70,6 +71,13 @@ async def health() -> HealthZResponse:
     """Gets the health status of the bot and API."""
     from spanner.bot import bot
 
+    try:
+        latency = round(bot.latency * 1000)
+    except (AttributeError, OverflowError, ZeroDivisionError):
+        latency = 3600000
+
+    latency = max(-3600000, min(3600000, latency))
+
     return HealthZResponse.model_validate(
         {
             "status": {True: "ok", False: "offline"}[bot.is_ready()],
@@ -86,7 +94,7 @@ async def health() -> HealthZResponse:
                 "avatar": bot.user.avatar.key if bot.user and bot.user.avatar else None
             },
             "latency": {
-                "now": round(bot.latency * 1000),
+                "now": latency,
                 "history": list(bot.latency_history)
             }
         }
