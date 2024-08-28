@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import RedirectResponse
 
 from .routes.config import router as config_router
 from .routes.discord_api import router as discord_router
@@ -18,6 +19,12 @@ app = FastAPI(
     version="3.0.0a1.dev1",
     root_path=ROOT_PATH
 )
+
+
+@app.get("", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/docs")
 
 
 class HealthZResponse(BaseModel):
