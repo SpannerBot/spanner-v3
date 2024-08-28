@@ -1,3 +1,6 @@
-[submodule "spanner-v3-webdash"]
-	path = spanner-v3-webdash
-	url = https://github.com/nexy7574/spanner-v3-webdash.git
+[submodule "webdash"]
+	path = webdash
+	url = https://github.com/spannerbot/spanner-v3-webdash
+[submodule "docs"]
+	path = docs
+	url = https://github.com/spannerbot/spanner-v3-docs
