@@ -211,3 +211,10 @@ async def whoami(user: Annotated[DiscordOauthUser, is_logged_in]) -> User:
 async def session(user: Annotated[DiscordOauthUser, is_logged_in]):
     """Returns the current session token"""
     return {"token": user.session, "scopes": user.scope}
+
+
+@router.delete("/session")
+async def delete_session(user: Annotated[DiscordOauthUser, is_logged_in]):
+    """Deletes the current session token"""
+    await user.delete()
+    return {"message": "Session deleted."}
