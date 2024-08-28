@@ -1,5 +1,7 @@
+import datetime
 import time
 import platform
+from typing import Literal
 
 from pydantic import BaseModel
 from fastapi import FastAPI
@@ -30,9 +32,15 @@ class HealthZResponse(BaseModel):
         avatar: str | None
         """Avatar hash if any"""
     class LatencyPart(BaseModel):
+        class LatencyHistoryPart(BaseModel):
+            timestamp_ms: int | float
+            """Unix timestamp in milliseconds"""
+            latency: float
+            """Latency in milliseconds, to two decimal places."""
+
         now: int
         """Current latency in milliseconds"""
-        history: list[int]
+        history: list[LatencyHistoryPart]
         """Up to the last 1440 latencies in milliseconds"""
 
     status: str
@@ -55,24 +63,26 @@ async def health() -> HealthZResponse:
     """Gets the health status of the bot and API."""
     from spanner.bot import bot
 
-    return HealthZResponse(
-        status={True: "ok", False: "offline"}[bot.is_ready()],
-        online=bot.is_ready() and not bot.is_closed(),
-        uptime=round(time.time() - bot.epoch),
-        guilds=HealthZResponse.GuildsPart(
-            total=len(bot.guilds),
-            unavailable=[str(g.id) for g in bot.guilds if g.unavailable]
-        ),
-        host=platform.node() or "unknown",
-        user=HealthZResponse.UserPart(
-            id=str(bot.user.id) if bot.user else None,
-            name=bot.user.name if bot.user else None,
-            avatar=bot.user.avatar.key if bot.user and bot.user.avatar else None
-        ),
-        latency=HealthZResponse.LatencyPart(
-            now=round(bot.latency * 1000),
-            history=list(map(lambda s: round(s*1000), bot.latency_history))
-        )
+    return HealthZResponse.model_validate(
+        {
+            "status": {True: "ok", False: "offline"}[bot.is_ready()],
+            "online": bot.is_ready() and not bot.is_closed(),
+            "uptime": round(time.time() - bot.epoch),
+            "guilds": {
+                "total": len(bot.guilds),
+                "unavailable": [str(g.id) for g in bot.guilds if g.unavailable]
+            },
+            "host": platform.node() or "unknown",
+            "user": {
+                "id": str(bot.user.id) if bot.user else None,
+                "name": bot.user.name if bot.user else None,
+                "avatar": bot.user.avatar.key if bot.user and bot.user.avatar else None
+            },
+            "latency": {
+                "now": round(bot.latency * 1000),
+                "history": list(bot.latency_history)
+            }
+        }
     )
 
 app.include_router(oauth2_router, prefix="/oauth2")

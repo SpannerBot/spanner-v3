@@ -51,16 +51,16 @@ class CustomBridgeBot(bridge.Bot):
         kwargs["intents"] = intents
         self.epoch = time.time()
         self.latency_history = deque(maxlen=1440)
-        self.last_latency_sample = 0
 
         super().__init__(*args, **kwargs)
 
     @tasks.loop(minutes=1)
     async def update_latency(self):
+        seconds_util_next_full_minute = 60 - time.time() % 60
+        await asyncio.sleep(seconds_util_next_full_minute)
         if not bot.is_ready():
             await bot.wait_until_ready()
-        bot.latency_history.append(bot.latency)
-        bot.last_latency_sample = time.time()
+        bot.latency_history.append({"timestamp_ms": int(time.time() * 1000), "latency": round(bot.latency * 1000, 2)})
 
     async def close(self) -> None:
         if self.web is not None:
