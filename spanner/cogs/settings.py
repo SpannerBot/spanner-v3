@@ -3,6 +3,7 @@ import typing
 
 import discord
 from discord.ext import bridge, commands
+from tortoise.transactions import in_transaction
 
 from spanner.share.config import load_config
 from spanner.share.database import GuildAuditLogEntry, GuildConfig, GuildLogFeatures, GuildNickNameModeration
@@ -27,7 +28,14 @@ class SettingsCog(commands.Cog):
         config, _ = await GuildConfig.get_or_create(id=guild_id)
         return config
 
-    @settings.command(name="set-log-channel")
+    logging_group = discord.SlashCommandGroup(
+        name="logging",
+        description="Manages logging for the server.",
+        default_member_permissions=discord.Permissions(manage_guild=True, manage_channels=True),
+        contexts={discord.InteractionContextType.guild},
+    )
+
+    @logging_group.command(name="set-channel")
     async def set_log_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
         """Sets the channels where logs will go."""
         await ctx.defer(ephemeral=True)
@@ -37,16 +45,28 @@ class SettingsCog(commands.Cog):
                 f"\N{CROSS MARK} I need to be able to send messages, embeds, and files in {channel.mention}."
             )
 
-        config = await self._ensure_guild_config(ctx.guild_id)
-        config.log_channel = channel.id
-        await config.save()
-        await GuildAuditLogEntry.create(
-            guild=config,
-            author=ctx.user.id,
-            namespace="settings.logging.channels.main",
-            action="set",
-            description=f"Set the log channel to {channel.id} ({channel.name}).",
-        )
+        async with in_transaction() as tx:
+            config = await self._ensure_guild_config(ctx.guild_id)
+            old_channel_id = config.log_channel
+            old_log_channel = ctx.guild.get_channel(old_channel_id) if old_channel_id else None
+            config.log_channel = channel.id
+            await config.save(using_db=tx)
+            await GuildAuditLogEntry.generate(
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="logging.channel",
+                action="modify",
+                description=f"Set the log channel to {channel.id} ({channel.name}).",
+                metadata={
+                    "action.historical": "modified",
+                    "old": {
+                        "id": str(old_channel_id) if old_channel_id else None,
+                        "name": old_log_channel.name if old_log_channel else None,
+                    },
+                    "new": {"id": str(channel.id), "name": channel.name},
+                },
+                using_db=tx
+            )
 
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Set the log channel to {channel.mention}.")
 
@@ -55,25 +75,36 @@ class SettingsCog(commands.Cog):
     async def _set_log_feature(
         self, guild_id: int, feature: str, enabled: bool = None, *, user_id: int = None
     ) -> GuildLogFeatures | None:
-        config = await self._ensure_guild_config(guild_id)
-        log_feature = await GuildLogFeatures.get_or_none(guild_id=guild_id, name=feature)
+        async with in_transaction() as tx:
+            config = await self._ensure_guild_config(guild_id)
+            log_feature = await GuildLogFeatures.get_or_none(guild_id=guild_id, name=feature, using_db=tx)
 
-        if log_feature is None:
-            log_feature = await GuildLogFeatures.create(guild=config, name=feature, enabled=enabled)
+            if log_feature is None:
+                log_feature = await GuildLogFeatures.create(guild=config, name=feature, enabled=enabled, using_db=tx)
 
-        log_feature.enabled = enabled if enabled is not None else not log_feature.enabled
-        await log_feature.save()
-        if user_id:
-            e = await GuildAuditLogEntry.create(
-                guild=config,
-                author=user_id,
-                namespace="settings.logging.features",
-                action="toggle",
-                description=f"Toggled the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}.",
-            )
-            self.bot.dispatch("spanner_audit_log_entry", e)
-
-        return log_feature
+            previous = log_feature.enabled
+            log_feature.enabled = enabled if enabled is not None else not log_feature.enabled
+            action = {True: "enabled", False: "disabled"}[log_feature.enabled]
+            await log_feature.save()
+            if user_id:
+                e = await GuildAuditLogEntry.generate(
+                    guild_id=guild_id,
+                    author=user_id,
+                    namespace="logging.features",
+                    action=action,
+                    description=f"set the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}.",
+                    metadata={
+                        "feature": feature,
+                        "old": {
+                            "enabled": previous,
+                        },
+                        "new": {
+                            "enabled": log_feature.enabled,
+                        }
+                    },
+                    using_db=tx,
+                )
+            return log_feature
 
     @log_feature.command(name="toggle")
     async def toggle_log_feature(

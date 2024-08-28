@@ -331,12 +331,12 @@ class StarboardCog(commands.Cog):
             config.channel_id = channel.id
             config.star_emoji = str(_emoji)
             await config.save(using_db=conn)
-            await GuildAuditLogEntry.create(
+            await GuildAuditLogEntry.generate(
                 using_db=conn,
-                guild=gc,
+                guild_id=ctx.guild.id,
                 author=ctx.user.id,
-                namespace="settings.starboard",
-                action="set_channel",
+                namespace="starboard.channel",
+                action="modify",
                 description=f"Set the starboard channel to {channel.mention}",
             )
             await GuildAuditLogEntry.create(

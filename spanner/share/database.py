@@ -2,6 +2,9 @@ import datetime
 import enum
 import typing
 import uuid
+import warnings
+
+
 try:
     import aerich.models
 except ImportError:
@@ -23,6 +26,7 @@ class GuildConfig(Model):
     if typing.TYPE_CHECKING:
         log_features: fields.ReverseRelation["GuildLogFeatures"]
         audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
+        audit_log_entries_new: fields.ReverseRelation["GuildAuditLogEntryNew"]
         self_roles: fields.ReverseRelation["SelfRoleMenu"]
         nickname_moderation: fields.ReverseRelation["GuildNickNameModeration"]
         starboard: fields.ReverseRelation["StarboardConfig"]
@@ -105,6 +109,65 @@ class GuildAuditLogEntry(Model):
     action: str = fields.CharField(min_length=1, max_length=128)
     description: str = fields.TextField()
     created_at: datetime.datetime = fields.DatetimeField(auto_now=True)
+    metadata: dict = fields.JSONField(default={})
+    version: int = fields.IntField(default=2)
+
+    @classmethod
+    async def generate(
+            cls,
+            guild_id: int,
+            author: discord.User | discord.Member | discord.abc.Snowflake | int,
+            namespace: str,
+            action: str,
+            description: str,
+            metadata: dict | None = None,
+            *,
+            using_db = None
+    ) -> typing.Self:
+        """Generates a new audit log entry"""
+        metadata = metadata or {}
+        if isinstance(author, int):
+            author = discord.Object(id=author)
+        metadata.setdefault("author", {})
+        metadata["author"]["id"] = str(author.id)
+        if isinstance(author, (discord.User, discord.Member)):
+            metadata["author"]["nick"] = author.nick
+            metadata["author"]["username"] = author.name
+            metadata["author"]["display_name"] = author.display_name
+            metadata["author"]["avatar_url"] = author.display_avatar.url
+            metadata["author"]["color"] = author.color.value
+            metadata["author"]["flags"] = author.public_flags.value
+
+        if "action.historical" not in metadata:
+            warnings.warn(
+                "The 'action.historical' key is not present in the metadata."
+                "This may cause issues with historical data.",
+                RuntimeWarning,
+                stacklevel=2
+            )
+            match action:
+                case "add":
+                    metadata["action.historical"] = "added"
+                case "remove":
+                    metadata["action.historical"] = "removed"
+                case "update":
+                    metadata["action.historical"] = "updated"
+                case "modified":
+                    metadata["action.historical"] = "modified"
+                case "create":
+                    metadata["action.historical"] = "created"
+
+        return await cls.create(
+            guild_id=guild_id,
+            author=str(author.id),
+            namespace=namespace,
+            action=action,
+            description=description,
+            metadata=metadata,
+            version=3,
+            using_db=using_db
+        )
+
 
 
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")

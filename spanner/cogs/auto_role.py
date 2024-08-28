@@ -23,11 +23,23 @@ class AutoRoleConfig(commands.Cog):
             return await ctx.respond(f"\N{CROSS MARK} {role.mention} is already an auto role.")
         config.auto_roles.append(role.id)
         await config.save()
-        await GuildAuditLogEntry.create(
-            guild=config,
-            author=ctx.user.id,
-            namespace="settings.auto_roles",
-            action="add",
-            description=f"Added {role.id} ({role.name}) as an auto role.",
+        await GuildAuditLogEntryNew.generate(
+            ctx.guild_id,
+            ctx.user,
+            "auto_roles",
+            "action",
+            f"Added role {role.id} ({role.name}) to the auto roles.",
+            metadata={
+                "action.historical": "added",
+                "role": {
+                    "id": str(role.id),
+                    "name": str(role.name),
+                    "color": role.color.value,
+                    "position": role.position,
+                    "permissions": role.permissions.value,
+                    "mentionable": role.mentionable,
+                    "hoist": role.hoist,
+                }
+            }
         )
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Added {role.mention} as an auto role.")

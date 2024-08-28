@@ -33,6 +33,6 @@ DISCORD_API_BASE_URL = f"https://discord.com/api/v{DISCORD_API_VERSION}"
 FORWARDED_ALLOW_IPS = _get_item(WEB_CONFIG, "forwarded_allow_ips", "*", str)
 
 CORS_ALLOW_ORIGINS = _get_item(CORS_CONFIG, "allow_origins", ["*"])
-CORS_ALLOW_METHODS = _get_item(CORS_CONFIG, "allow_methods", ["GET", "POST"])
+CORS_ALLOW_METHODS = _get_item(CORS_CONFIG, "allow_methods", ["GET", "POST", "PATCH", "PUT", "DELETE"])
 CORS_ALLOW_CREDENTIALS = _get_item(CORS_CONFIG, "allow_credentials", True)
 CORS_ALLOW_HEADERS = _get_item(CORS_CONFIG, "allow_headers", ["*"])

@@ -74,22 +74,32 @@ async def get_nickname_moderation(
     return await GuildNickNameModerationPydantic.from_tortoise_orm(config)
 
 
+class PatchNickNameModerationBody(BaseModel):
+    hate: bool | None = None
+    harassment: bool | None = None
+    self_harm: bool | None = None
+    sexual: bool | None = None
+    violence: bool | None = None
+
+
 @router.patch("/{guild_id}/nickname-moderation")
 async def set_nickname_moderation(
     guild_id: int,
+    body: PatchNickNameModerationBody,
     user: Annotated[DiscordOauthUser, is_logged_in],
     bot: Annotated[CustomBridgeBot, bot_is_ready],
-    hate: Annotated[bool | None, Body()] = None,
-    harassment: Annotated[bool | None, Body()] = None,
-    self_harm: Annotated[bool | None, Body()] = None,
-    sexual: Annotated[bool | None, Body()] = None,
-    violence: Annotated[bool | None, Body()] = None,
 ):
     """
     Update the nickname moderation configuration for the given guild.
 
     This will return the updated configuration. Omitted fields will not be changed.
     """
+    hate = body.hate
+    harassment = body.harassment
+    self_harm = body.self_harm
+    sexual = body.sexual
+    violence = body.violence
+
     guild = bot.get_guild(guild_id)
     if not guild:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Guild not found.")
