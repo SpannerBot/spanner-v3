@@ -2,9 +2,10 @@ import math
 import time
 from typing import Annotated
 
-import discord.utils
+import discord
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from discord.http import Route
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 
 from spanner.bot import bot
@@ -36,22 +37,36 @@ def handle_ratelimit(req: Request):
     RATELIMITER[req.client.host]["remaining"] -= 1
     return
 
+
 ratelimit = Depends(handle_ratelimit)
 
 
 @router.get("/users/@me", dependencies=[ratelimit])
 async def get_me(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> User:
+    """Fetches the discord profile of the currently logged in user."""
+    _user = await bot.get_or_fetch_user(user.user_id)
+    if _user:
+        return User.from_user(_user)
     res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
     if "identify" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: identify")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
         response = await client.get("/users/@me", headers={"Authorization": f"Bearer {user.access_token}"})
+        if response.status_code == 429:
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, 
+                detail="You are being ratelimited by discord.",
+                headers={
+                    "Retry-After": str(response.headers.get("X-Ratelimit-Reset-After", 10)),
+                }
+            )
         response.raise_for_status()
         return User.model_validate(response.json())
 
 
 @router.get("/users/@me/guilds", dependencies=[ratelimit])
 async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> list[PartialGuild]:
+    """Returns a list of partial guilds that the logged in user is in."""
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
 
@@ -60,29 +75,38 @@ async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JS
             "/users/@me/guilds",
             headers={"Authorization": f"Bearer {user.access_token}"},
         )
+        if response.status_code == 429:
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, 
+                detail="You are being ratelimited by discord.",
+                headers={
+                    "Retry-After": str(response.headers.get("X-Ratelimit-Reset-After", 10)),
+                }
+            )
         response.raise_for_status()
         res.headers["Cache-Control"] = "private,max-age=60,stale-while-revalidate=60,stale-if-error=60"
         return [PartialGuild.model_validate(guild) for guild in response.json()]
 
 
+@router.get("/users/{user_id}", dependencies=[ratelimit])
+async def get_user(user_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> User:
+    """Fetches a user by ID."""
+    user = await bot.get_or_fetch_user(user_id)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="User not found.")
+    return User.from_user(user)
+
+
 @router.get("/guilds/{guild_id}", dependencies=[ratelimit])
 async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> PartialGuild:
-    if bot.is_ready():
-        # fetch from bot instead of API
-        guild = bot.get_guild(guild_id)
-        if guild:
-            member = await discord.utils.get_or_fetch(guild, "member", user.user_id)
-            if member:
-                data = {
-                    "id": str(guild.id),
-                    "name": guild.name,
-                    "icon": guild.icon.key if guild.icon else None,
-                    "owner": guild.owner_id == user.user_id,
-                    "permissions": str(member.guild_permissions.value),
-                    "features": guild.features,
-                }
-                res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
-                return PartialGuild.model_validate(data)
+    guild = await discord.utils.get_or_fetch(bot, "guild", guild_id)
+    if guild:
+        res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
+        member = await discord.utils.get_or_fetch(guild, "member", user.user_id)
+        if member:
+            return PartialGuild.from_member(member)
+        return PartialGuild.from_guild(guild)
+
     if "guilds" not in user.scope:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Missing required scope: guilds")
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -90,6 +114,14 @@ async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_i
             "/users/@me/guilds",
             headers={"Authorization": f"Bearer {user.access_token}"},
         )
+        if response.status_code == 429:
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, 
+                detail="You are being ratelimited by discord.",
+                headers={
+                    "Retry-After": str(response.headers.get("X-Ratelimit-Reset-After")),
+                }
+            )
         response.raise_for_status()
         for guild in response.json():
             if guild["id"] == str(guild_id):
@@ -170,6 +202,14 @@ async def get_my_guild_member(
             f"/users/@me/guilds/{guild_id}/member",
             headers={"Authorization": f"Bearer {user.access_token}"},
         )
+        if response.status_code == 429:
+            raise HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS, 
+                detail="You are being ratelimited by discord.",
+                headers={
+                    "Retry-After": str(response.headers.get("X-Ratelimit-Reset-After", 10)),
+                }
+            )
         response.raise_for_status()
         res.headers["Cache-Control"] = "private,max-age=3600,stale-while-revalidate=3600,stale-if-error=3600"
         return response.json()

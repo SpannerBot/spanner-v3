@@ -1,3 +1,4 @@
+import discord
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, HttpUrl, computed_field
@@ -31,6 +32,21 @@ class User(BaseModel):
     premium_type: int | None
     public_flags: int | None
 
+    @classmethod
+    def from_user(cls, user: discord.User):
+        """Creates a User object from a discord.User object."""
+        return cls(
+            id=str(user.id),
+            username=user.name,
+            discriminator=user.discriminator,
+            global_name=user.global_name,
+            avatar=user.avatar.key if user.avatar else None,
+            bot=user.bot,
+            system=user.system,
+            flags=user.public_flags.value,
+            public_flags=user.public_flags.value,
+        )
+
     @computed_field
     @property
     def avatar_url(self) -> str:
@@ -48,6 +64,29 @@ class PartialGuild(BaseModel):
     permissions: str | None = None
     features: list[str] = None
     owner: bool
+
+    @classmethod
+    def from_member(cls, member: discord.Member):
+        """Creates a PartialGuild object from a discord.Member object."""
+        guild: discord.Guild = member.guild
+        return cls(
+            id=str(guild.id),
+            name=guild.name,
+            icon=guild.icon.key if guild.icon else None,
+            owner=guild.owner_id == member.id,
+            permissions=str(member.guild_permissions.value),
+            features=guild.features,
+        )
+    
+    @classmethod
+    def from_guild(cls, guild: discord.Guild):
+        """Creates a PartialGuild object from a discord.Guild object."""
+        return cls(
+            id=str(guild.id),
+            name=guild.name,
+            icon=guild.icon.key if guild.icon else None,
+            features=guild.features,
+        )
 
     @computed_field
     @property
