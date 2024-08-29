@@ -191,7 +191,7 @@ async def get_guild_channels(
     return resolved_channels
 
 
-@router.get("/users/@me/guilds/{guild_id}/member", dependencies=[ratelimit])
+@router.get("/guilds/{guild_id}/@me", dependencies=[ratelimit])
 async def get_my_guild_member(
     guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
 ):
@@ -215,7 +215,7 @@ async def get_my_guild_member(
         return response.json()
 
 
-@router.get("/users/@me/guilds/{guild_id}/bot", dependencies=[ratelimit])
+@router.get("/guilds/{guild_id}/bot", dependencies=[ratelimit])
 async def get_my_guild_bot(
     guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
 ):
@@ -246,7 +246,7 @@ async def get_my_guild_bot(
     return data
 
 
-@router.get("/users/@me/guilds/{guild_id}/permissions", dependencies=[ratelimit])
+@router.get("/guilds/{guild_id}/@me/permissions", dependencies=[ratelimit])
 async def get_my_guild_permissions(
         guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in]
 ):
