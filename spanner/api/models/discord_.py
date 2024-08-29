@@ -43,8 +43,12 @@ class User(BaseModel):
             avatar=user.avatar.key if user.avatar else None,
             bot=user.bot,
             system=user.system,
+            banner=user.banner.key if user.banner else None,
             flags=user.public_flags.value,
             public_flags=user.public_flags.value,
+            accent_color=user.accent_color.value if user.accent_color else None,
+            locale=None,
+            premium_type=None
         )
 
     @computed_field
@@ -63,8 +67,8 @@ class PartialGuild(BaseModel):
     owner: bool | None = None
     permissions: str | None = None
     features: list[str] = None
-    owner: bool
-
+    owner: bool | None
+    
     @classmethod
     def from_member(cls, member: discord.Member):
         """Creates a PartialGuild object from a discord.Member object."""
@@ -86,6 +90,7 @@ class PartialGuild(BaseModel):
             name=guild.name,
             icon=guild.icon.key if guild.icon else None,
             features=guild.features,
+            owner=None
         )
 
     @computed_field
