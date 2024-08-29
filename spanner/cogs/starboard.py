@@ -328,23 +328,34 @@ class StarboardCog(commands.Cog):
             config, _ = await StarboardConfig.get_or_create(
                 guild=gc, defaults={"channel_id": channel.id, "star_emoji": str(_emoji)}
             )
+            old = {
+                "channel_id": config.channel_id,
+                "star_emoji": config.star_emoji,
+            }
             config.channel_id = channel.id
             config.star_emoji = str(_emoji)
             await config.save(using_db=conn)
             await GuildAuditLogEntry.generate(
                 using_db=conn,
                 guild_id=ctx.guild.id,
-                author=ctx.user.id,
+                author=ctx.user,
                 namespace="starboard.channel",
                 action="modify",
                 description=f"Set the starboard channel to {channel.mention}",
+                metadata={
+                    "old": old,
+                    "new": {
+                        "channel_id": config.channel_id,
+                        "star_emoji": config.star_emoji,
+                    }
+                }
             )
-            await GuildAuditLogEntry.create(
+            await GuildAuditLogEntry.generate(
                 using_db=conn,
-                guild=gc,
-                author=ctx.user.id,
-                namespace="settings.starboard",
-                action="set_emoji",
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="starboard.emoji",
+                action="modify",
                 description=f"Set the starboard emoji to {_emoji}",
             )
             await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Starboard channel set to {channel.mention}.")
@@ -380,13 +391,17 @@ class StarboardCog(commands.Cog):
             config.star_emoji = str(reaction.emoji)
             await config.save(conn)
             gc, _ = await GuildConfig.get_or_create(id=ctx.guild.id)
-            await GuildAuditLogEntry.create(
-                conn,
-                guild=gc,
-                author=ctx.user.id,
-                namespace="settings.starboard",
-                action="set_emoji",
+            await GuildAuditLogEntry.generate(
+                using_db=conn,
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="starboard.emoji",
+                action="modify",
                 description=f"Set the starboard emoji to {reaction.emoji}",
+                metadata={
+                    "old": config.star_emoji,
+                    "new": reaction.emoji
+                }
             )
             await ctx.edit(content=f"Starboard emoji set to {reaction.emoji}")
             await m.clear_reactions()
@@ -408,8 +423,18 @@ class StarboardCog(commands.Cog):
                     "starboard channel.",
                     ephemeral=True,
                 )
+            old = config.allow_bot_messages
             config.allow_bot_messages = enable == "Yes"
             await config.save(using_db=conn)
+            await GuildAuditLogEntry.generate(
+                using_db=conn,
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="settings.starboard.bot_messages",
+                action="modify",
+                description=f"{'Enabled' if enable == 'Yes' else 'Disabled'} starring bot messages",
+                metadata={"old": old, "new": config.allow_bot_messages},
+            )
         await ctx.respond(
             "\N{WHITE HEAVY CHECK MARK} Bot messages can be %sstarred." % ("no longer be " if enable == "No" else "")
         )
@@ -431,8 +456,18 @@ class StarboardCog(commands.Cog):
                     "starboard channel.",
                     ephemeral=True,
                 )
+            old = config.allow_self_star
             config.allow_self_star = enable == "Yes"
             await config.save(using_db=conn)
+            await GuildAuditLogEntry.generate(
+                using_db=conn,
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="settings.starboard.self_star",
+                action="modify",
+                description=f"{'Enabled' if enable == 'Yes' else 'Disabled'} self-starring",
+                metadata={"old": old, "new": config.allow_self_star},
+            )
         await ctx.respond(
             "\N{WHITE HEAVY CHECK MARK} Users can now %sstar their own messages."
             % ("no longer " if enable == "No" else "")
@@ -463,9 +498,28 @@ class StarboardCog(commands.Cog):
                     "starboard channel.",
                     ephemeral=True,
                 )
+            old = {
+                "mode": config.star_mode,
+                "minimum": config.minimum_stars,
+            }
             config.star_mode = mode
             config.minimum_stars = value
             await config.save(using_db=conn)
+            await GuildAuditLogEntry.generate(
+                using_db=conn,
+                guild_id=ctx.guild.id,
+                author=ctx.user,
+                namespace="settings.starboard.threshold",
+                action="modify",
+                description=f"Set the starboard threshold to {value} {mode.name.lower()}",
+                metadata={
+                    "old": old,
+                    "new": {
+                        "mode": mode,
+                        "minimum": value,
+                    }
+                }
+            )
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Starboard threshold set to {value} {mode.name.lower()}.")
 
 

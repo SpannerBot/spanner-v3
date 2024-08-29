@@ -111,4 +111,5 @@ if CORS_ALLOW_ORIGINS:
         allow_methods=CORS_ALLOW_METHODS,
         allow_headers=CORS_ALLOW_HEADERS,
         allow_credentials=CORS_ALLOW_CREDENTIALS,
+        expose_headers=["Retry-After"]
     )

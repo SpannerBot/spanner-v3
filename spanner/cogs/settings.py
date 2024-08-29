@@ -1,5 +1,6 @@
 import fnmatch
 import typing
+import warnings
 
 import discord
 from discord.ext import bridge, commands
@@ -73,7 +74,7 @@ class SettingsCog(commands.Cog):
     log_feature = settings.create_subgroup(name="log-features", description="Manages logging features for the server.")
 
     async def _set_log_feature(
-        self, guild_id: int, feature: str, enabled: bool = None, *, user_id: int = None
+        self, guild_id: int, feature: str, enabled: bool = None, *, user: discord.User | discord.Member = None
     ) -> GuildLogFeatures | None:
         async with in_transaction() as tx:
             config = await self._ensure_guild_config(guild_id)
@@ -86,10 +87,10 @@ class SettingsCog(commands.Cog):
             log_feature.enabled = enabled if enabled is not None else not log_feature.enabled
             action = {True: "enabled", False: "disabled"}[log_feature.enabled]
             await log_feature.save()
-            if user_id:
-                e = await GuildAuditLogEntry.generate(
+            if user:
+                await GuildAuditLogEntry.generate(
                     guild_id=guild_id,
-                    author=user_id,
+                    author=user,
                     namespace="logging.features",
                     action=action,
                     description=f"set the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}.",
@@ -128,7 +129,7 @@ class SettingsCog(commands.Cog):
             toggled = []
             for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
-                    await self._set_log_feature(ctx.guild_id, log_feature, user_id=ctx.user.id)
+                    await self._set_log_feature(ctx.guild_id, log_feature, user=ctx.user)
                     toggled.append(log_feature)
             return await ctx.respond(
                 f"\N{WHITE HEAVY CHECK MARK} Toggled the following features: {', '.join(toggled)}."
@@ -137,7 +138,7 @@ class SettingsCog(commands.Cog):
         if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
-        log_feature = await self._set_log_feature(ctx.guild_id, feature, user_id=ctx.user.id)
+        log_feature = await self._set_log_feature(ctx.guild_id, feature, user=ctx.user)
 
         await ctx.respond(
             f"\N{WHITE HEAVY CHECK MARK} {'Enabled' if log_feature.enabled else 'Disabled'} the feature `{feature}`."
@@ -164,7 +165,7 @@ class SettingsCog(commands.Cog):
             toggled = []
             for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
-                    await self._set_log_feature(ctx.guild_id, log_feature, True, user_id=ctx.user.id)
+                    await self._set_log_feature(ctx.guild_id, log_feature, True, user=ctx.user)
                     toggled.append(log_feature)
             return await ctx.respond(
                 f"\N{WHITE HEAVY CHECK MARK} Enabled the following features: {', '.join(toggled)}."
@@ -173,7 +174,7 @@ class SettingsCog(commands.Cog):
         if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
-        await self._set_log_feature(ctx.guild_id, feature, True, user_id=ctx.user.id)
+        await self._set_log_feature(ctx.guild_id, feature, True, user=ctx.user)
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Enabled the feature `{feature}`.")
 
     @log_feature.command(name="disable")
@@ -197,7 +198,7 @@ class SettingsCog(commands.Cog):
             toggled = []
             for log_feature in GuildLogFeatures.VALID_LOG_FEATURES:
                 if fnmatch.fnmatch(log_feature, feature):
-                    await self._set_log_feature(ctx.guild_id, log_feature, False, user_id=ctx.user.id)
+                    await self._set_log_feature(ctx.guild_id, log_feature, False, user=ctx.user)
                     toggled.append(log_feature)
             return await ctx.respond(
                 f"\N{WHITE HEAVY CHECK MARK} Disabled the following features: {', '.join(toggled)}."
@@ -206,7 +207,7 @@ class SettingsCog(commands.Cog):
         if feature not in GuildLogFeatures.VALID_LOG_FEATURES:
             return await ctx.respond(f"\N{CROSS MARK} The feature `{feature}` does not exist.")
 
-        await self._set_log_feature(ctx.guild_id, feature, False, user_id=ctx.user.id)
+        await self._set_log_feature(ctx.guild_id, feature, False, user=ctx.user)
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Disabled the feature `{feature}`.")
 
     @settings.command(name="audit-log")

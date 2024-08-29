@@ -1,11 +1,11 @@
+import hashlib
 import math
 import time
 from typing import Annotated
 
 import discord
 import httpx
-from discord.http import Route
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status, Header
 from fastapi.responses import JSONResponse
 
 from spanner.bot import bot
@@ -88,12 +88,15 @@ async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in], res: JS
         return [PartialGuild.model_validate(guild) for guild in response.json()]
 
 
-@router.get("/users/{user_id}", dependencies=[ratelimit])
-async def get_user(user_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse) -> User:
+@router.get("/users/{user_id}", dependencies=[ratelimit, is_logged_in])
+async def get_user(user_id: int, res: JSONResponse, if_none_match: str = Header(None)) -> User:
     """Fetches a user by ID."""
     user = await bot.get_or_fetch_user(user_id)
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="User not found.")
+    res.headers["etag"] = hashlib.md5(f"{user.display_name}{user.display_avatar}".encode()).hexdigest()
+    if if_none_match and if_none_match == res.headers["etag"]:
+        raise HTTPException(status.HTTP_304_NOT_MODIFIED)
     return User.from_user(user)
 
 
@@ -215,9 +218,9 @@ async def get_my_guild_member(
         return response.json()
 
 
-@router.get("/guilds/{guild_id}/bot", dependencies=[ratelimit])
+@router.get("/guilds/{guild_id}/bot", dependencies=[ratelimit, is_logged_in])
 async def get_my_guild_bot(
-    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
+    guild_id: int
 ):
     guild = bot.get_guild(guild_id)
     if not guild:
