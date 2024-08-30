@@ -58,6 +58,7 @@ class SettingsCog(commands.Cog):
                 namespace="logging.channel",
                 action="modify",
                 description=f"Set the log channel to {channel.id} ({channel.name}).",
+                target=channel,
                 metadata={
                     "action.historical": "modified",
                     "old": {
@@ -93,6 +94,7 @@ class SettingsCog(commands.Cog):
                     author=user,
                     namespace="logging.features",
                     action=action,
+                    target=log_feature,
                     description=f"set the feature `{feature}` to {'enabled' if log_feature.enabled else 'disabled'}.",
                     metadata={
                         "feature": feature,

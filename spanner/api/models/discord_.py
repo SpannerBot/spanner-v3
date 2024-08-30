@@ -191,3 +191,98 @@ class Member(BaseModel):
 
         uri = "/guilds/{0._guild_id}/users/{0.user.id}/avatars/{0.avatar}.webp?size=512"
         return "https://cdn.discordapp.com" + uri.format(self)
+
+
+class Role(BaseModel):
+    class RoleTags(BaseModel):
+        bot_id: str | None = None
+        integration_id: str | None = None
+        subscription_listing_id: str | None = None
+
+    id: str
+    name: str
+    color: int
+    hoist: bool
+    icon: str | None = None
+    unicode_emoji: str | None = None
+    position: int
+    permissions: str
+    managed: bool
+    mentionable: bool
+    tags: RoleTags | None = None
+    flags: int
+
+    @classmethod
+    def from_role(cls, role: discord.Role):
+        """Creates a Role object from a discord.Role object."""
+        tags = None
+        if role.tags:
+            tags = cls.RoleTags(
+                bot_id=role.tags.bot_id,
+                integration_id=role.tags.integration_id,
+                subscription_listing_id=role.tags.subscription_listing_id
+            )
+        return cls(
+            id=str(role.id),
+            name=role.name,
+            color=role.color.value,
+            hoist=role.hoist,
+            icon=role.icon.key if role.icon else None,
+            unicode_emoji=role.unicode_emoji,
+            position=role.position,
+            permissions=str(role.permissions.value),
+            managed=role.managed,
+            mentionable=role.mentionable,
+            flags=role.flags.value,
+            tags=tags
+        )
+
+
+class Message(BaseModel):
+    id: str
+    channel_id: str
+    guild_id: str | None = None
+    author: User | Member | str
+    content: str
+    timestamp: datetime.datetime
+    edited_timestamp: datetime.datetime | None = None
+    tts: bool
+    mention_everyone: bool
+    mentions: list[User] = []
+    mention_roles: list[str] = []
+    mention_channels: list[dict[str, str]] = []
+    attachments: list[dict[str, str]] = []
+    embeds: list[dict[str, str]] = []
+    reactions: list[dict[str, str]] = []
+    pinned: bool
+    type: int
+    flags: int
+
+    @classmethod
+    def from_message(cls, message: discord.Message):
+        """Creates a Message object from a discord.Message object."""
+        if isinstance(message.author, discord.Member):
+            author = Member.from_member(message.author)
+        else:
+            author = User.from_user(message.author)
+        # noinspection PyUnresolvedReferences
+        return cls(
+            id=str(message.id),
+            channel_id=str(message.channel.id),
+            guild_id=str(message.guild.id) if message.guild else None,
+            author=author,
+            content=message.content,
+            timestamp=message.created_at,
+            edited_timestamp=message.edited_at,
+            tts=message.tts,
+            mention_everyone=message.mention_everyone,
+            mentions=[User.from_user(user) for user in message.mentions],
+            mention_roles=[str(role.id) for role in message.role_mentions],
+            mention_channels=[{"id": str(channel.id), "name": channel.name} for channel in message.channel_mentions],
+            attachments=[{"url": attachment.url, "filename": attachment.filename} for attachment in message.attachments],
+            embeds=[embed.to_dict() for embed in message.embeds],
+            reactions=[{"emoji": str(reaction.emoji), "count": reaction.count} for reaction in message.reactions],
+            pinned=message.pinned,
+            type=message.type.value,
+            flags=message.flags.value
+        )

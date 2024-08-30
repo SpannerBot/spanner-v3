@@ -1,5 +1,6 @@
 import datetime
 import enum
+import json
 import typing
 import uuid
 import warnings
@@ -178,11 +179,48 @@ class GuildAuditLogEntry(Model):
                     metadata["action.historical"] = "created"
 
         if target:
-            metadata["target"] = target
-
             match type(target):
                 case discord.Member:
-                    pass
+                    from spanner.api.models.discord_ import Member
+                    metadata["target"] = Member.from_member(target)
+                case discord.User:
+                    from spanner.api.models.discord_ import User
+                    metadata["target"] = User.from_user(target)
+                case discord.Guild:
+                    from spanner.api.models.discord_ import PartialGuild
+                    metadata["target"] = PartialGuild.from_guild(target)
+                case discord.Role:
+                    from spanner.api.models.discord_ import Role
+                    metadata["target"] = Role.from_role(target)
+                case discord.TextChannel:
+                    from spanner.api.models.discord_ import ChannelInformation
+                    metadata["target"] = ChannelInformation.from_channel(target)
+                case discord.VoiceChannel:
+                    from spanner.api.models.discord_ import ChannelInformation
+                    metadata["target"] = ChannelInformation.from_channel(target)
+                case discord.StageChannel:
+                    from spanner.api.models.discord_ import ChannelInformation
+                    metadata["target"] = ChannelInformation.from_channel(target)
+                case discord.CategoryChannel:
+                    from spanner.api.models.discord_ import ChannelInformation
+                    metadata["target"] = ChannelInformation.from_channel(target)
+                case discord.abc.Snowflake:
+                    metadata["target"] = {"id": str(target.id)}
+                case _:
+                    try:
+                        metadata["target"] = json.loads(
+                            json.dumps(
+                                getattr(target, "to_dict", lambda: target)(),
+                                default=repr
+                            )
+                        )
+                    except Exception as e:
+                        metadata["target"] = repr(target)
+                        warnings.warn(
+                            f"Failed to convert target to JSON: {e!r}",
+                            RuntimeWarning,
+                            stacklevel=2
+                        )
 
         return await cls.create(
             guild_id=guild_id,

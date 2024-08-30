@@ -341,6 +341,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user,
                 namespace="starboard.channel",
                 action="modify",
+                target=channel,
                 description=f"Set the starboard channel to {channel.mention}",
                 metadata={
                     "old": old,
@@ -355,6 +356,7 @@ class StarboardCog(commands.Cog):
                 guild_id=ctx.guild.id,
                 author=ctx.user,
                 namespace="starboard.emoji",
+                target=_emoji,
                 action="modify",
                 description=f"Set the starboard emoji to {_emoji}",
             )
@@ -397,6 +399,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user,
                 namespace="starboard.emoji",
                 action="modify",
+                target=str(reaction.emoji),
                 description=f"Set the starboard emoji to {reaction.emoji}",
                 metadata={
                     "old": config.star_emoji,
@@ -432,6 +435,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user,
                 namespace="settings.starboard.bot_messages",
                 action="modify",
+                target="bot-messages",
                 description=f"{'Enabled' if enable == 'Yes' else 'Disabled'} starring bot messages",
                 metadata={"old": old, "new": config.allow_bot_messages},
             )
@@ -465,6 +469,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user,
                 namespace="settings.starboard.self_star",
                 action="modify",
+                target="self-star",
                 description=f"{'Enabled' if enable == 'Yes' else 'Disabled'} self-starring",
                 metadata={"old": old, "new": config.allow_self_star},
             )
@@ -511,6 +516,7 @@ class StarboardCog(commands.Cog):
                 author=ctx.user,
                 namespace="settings.starboard.threshold",
                 action="modify",
+                target="threshold",
                 description=f"Set the starboard threshold to {value} {mode.name.lower()}",
                 metadata={
                     "old": old,

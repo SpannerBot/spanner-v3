@@ -1,10 +1,14 @@
+import time
 import typing
 
 import discord
 from discord.ext import bridge, commands
+from tortoise.transactions import in_transaction
 
 from spanner.share.utils import SilentCommandError
 from spanner.share.views.prune import PruneFilterView
+from spanner.share.database import GuildAuditLogEntry
+from spanner.api.models.discord_ import ChannelInformation, Message
 
 
 class PruneCog(commands.Cog):
@@ -47,25 +51,45 @@ class PruneCog(commands.Cog):
 
         await ctx.respond("Pruning messages (this may take some time)...", ephemeral=True)
 
-        try:
-            n = await ctx.channel.purge(
-                limit=limit,
-                check=filters.check,
-                reason=f"{ctx.user} requested a prune of {limit} messages with filters {filters.v!r}",
+        async with in_transaction() as conn:
+            entry = await GuildAuditLogEntry.generate(
+                ctx.guild_id,
+                ctx.user,
+                "command",
+                "prune",
+                f"Pruned {limit} messages with filters {filters.v!r}",
+                metadata={
+                    "filters": filters.v, "limit": limit, "channel": ChannelInformation.from_channel(ctx.channel)
+                },
+                target=ctx.channel,
+                using_db=conn,
             )
-        except discord.HTTPException as e:
-            await ctx.edit(
-                content=None,
-                embed=discord.Embed(
-                    title="Sorry, there was an error while pruning messages.",
-                    description=f"Messages may or not have been deleted. Error: {e}\n"
-                    f"The developer has been notified.",
-                    color=discord.Color.red(),
-                ),
-            )
-            raise SilentCommandError from e
-        else:
-            await ctx.edit(content=f"Successfully pruned {len(n):,} messages.", embed=None)
+            try:
+                start = time.time()
+                n = await ctx.channel.purge(
+                    limit=limit,
+                    check=filters.check,
+                    reason=f"{ctx.user} requested a prune of {limit} messages with filters {filters.v!r}",
+                )
+                end = time.time()
+            except discord.HTTPException as e:
+                await ctx.edit(
+                    content=None,
+                    embed=discord.Embed(
+                        title="Sorry, there was an error while pruning messages.",
+                        description=f"Messages may or not have been deleted. Error: {e}\n",
+                        color=discord.Color.red(),
+                    ),
+                )
+                raise SilentCommandError from e
+            else:
+                entry.metadata["target"] = [Message.from_message(m) for m in n]
+                entry.metadata["deleted"] = len(n)
+                entry.metadata["duration"] = end - start
+                entry.metadata["start"] = start
+                entry.metadata["end"] = end
+                await entry.save(using_db=conn)
+                await ctx.edit(content=f"Successfully pruned {len(n):,} messages.", embed=None)
 
 
 def setup(bot: bridge.Bot):

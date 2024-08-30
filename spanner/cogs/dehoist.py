@@ -1,6 +1,8 @@
-
 import discord
 from discord.ext import commands
+from spanner.share.database import GuildAuditLogEntry
+from spanner.api.models.discord_ import Member
+from tortoise.transactions import in_transaction
 
 CHAR = "\U000017b5"
 
@@ -18,8 +20,28 @@ class Dehoist(commands.Cog):
             await ctx.respond(f"{member.mention} is already de-hoisted.", ephemeral=True)
         else:
             x = f"{CHAR}{member.display_name}"[:32]
-            await member.edit(nick=x, reason=f"Dehoisted by @{ctx.user.global_name}")
-            await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)
+            async with in_transaction() as conn:
+                new_m = Member.from_member(member)
+                new_m.nick = x
+                await GuildAuditLogEntry.generate(
+                    guild_id=ctx.guild_id,
+                    author=ctx.user,
+                    namespace="command",
+                    action="dehoist",
+                    description=f"Dehoisted {member.display_name} to {x}.",
+                    target=member,
+                    metadata={
+                        "old": {
+                            "member": Member.from_member(member),
+                        },
+                        "new": {
+                            "member": new_m,
+                        },
+                    },
+                    using_db=conn
+                )
+                await member.edit(nick=x, reason=f"Dehoisted by @{ctx.user.global_name}")
+                await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)
 
 
 def setup(bot):
