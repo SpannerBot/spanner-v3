@@ -48,7 +48,9 @@ async def get_guild_presence(req: Request, guild_id: int, bot: Annotated[CustomB
     if not bot.is_ready():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot is not ready.")
 
-    key = hashlib.sha1(f"{req.client.host}:guild:{guild_id}:presence".encode()).hexdigest()
+    key = hashlib.sha1(
+        f"{req.client.host}:{req.headers.get('Authorization') or req.client.host}:presence".encode()
+    ).hexdigest()
     if (bucket := RATELIMITER.get_bucket(key)) is None:
         bucket = Bucket(key, 50, 50, time.time() + 10, 10)
     bucket.renew_if_not_expired()

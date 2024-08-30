@@ -94,7 +94,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
     )
     url = url_base.format(DISCORD_CLIENT_ID, DISCORD_OAUTH_CALLBACK, state)
     res = RedirectResponse(url)
-    res.set_cookie("state", state, samesite="strict", expires=600)
+    res.set_cookie("state", state, httponly=True, expires=600)
     return res
 
 
@@ -118,7 +118,7 @@ async def invite(
             redirect_uri=DISCORD_OAUTH_CALLBACK,
         ) + "&state=" + state
     )
-    res.set_cookie("state", state)
+    res.set_cookie("state", state, httponly=True, expires=600)
     return res
 
 
@@ -163,7 +163,7 @@ async def callback(
                 }
             )
         code_payload = AccessTokenResponse.model_validate(code_grant.json())
-        if not all(x in code_payload.scope_array for x in ("identify", "guilds")):
+        if not all(x in code_payload.scope_array for x in ("identify",)):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing required scopes")
 
         user_data = await client.get("/users/@me", headers={"Authorization": f"Bearer {code_payload.access_token}"})
