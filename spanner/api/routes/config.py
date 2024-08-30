@@ -1,9 +1,10 @@
 import datetime
 import hashlib
+import time
 from typing import Annotated
 
 import discord.utils
-from fastapi import APIRouter, Depends, HTTPException, Header, Query, status, Body
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, status, Request
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, Response
 
@@ -21,6 +22,7 @@ from spanner.share.database import (
 
 from ..models.config import GuildAuditLogEntryResponse
 from .oauth2 import is_logged_in
+from ..ratelimiter import Ratelimiter, Bucket
 
 
 class _FeatureToggle(BaseModel):
@@ -37,13 +39,31 @@ bot_is_ready = Depends(_bot_is_ready_callback)
 
 
 router = APIRouter(tags=["Configuration"])
+RATELIMITER = Ratelimiter()
 
 
 @router.get("/{guild_id}/presence", status_code=status.HTTP_204_NO_CONTENT)
-async def get_guild_presence(guild_id: int, bot: Annotated[CustomBridgeBot, bot_is_ready]):
+async def get_guild_presence(req: Request, guild_id: int, bot: Annotated[CustomBridgeBot, bot_is_ready]):
     """Checks that the bot is in the target server."""
     if not bot.is_ready():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Bot is not ready.")
+
+    key = hashlib.sha1(f"{req.client.host}:guild:{guild_id}:presence".encode()).hexdigest()
+    if (bucket := RATELIMITER.get_bucket(key)) is None:
+        bucket = Bucket(key, 50, 50, time.time() + 10, 10)
+    bucket.renew_if_not_expired()
+    bucket.remaining -= 1
+    RATELIMITER.buckets[key] = bucket
+
+    if bucket.exhausted:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You are being ratelimited by the server.",
+            headers={
+                "X-Ratelimit-Source": "internal",
+                **bucket.generate_ratelimit_headers()
+            }
+        )
 
     guild = bot.get_guild(guild_id)
     if not guild:
