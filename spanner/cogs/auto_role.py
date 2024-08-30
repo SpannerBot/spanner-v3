@@ -23,12 +23,13 @@ class AutoRoleConfig(commands.Cog):
             return await ctx.respond(f"\N{CROSS MARK} {role.mention} is already an auto role.")
         config.auto_roles.append(role.id)
         await config.save()
-        await GuildAuditLogEntryNew.generate(
+        await GuildAuditLogEntry.generate(
             ctx.guild_id,
             ctx.user,
             "auto_roles",
             "action",
             f"Added role {role.id} ({role.name}) to the auto roles.",
+            target=role,
             metadata={
                 "action.historical": "added",
                 "role": {

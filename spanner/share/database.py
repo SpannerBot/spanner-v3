@@ -3,17 +3,17 @@ import enum
 import typing
 import uuid
 import warnings
-
-
-try:
-    import aerich.models
-except ImportError:
-    raise RuntimeError("Aerich is not installed. Please install it by running `pip install aerich`.")
+from typing import Any, Union
 
 import discord
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.models import Model
+
+try:
+    import aerich.models
+except ImportError:
+    raise RuntimeError("Aerich is not installed. Please install it by running `pip install aerich`.")
 
 
 class GuildConfig(Model):
@@ -97,6 +97,21 @@ class GuildLogFeatures(Model):
 
 
 GuildLogFeaturesPydantic = pydantic_model_creator(GuildLogFeatures, name="GuildLogFeatures")
+TargetTypes = Union[
+    discord.Member,
+    discord.User,
+    discord.Role,
+    discord.Guild,
+    discord.TextChannel,
+    discord.VoiceChannel,
+    discord.CategoryChannel,
+    discord.Invite,
+    discord.Message,
+    discord.Emoji,
+    discord.PartialEmoji,
+    discord.abc.Snowflake,
+    Any
+]
 
 
 class GuildAuditLogEntry(Model):
@@ -122,9 +137,14 @@ class GuildAuditLogEntry(Model):
             description: str,
             metadata: dict | None = None,
             *,
+            target: Any = None,
             using_db = None
     ) -> typing.Self:
-        """Generates a new audit log entry"""
+        """
+        Generates a new audit log entry
+
+        This function should be used instead of create(), as it produces a consistent, API-friendly output.
+        """
         metadata = metadata or {}
         if isinstance(author, int):
             author = discord.Object(id=author)
@@ -157,6 +177,13 @@ class GuildAuditLogEntry(Model):
                 case "create":
                     metadata["action.historical"] = "created"
 
+        if target:
+            metadata["target"] = target
+
+            match type(target):
+                case discord.Member:
+                    pass
+
         return await cls.create(
             guild_id=guild_id,
             author=str(author.id),
@@ -164,7 +191,7 @@ class GuildAuditLogEntry(Model):
             action=action,
             description=description,
             metadata=metadata,
-            version=3,
+            version=4 if target else 3,
             using_db=using_db
         )
 
