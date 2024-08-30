@@ -2,28 +2,54 @@ import datetime
 import secrets
 import time
 from typing import Annotated
+from hashlib import sha1
 
 import discord.utils
 import httpx
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security.api_key import APIKeyCookie, APIKeyHeader
+from starlette.responses import JSONResponse
 
 from spanner.share.database import DiscordOauthUser
 
 from ..models.discord_ import AccessTokenResponse, User
 from ..vars import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK
+from ..ratelimiter import Ratelimiter, Bucket
 
 __all__ = ("router", "is_logged_in")
 
 
 router = APIRouter(tags=["OAuth2"])
 STATES: dict[str, str] = {}
-RATELIMITER: dict[str, tuple[int, float]] = {}
-# IP: (count, expires)
 
 cookie_scheme = APIKeyCookie(name="session", auto_error=False)
 bearer_scheme = APIKeyHeader(name="X-Spanner-Session", auto_error=False)
+
+RATELIMITER = Ratelimiter()
+DEFAULT_INTERNAL_KEY = "{req.method}:{req.client.host}"
+
+
+def handle_ratelimit(req: Request) -> Bucket:
+    key = sha1(DEFAULT_INTERNAL_KEY.format(req=req, authorization=req.headers.get("Authorization", "")).encode()).hexdigest()
+    bucket = RATELIMITER.get_bucket(key)
+    if not bucket:
+        bucket = Bucket(key, 5, 5, time.time() + 10, 10)
+
+    bucket.renew_if_not_expired()
+    bucket.remaining -= 1
+    RATELIMITER.buckets[key] = bucket
+
+    if bucket.exhausted:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You are being ratelimited by the server.",
+            headers={
+                "X-Ratelimit-Source": "internal",
+                **bucket.generate_ratelimit_headers()
+            }
+        )
+    return bucket
 
 
 async def _is_authenticated(
@@ -49,7 +75,7 @@ async def _is_authenticated(
 is_logged_in = Depends(_is_authenticated)
 
 
-@router.get("/login")
+@router.get("/login", dependencies=[Depends(handle_ratelimit)])
 async def login(req: Request, return_to: str) -> RedirectResponse:
     """
     Initiates the oauth2 login flow, by redirecting to discord.
@@ -58,21 +84,6 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
     """
     if not all((DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK)):
         raise HTTPException(503, "Oauth2 is misconfigured.")
-    RATELIMITER.setdefault(req.client.host, (0, 0))
-    count, expires = RATELIMITER[req.client.host]
-
-    if count >= 5 and expires > time.time():
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limited. Try again later.",
-            headers={"Retry-After": str(round(expires - time.time()))},
-        )
-
-    if expires > time.time():
-        RATELIMITER[req.client.host] = (count + 1, expires)
-    else:
-        RATELIMITER[req.client.host] = (1, time.time() + 30)
-
     state = secrets.token_urlsafe()
     STATES[state] = return_to
 
@@ -83,32 +94,17 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
     )
     url = url_base.format(DISCORD_CLIENT_ID, DISCORD_OAUTH_CALLBACK, state)
     res = RedirectResponse(url)
-    res.set_cookie("state", state)
+    res.set_cookie("state", state, samesite="strict", expires=600)
     return res
 
 
-@router.get("/invite", include_in_schema=False)
+@router.get("/invite", include_in_schema=False, dependencies=[Depends(handle_ratelimit)])
 async def invite(
-        req: Request,
         guild_id: int | None = None,
         return_to: str | None = None
 ) -> RedirectResponse:
     if not all((DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK)):
         raise HTTPException(503, "Oauth2 is misconfigured.")
-    RATELIMITER.setdefault(req.client.host, (0, 0))
-    count, expires = RATELIMITER[req.client.host]
-
-    if count >= 5 and expires > time.time():
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limited. Try again later.",
-            headers={"Retry-After": str(round(expires - time.time()))},
-        )
-
-    if expires > time.time():
-        RATELIMITER[req.client.host] = (count + 1, expires)
-    else:
-        RATELIMITER[req.client.host] = (1, time.time() + 30)
 
     state = secrets.token_urlsafe()
     STATES[state] = return_to
@@ -126,9 +122,9 @@ async def invite(
     return res
 
 
-@router.get("/callback")
+@router.get("/callback", dependencies=[Depends(handle_ratelimit)])
 async def callback(
-    req: Request, code: str, state: str = Query(...), state_cookie: str = Cookie(..., alias="state")
+    code: str, state: str = Query(...), state_cookie: str = Cookie(..., alias="state")
 ) -> RedirectResponse:
     """
     Callback for the oauth2 login flow, redirects to the return_to URL.
@@ -145,15 +141,6 @@ async def callback(
     del STATES[state]
 
     async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
-        print(
-            "Fetching token using code %r (state %r), with client ID %r, secret %r, and redirect %r" % (
-                code,
-                state,
-                DISCORD_CLIENT_ID,
-                DISCORD_CLIENT_SECRET,
-                DISCORD_OAUTH_CALLBACK,
-            )
-        )
         code_grant = await client.post(
             "/oauth2/token",
             data={
@@ -198,23 +185,72 @@ async def callback(
     return res
 
 
-@router.get("/whoami")
-async def whoami(user: Annotated[DiscordOauthUser, is_logged_in]) -> User:
-    """Fetches the current logged-in user's discord details"""
-    async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
-        res = await client.get("/users/@me", headers={"Authorization": f"Bearer {user.access_token}"})
-        res.raise_for_status()
-        return User.model_validate(res.json())
-
-
 @router.get("/session")
 async def session(user: Annotated[DiscordOauthUser, is_logged_in]):
     """Returns the current session token"""
-    return {"token": user.session, "scopes": user.scope}
+    return {
+        "token": user.session,
+        "user_id": str(user.user_id),
+        "scopes": user.scope,
+        "expires_at": user.expires_at
+    }
+
+
+@router.post("/session/refresh", dependencies=[Depends(handle_ratelimit)])
+async def refresh_session(res: JSONResponse, user: Annotated[DiscordOauthUser, is_logged_in]):
+    """Refreshes the current session token"""
+    async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
+        refresh = await client.post(
+            "/oauth2/token",
+            data={
+                "client_id": DISCORD_CLIENT_ID,
+                "client_secret": DISCORD_CLIENT_SECRET,
+                "grant_type": "refresh_token",
+                "refresh_token": user.refresh_token,
+            },
+            auth=(DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        if refresh.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": "Failed to fetch token from upstream",
+                    "status": refresh.status_code,
+                    "response": refresh.json(),
+                }
+            )
+        refresh_payload = AccessTokenResponse.model_validate(refresh.json())
+
+        user.access_token = refresh_payload.access_token
+        if refresh_payload.refresh_token != user.refresh_token:
+            user.refresh_token = refresh_payload.refresh_token
+        if refresh_payload.scope != user.scope:
+            user.scope = refresh_payload.scope
+        user.expires_at = (discord.utils.utcnow() + datetime.timedelta(seconds=refresh_payload.expires_in)).timestamp()
+        await user.save()
+
+    res.set_cookie("session", user.session, expires=refresh_payload.expires_in, samesite="lax")
+    return {
+        "token": user.session,
+        "user_id": str(user.user_id),
+        "scopes": user.scope,
+        "expires_at": user.expires_at
+    }
 
 
 @router.delete("/session")
 async def delete_session(user: Annotated[DiscordOauthUser, is_logged_in]):
     """Deletes the current session token"""
-    await user.delete()
+    try:
+        async with httpx.AsyncClient(base_url="https://discord.com/api/v10") as client:
+            await client.post(
+                "/oauth2/token/revoke",
+                data={"token": user.access_token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+    except httpx.HTTPError:
+        pass
+    finally:
+        await user.delete()
     return {"message": "Session deleted."}
