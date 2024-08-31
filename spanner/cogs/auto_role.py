@@ -42,7 +42,7 @@ class AutoRoleConfig(commands.Cog):
                 return await ctx.respond("\N{CROSS MARK} This role is above your top role, you cannot assign it.")
 
             dangerous = []
-            for key, value in dict(role.permissions):
+            for key, value in dict(iter(role.permissions)):
                 if any((fnmatch(key, perm_name) for perm_name in self.MODERATOR_PERMISSIONS)) and value is True:
                     dangerous.append(key)
 
