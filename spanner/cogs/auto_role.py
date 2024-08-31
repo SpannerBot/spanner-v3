@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from fnmatch import fnmatch
 from discord.ext import commands
@@ -16,6 +18,7 @@ class AutoRoleConfig(commands.Cog):
     )
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger("spanner.cogs.auto_role")
 
     auto_roles_command = discord.SlashCommandGroup(
         name="auto-roles",
@@ -191,7 +194,7 @@ class AutoRoleConfig(commands.Cog):
             )
             await msg.edit("\N{WHITE HEAVY CHECK MARK} Cleared all auto roles for the server.")
 
-    async def _add_auto_roles(self, member: discord.Member):
+    async def _autorole_action(self, member: discord.Member):
         auto_roles = await AutoRole.filter(guild_id=member.guild.id)
         if not auto_roles:
             self.log.info("No autoroles for %r in %r", member, member.guild)
@@ -200,44 +203,60 @@ class AutoRoleConfig(commands.Cog):
         roles = list(filter(None, roles))
         roles = list(filter(lambda r: r < member.guild.me.top_role, roles))
         roles = list(sorted(roles, reverse=True))
-        await member.add_roles(*roles, reason="Auto roles", atomic=False)
-        await GuildAuditLogEntry.generate(
-            member.guild.id,
-            self.bot.user,
-            "auto_roles",
-            "action",
-            f"Auto assigned roles to {member.id} ({member})",
-            metadata={
-                "action.historical": "auto_assigned",
-                "member": {
-                    "id": str(member.id),
-                    "name": str(member),
-                },
-                "roles": [str(role.id) for role in roles],
-            }
-        )
+        try:
+            await member.add_roles(*roles, reason="Auto roles", atomic=False)
+        except discord.HTTPException as e:
+            self.log.warning("Failed to apply auto roles to %r: %r", member, e, exc_info=e)
+            await GuildAuditLogEntry.generate(
+                member.guild.id,
+                self.bot.user,
+                "auto_roles",
+                "error",
+                f"Failed to auto assign roles to {member.id} ({member})",
+                metadata={
+                    "action.historical": "failed",
+                    "member": {
+                        "id": str(member.id),
+                        "name": str(member),
+                    },
+                    "roles": [str(role.id) for role in roles],
+                    "error": str(e),
+                }
+            )
+        else:
+            await GuildAuditLogEntry.generate(
+                member.guild.id,
+                self.bot.user,
+                "auto_roles",
+                "action",
+                f"Auto assigned roles to {member.id} ({member})",
+                metadata={
+                    "action.historical": "auto_assigned",
+                    "member": {
+                        "id": str(member.id),
+                        "name": str(member),
+                    },
+                    "roles": [str(role.id) for role in roles],
+                }
+            )
 
-    @commands.Cog.listener()
+    @commands.Cog.listener("on_member_join")
     async def on_member_join(self, member: discord.Member):
         if member.bot:
             return
         if member.pending:
             self.log.info("Member %r joined %r, but is pending. Holding off on assigning auto roles.", member, member.guild)
             return  # assign later
-        await self._add_auto_roles(member)
+        await self._autorole_action(member)
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         if after.bot:
             return
-        if before.pending is False:
-            return
-        if after.pending is True:
-            return
-        if after.top_role >= after.guild.me.top_role:
+        if before.pending is False and after.pending is False:
             return
 
-        await self._add_auto_roles(after)
+        await self._autorole_action(after)
 
 
 def setup(bot):
