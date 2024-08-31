@@ -5,10 +5,10 @@ import discord
 from discord.ext import bridge, commands
 from tortoise.transactions import in_transaction
 
+from spanner.api.models.discord_ import ChannelInformation, Message
+from spanner.share.database import GuildAuditLogEntry
 from spanner.share.utils import SilentCommandError
 from spanner.share.views.prune import PruneFilterView
-from spanner.share.database import GuildAuditLogEntry
-from spanner.api.models.discord_ import ChannelInformation, Message
 
 
 class PruneCog(commands.Cog):
@@ -59,7 +59,9 @@ class PruneCog(commands.Cog):
                 "prune",
                 f"Pruned {limit} messages with filters {filters.v!r}",
                 metadata={
-                    "filters": filters.v, "limit": limit, "channel": ChannelInformation.from_channel(ctx.channel)
+                    "filters": filters.v,
+                    "limit": limit,
+                    "channel": ChannelInformation.from_channel(ctx.channel),
                 },
                 target=ctx.channel,
                 using_db=conn,

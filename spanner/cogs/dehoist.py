@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
-from spanner.share.database import GuildAuditLogEntry
-from spanner.api.models.discord_ import Member
 from tortoise.transactions import in_transaction
+
+from spanner.api.models.discord_ import Member
+from spanner.share.database import GuildAuditLogEntry
 
 CHAR = "\U000017b5"
 
@@ -38,7 +39,7 @@ class Dehoist(commands.Cog):
                             "member": new_m.model_dump(),
                         },
                     },
-                    using_db=conn
+                    using_db=conn,
                 )
                 await member.edit(nick=x, reason=f"Dehoisted by @{ctx.user.global_name}")
                 await ctx.respond(f"Dehoisted {member.mention}.", ephemeral=True)

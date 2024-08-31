@@ -1,11 +1,6 @@
 import time
-from dataclasses import dataclass
 
-
-__all__ = (
-    "Bucket",
-    "Ratelimiter"
-)
+__all__ = ("Bucket", "Ratelimiter")
 
 
 class Bucket:
@@ -23,13 +18,13 @@ class Bucket:
     # """The key to use when ratelimiting against an external service"""
 
     def __init__(
-            self,
-            key: str,
-            limit: int,
-            remaining: int,
-            reset: float,
-            window: int | float | None = None,
-            external_key: str | None = None
+        self,
+        key: str,
+        limit: int,
+        remaining: int,
+        reset: float,
+        window: int | float | None = None,
+        external_key: str | None = None,
     ):
         self.key = key
         self.limit = limit
@@ -67,7 +62,7 @@ class Bucket:
             "X-Ratelimit-Limit": str(self.limit),
             "X-Ratelimit-Remaining": str(self.remaining),
             "X-Ratelimit-Reset": str(self.reset),
-            "Retry-After": str(self.reset_after)
+            "Retry-After": str(self.reset_after),
         }
 
     @classmethod
@@ -78,7 +73,7 @@ class Bucket:
             limit=int(headers["X-Ratelimit-Limit"]),
             remaining=int(headers["X-Ratelimit-Remaining"]),
             reset=float(headers["X-Ratelimit-Reset"]),
-            external_key=headers["X-Ratelimit-Bucket"]
+            external_key=headers["X-Ratelimit-Bucket"],
         )
 
 

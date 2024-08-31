@@ -1,11 +1,9 @@
-import datetime
-import uuid
 
 from pydantic import BaseModel
 
-from spanner.share.database import GuildAuditLogEntryPydantic, GuildConfigPydantic
+from spanner.share.database import GuildAuditLogEntryPydantic
 
-__all__ = ("GuildAuditLogEntryResponse", "NicknameModerationUpdateBody", "GuildAuditLogEntryModel")
+__all__ = ("GuildAuditLogEntryResponse", "NicknameModerationUpdateBody")
 
 
 class GuildAuditLogEntryResponse(BaseModel):

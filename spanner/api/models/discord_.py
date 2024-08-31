@@ -1,9 +1,8 @@
 import datetime
+from typing import Literal
 
 import discord
-from typing import Annotated, Literal
-
-from pydantic import BaseModel, HttpUrl, computed_field
+from pydantic import BaseModel, computed_field
 
 
 class AccessTokenResponse(BaseModel):
@@ -50,7 +49,7 @@ class User(BaseModel):
             public_flags=user.public_flags.value,
             accent_color=user.accent_color.value if user.accent_color else None,
             locale=None,
-            premium_type=None
+            premium_type=None,
         )
 
     @computed_field
@@ -70,7 +69,7 @@ class PartialGuild(BaseModel):
     permissions: str | None = None
     features: list[str] = None
     owner: bool | None
-    
+
     @classmethod
     def from_member(cls, member: discord.Member):
         """Creates a PartialGuild object from a discord.Member object."""
@@ -83,7 +82,7 @@ class PartialGuild(BaseModel):
             permissions=str(member.guild_permissions.value),
             features=guild.features,
         )
-    
+
     @classmethod
     def from_guild(cls, guild: discord.Guild):
         """Creates a PartialGuild object from a discord.Guild object."""
@@ -92,7 +91,7 @@ class PartialGuild(BaseModel):
             name=guild.name,
             icon=guild.icon.key if guild.icon else None,
             features=guild.features,
-            owner=None
+            owner=None,
         )
 
     @computed_field
@@ -110,6 +109,7 @@ class ChannelInformation(BaseModel):
 
     This model contains only data that is mutual between all channel types.
     """
+
     id: str
     type: int
     guild_id: str | None = None
@@ -123,10 +123,7 @@ class ChannelInformation(BaseModel):
     flags: int = 0
 
     @classmethod
-    def from_channel(
-            cls,
-            channel: discord.abc.GuildChannel
-    ):
+    def from_channel(cls, channel: discord.abc.GuildChannel):
         """Creates a BasicChannelInformation object from a discord.abc.GuildChannel object."""
         extra = {}
         if isinstance(channel, (discord.TextChannel, discord.VoiceChannel)):
@@ -141,7 +138,7 @@ class ChannelInformation(BaseModel):
             user_permissions=str(channel.permissions_for(channel.guild.me).value),
             bot_permissions=str(channel.permissions_for(channel.guild.me).value),
             flags=channel.flags.value,
-            **extra
+            **extra,
         )
 
 
@@ -156,7 +153,7 @@ class Member(BaseModel):
     mute: bool
     flags: int
     pending: bool = None
-    permissions: str  = None
+    permissions: str = None
     communication_disabled_until: datetime.datetime | None = None
     _guild_id: str | None = None
     """This field is not part of the discord API and is only used to calculate the avatar URL."""
@@ -175,7 +172,7 @@ class Member(BaseModel):
             mute=member.voice.mute if member.voice else False,
             flags=member.public_flags.value,
             permissions=str(member.guild_permissions.value),
-            communication_disabled_until=member.communication_disabled_until
+            communication_disabled_until=member.communication_disabled_until,
         )
 
     @computed_field
@@ -220,7 +217,7 @@ class Role(BaseModel):
             tags = cls.RoleTags(
                 bot_id=role.tags.bot_id,
                 integration_id=role.tags.integration_id,
-                subscription_listing_id=role.tags.subscription_listing_id
+                subscription_listing_id=role.tags.subscription_listing_id,
             )
         return cls(
             id=str(role.id),
@@ -234,7 +231,7 @@ class Role(BaseModel):
             managed=role.managed,
             mentionable=role.mentionable,
             flags=role.flags.value,
-            tags=tags
+            tags=tags,
         )
 
 
@@ -279,10 +276,12 @@ class Message(BaseModel):
             mentions=[User.from_user(user) for user in message.mentions],
             mention_roles=[str(role.id) for role in message.role_mentions],
             mention_channels=[{"id": str(channel.id), "name": channel.name} for channel in message.channel_mentions],
-            attachments=[{"url": attachment.url, "filename": attachment.filename} for attachment in message.attachments],
+            attachments=[
+                {"url": attachment.url, "filename": attachment.filename} for attachment in message.attachments
+            ],
             embeds=[embed.to_dict() for embed in message.embeds],
             reactions=[{"emoji": str(reaction.emoji), "count": reaction.count} for reaction in message.reactions],
             pinned=message.pinned,
             type=message.type.value,
-            flags=message.flags.value
+            flags=message.flags.value,
         )

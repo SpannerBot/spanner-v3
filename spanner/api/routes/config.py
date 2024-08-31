@@ -4,7 +4,7 @@ import time
 from typing import Annotated
 
 import discord.utils
-from fastapi import APIRouter, Depends, HTTPException, Header, Query, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, status
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, Response
 
@@ -21,8 +21,8 @@ from spanner.share.database import (
 )
 
 from ..models.config import GuildAuditLogEntryResponse
+from ..ratelimiter import Bucket, Ratelimiter
 from .oauth2 import is_logged_in
-from ..ratelimiter import Ratelimiter, Bucket
 
 
 class _FeatureToggle(BaseModel):
@@ -61,10 +61,7 @@ async def get_guild_presence(req: Request, guild_id: int, bot: Annotated[CustomB
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited by the server.",
-            headers={
-                "X-Ratelimit-Source": "internal",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "internal", **bucket.generate_ratelimit_headers()},
         )
 
     guild = bot.get_guild(guild_id)
@@ -234,11 +231,11 @@ def get_all_log_features(res: JSONResponse, guild_id: int, if_none_match: str | 
 
 @router.put("/{guild_id}/logging/features/{feature}")
 async def set_log_feature(
-        guild_id: int,
-        feature: str,
-        body: _FeatureToggle,
-        user: Annotated[DiscordOauthUser, is_logged_in],
-        bot: Annotated[CustomBridgeBot, bot_is_ready]
+    guild_id: int,
+    feature: str,
+    body: _FeatureToggle,
+    user: Annotated[DiscordOauthUser, is_logged_in],
+    bot: Annotated[CustomBridgeBot, bot_is_ready],
 ):
     """
     Enable or disable a specific logging feature for the given guild.

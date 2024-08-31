@@ -1,8 +1,8 @@
 import datetime
 import secrets
 import time
-from typing import Annotated
 from hashlib import sha1
+from typing import Annotated
 
 import discord.utils
 import httpx
@@ -14,8 +14,8 @@ from starlette.responses import JSONResponse
 from spanner.share.database import DiscordOauthUser
 
 from ..models.discord_ import AccessTokenResponse, User
+from ..ratelimiter import Bucket, Ratelimiter
 from ..vars import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK
-from ..ratelimiter import Ratelimiter, Bucket
 
 __all__ = ("router", "is_logged_in")
 
@@ -31,7 +31,9 @@ DEFAULT_INTERNAL_KEY = "{req.method}:{req.client.host}"
 
 
 def handle_ratelimit(req: Request) -> Bucket:
-    key = sha1(DEFAULT_INTERNAL_KEY.format(req=req, authorization=req.headers.get("Authorization", "")).encode()).hexdigest()
+    key = sha1(
+        DEFAULT_INTERNAL_KEY.format(req=req, authorization=req.headers.get("Authorization", "")).encode()
+    ).hexdigest()
     bucket = RATELIMITER.get_bucket(key)
     if not bucket:
         bucket = Bucket(key, 5, 5, time.time() + 10, 10)
@@ -44,10 +46,7 @@ def handle_ratelimit(req: Request) -> Bucket:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited by the server.",
-            headers={
-                "X-Ratelimit-Source": "internal",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "internal", **bucket.generate_ratelimit_headers()},
         )
     return bucket
 
@@ -99,10 +98,7 @@ async def login(req: Request, return_to: str) -> RedirectResponse:
 
 
 @router.get("/invite", include_in_schema=False, dependencies=[Depends(handle_ratelimit)])
-async def invite(
-        guild_id: int | None = None,
-        return_to: str | None = None
-) -> RedirectResponse:
+async def invite(guild_id: int | None = None, return_to: str | None = None) -> RedirectResponse:
     if not all((DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_OAUTH_CALLBACK)):
         raise HTTPException(503, "Oauth2 is misconfigured.")
 
@@ -116,7 +112,9 @@ async def invite(
             scopes=["bot", "identify", "guilds", "guilds.members.read"],
             disable_guild_select=guild_id is not None,
             redirect_uri=DISCORD_OAUTH_CALLBACK,
-        ) + "&state=" + state
+        )
+        + "&state="
+        + state
     )
     res.set_cookie("state", state, httponly=True, expires=600)
     return res
@@ -160,7 +158,7 @@ async def callback(
                     "message": "Failed to fetch token from upstream",
                     "status": code_grant.status_code,
                     "response": code_grant.json(),
-                }
+                },
             )
         code_payload = AccessTokenResponse.model_validate(code_grant.json())
         if not all(x in code_payload.scope_array for x in ("identify",)):
@@ -188,12 +186,7 @@ async def callback(
 @router.get("/session")
 async def session(user: Annotated[DiscordOauthUser, is_logged_in]):
     """Returns the current session token"""
-    return {
-        "token": user.session,
-        "user_id": str(user.user_id),
-        "scopes": user.scope,
-        "expires_at": user.expires_at
-    }
+    return {"token": user.session, "user_id": str(user.user_id), "scopes": user.scope, "expires_at": user.expires_at}
 
 
 @router.post("/session/refresh", dependencies=[Depends(handle_ratelimit)])
@@ -218,7 +211,7 @@ async def refresh_session(res: JSONResponse, user: Annotated[DiscordOauthUser, i
                     "message": "Failed to fetch token from upstream",
                     "status": refresh.status_code,
                     "response": refresh.json(),
-                }
+                },
             )
         refresh_payload = AccessTokenResponse.model_validate(refresh.json())
 
@@ -231,12 +224,7 @@ async def refresh_session(res: JSONResponse, user: Annotated[DiscordOauthUser, i
         await user.save()
 
     res.set_cookie("session", user.session, expires=refresh_payload.expires_in, samesite="lax")
-    return {
-        "token": user.session,
-        "user_id": str(user.user_id),
-        "scopes": user.scope,
-        "expires_at": user.expires_at
-    }
+    return {"token": user.session, "user_id": str(user.user_id), "scopes": user.scope, "expires_at": user.expires_at}
 
 
 @router.delete("/session")

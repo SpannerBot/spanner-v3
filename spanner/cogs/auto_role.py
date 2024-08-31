@@ -1,10 +1,11 @@
 import logging
+from fnmatch import fnmatch
 
 import discord
-from fnmatch import fnmatch
 from discord.ext import commands
 from tortoise.transactions import in_transaction
-from spanner.share.database import GuildAuditLogEntry, AutoRole
+
+from spanner.share.database import AutoRole, GuildAuditLogEntry
 from spanner.share.views import ConfirmView
 
 
@@ -16,6 +17,7 @@ class AutoRoleConfig(commands.Cog):
         "moderate_members",
         "create_events",
     )
+
     def __init__(self, bot):
         self.bot = bot
         self.log = logging.getLogger("spanner.cogs.auto_role")
@@ -54,8 +56,8 @@ class AutoRoleConfig(commands.Cog):
                     ctx.user,
                     title="This role seems to dangerous permissions.",
                     question="The following permissions are enabled for this role, which may be dangerous: {}\n"
-                             "Are you sure you want to add this role as an auto role?".format(", ".join(dangerous)),
-                    timeout=60
+                    "Are you sure you want to add this role as an auto role?".format(", ".join(dangerous)),
+                    timeout=60,
                 )
                 res, ok = await confirm.ask(ctx, False)
                 if not ok:
@@ -84,7 +86,7 @@ class AutoRoleConfig(commands.Cog):
                         "permissions": role.permissions.value,
                         "mentionable": role.mentionable,
                         "hoist": role.hoist,
-                    }
+                    },
                 },
                 using_db=conn,
             )
@@ -117,7 +119,7 @@ class AutoRoleConfig(commands.Cog):
                             "action.historical": "removed",
                             "role": {
                                 "id": str(entry.role_id),
-                            }
+                            },
                         },
                         using_db=conn,
                     )
@@ -127,7 +129,7 @@ class AutoRoleConfig(commands.Cog):
                     description=", ".join(role.mention for role in resolved_roles),
                     color=discord.Color.blurple(),
                     timestamp=discord.utils.utcnow(),
-                    footer=discord.EmbedFooter(text=f"{len(resolved_roles)}/25")
+                    footer=discord.EmbedFooter(text=f"{len(resolved_roles)}/25"),
                 )
             )
 
@@ -158,7 +160,7 @@ class AutoRoleConfig(commands.Cog):
                         "permissions": role.permissions.value,
                         "mentionable": role.mentionable,
                         "hoist": role.hoist,
-                    }
+                    },
                 },
                 using_db=conn,
             )
@@ -188,7 +190,7 @@ class AutoRoleConfig(commands.Cog):
                     "action.historical": "cleared",
                     "old": {
                         "roles": [str(entry.role_id) for entry in auto_roles],
-                    }
+                    },
                 },
                 using_db=conn,
             )
@@ -221,7 +223,7 @@ class AutoRoleConfig(commands.Cog):
                     },
                     "roles": [str(role.id) for role in roles],
                     "error": str(e),
-                }
+                },
             )
         else:
             await GuildAuditLogEntry.generate(
@@ -237,7 +239,7 @@ class AutoRoleConfig(commands.Cog):
                         "name": str(member),
                     },
                     "roles": [str(role.id) for role in roles],
-                }
+                },
             )
 
     @commands.Cog.listener("on_member_join")
@@ -245,7 +247,9 @@ class AutoRoleConfig(commands.Cog):
         if member.bot:
             return
         if member.pending:
-            self.log.info("Member %r joined %r, but is pending. Holding off on assigning auto roles.", member, member.guild)
+            self.log.info(
+                "Member %r joined %r, but is pending. Holding off on assigning auto roles.", member, member.guild
+            )
             return  # assign later
         await self._autorole_action(member)
 
@@ -256,6 +260,9 @@ class AutoRoleConfig(commands.Cog):
         if before.pending is False and after.pending is False:
             return
 
+        self.log.info(
+            "Member %r in %r changed pending status from %r to %r", after, after.guild, before.pending, after.pending
+        )
         await self._autorole_action(after)
 
 

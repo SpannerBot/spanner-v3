@@ -6,15 +6,15 @@ from typing import Annotated
 
 import discord
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, status
 from fastapi.responses import JSONResponse
 
 from spanner.bot import bot
 from spanner.share.database import DiscordOauthUser
 
-from ..models.discord_ import ChannelInformation, PartialGuild, User, Member
+from ..models.discord_ import ChannelInformation, Member, PartialGuild, User
+from ..ratelimiter import Bucket, Ratelimiter
 from ..vars import DISCORD_API_BASE_URL
-from ..ratelimiter import Ratelimiter, Bucket
 from .oauth2 import is_logged_in
 
 router = APIRouter(tags=["Discord API Proxy"])
@@ -24,7 +24,9 @@ DEFAULT_INTERNAL_KEY = "{req.method}:{req.client.host}"
 
 
 def handle_ratelimit(req: Request) -> Bucket:
-    key = sha1(DEFAULT_INTERNAL_KEY.format(req=req, authorization=req.headers.get("Authorization", "")).encode()).hexdigest()
+    key = sha1(
+        DEFAULT_INTERNAL_KEY.format(req=req, authorization=req.headers.get("Authorization", "")).encode()
+    ).hexdigest()
     bucket = RATELIMITER.get_bucket(key)
     if not bucket:
         bucket = Bucket(key, 10, 10, time.time() + 10, 10)
@@ -37,10 +39,7 @@ def handle_ratelimit(req: Request) -> Bucket:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited by the server.",
-            headers={
-                "X-Ratelimit-Source": "internal",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "internal", **bucket.generate_ratelimit_headers()},
         )
     return bucket
 
@@ -65,10 +64,7 @@ async def get_me(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONRespo
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited.",
-            headers={
-                "X-Ratelimit-Source": "discord.preemptive",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "discord.preemptive", **bucket.generate_ratelimit_headers()},
         )
 
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -77,12 +73,9 @@ async def get_me(user: Annotated[DiscordOauthUser, is_logged_in], res: JSONRespo
         bucket = RATELIMITER.from_discord_headers(response.headers, key=rl_key)
         if response.status_code == 429:
             raise HTTPException(
-                status.HTTP_429_TOO_MANY_REQUESTS, 
+                status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You are being ratelimited by discord.",
-                headers={
-                    "X-Ratelimit-Source": "discord",
-                    **bucket.generate_ratelimit_headers()
-                }
+                headers={"X-Ratelimit-Source": "discord", **bucket.generate_ratelimit_headers()},
             )
         response.raise_for_status()
         res.headers["X-Source"] = "discord"
@@ -101,10 +94,7 @@ async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in]) -> list
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited.",
-            headers={
-                "X-Ratelimit-Source": "discord.preemptive",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "discord.preemptive", **bucket.generate_ratelimit_headers()},
         )
 
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -115,12 +105,12 @@ async def get_my_guilds(user: Annotated[DiscordOauthUser, is_logged_in]) -> list
         bucket = RATELIMITER.from_discord_headers(response.headers, key=rl_key)
         if response.status_code == 429:
             raise HTTPException(
-                status.HTTP_429_TOO_MANY_REQUESTS, 
+                status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You are being ratelimited by discord.",
                 headers={
                     "X-Ratelimit-Source": "discord",
                     **bucket.generate_ratelimit_headers(),
-                }
+                },
             )
         response.raise_for_status()
         return [PartialGuild.model_validate(guild) for guild in response.json()]
@@ -169,10 +159,7 @@ async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_i
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited.",
-            headers={
-                "X-Ratelimit-Source": "discord.preemptive",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "discord.preemptive", **bucket.generate_ratelimit_headers()},
         )
 
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -183,12 +170,12 @@ async def get_guild(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_i
         bucket = RATELIMITER.from_discord_headers(response.headers, key=rl_key)
         if response.status_code == 429:
             raise HTTPException(
-                status.HTTP_429_TOO_MANY_REQUESTS, 
+                status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You are being ratelimited by discord.",
                 headers={
                     "X-Ratelimit-Source": "discord",
                     **bucket.generate_ratelimit_headers(),
-                }
+                },
             )
         response.raise_for_status()
         for guild in response.json():
@@ -229,16 +216,12 @@ async def get_guild_channels(
         elif bot_perms < discord.Permissions(minimum_bot_permissions):
             continue
 
-        resolved_channels.append(
-            ChannelInformation.from_channel(channel)
-        )
+        resolved_channels.append(ChannelInformation.from_channel(channel))
     return resolved_channels
 
 
 @router.get("/guilds/{guild_id}/@me", dependencies=[internal_ratelimit])
-async def get_my_guild_member(
-    guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse
-):
+async def get_my_guild_member(guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in], res: JSONResponse):
     """
     Fetches the current user's member object for the given guild.
 
@@ -265,10 +248,7 @@ async def get_my_guild_member(
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             detail="You are being ratelimited.",
-            headers={
-                "X-Ratelimit-Source": "discord.preemptive",
-                **bucket.generate_ratelimit_headers()
-            }
+            headers={"X-Ratelimit-Source": "discord.preemptive", **bucket.generate_ratelimit_headers()},
         )
 
     async with httpx.AsyncClient(base_url=DISCORD_API_BASE_URL) as client:
@@ -278,21 +258,19 @@ async def get_my_guild_member(
         )
         if response.status_code == 429:
             raise HTTPException(
-                status.HTTP_429_TOO_MANY_REQUESTS, 
+                status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You are being ratelimited by discord.",
                 headers={
                     "X-Ratelimit-Source": "discord",
                     **bucket.generate_ratelimit_headers(),
-                }
+                },
             )
         response.raise_for_status()
         return response.json()
 
 
 @router.get("/guilds/{guild_id}/bot", dependencies=[internal_ratelimit, is_logged_in])
-async def get_my_guild_bot(
-    guild_id: int
-) -> Member:
+async def get_my_guild_bot(guild_id: int) -> Member:
     """
     Fetches the bot's member object for the given guild.
     """
@@ -304,9 +282,7 @@ async def get_my_guild_bot(
 
 
 @router.get("/guilds/{guild_id}/@me/permissions", dependencies=[internal_ratelimit])
-async def get_my_guild_permissions(
-        res: JSONResponse, guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in]
-):
+async def get_my_guild_permissions(res: JSONResponse, guild_id: int, user: Annotated[DiscordOauthUser, is_logged_in]):
     """
     Fetches the current permissions value for the current user in a given server.
 

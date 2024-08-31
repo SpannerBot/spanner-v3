@@ -27,7 +27,6 @@ class GuildConfig(Model):
     if typing.TYPE_CHECKING:
         log_features: fields.ReverseRelation["GuildLogFeatures"]
         audit_log_entries: fields.ReverseRelation["GuildAuditLogEntry"]
-        audit_log_entries_new: fields.ReverseRelation["GuildAuditLogEntryNew"]
         self_roles: fields.ReverseRelation["SelfRoleMenu"]
         nickname_moderation: fields.ReverseRelation["GuildNickNameModeration"]
         starboard: fields.ReverseRelation["StarboardConfig"]
@@ -111,7 +110,7 @@ TargetTypes = Union[
     discord.Emoji,
     discord.PartialEmoji,
     discord.abc.Snowflake,
-    Any
+    Any,
 ]
 
 
@@ -130,16 +129,16 @@ class GuildAuditLogEntry(Model):
 
     @classmethod
     async def generate(
-            cls,
-            guild_id: int,
-            author: discord.User | discord.Member | discord.abc.Snowflake | int,
-            namespace: str,
-            action: str,
-            description: str,
-            metadata: dict | None = None,
-            *,
-            target: Any = None,
-            using_db = None
+        cls,
+        guild_id: int,
+        author: discord.User | discord.Member | discord.abc.Snowflake | int,
+        namespace: str,
+        action: str,
+        description: str,
+        metadata: dict | None = None,
+        *,
+        target: Any = None,
+        using_db=None,
     ) -> typing.Self:
         """
         Generates a new audit log entry
@@ -164,7 +163,7 @@ class GuildAuditLogEntry(Model):
                 "The 'action.historical' key is not present in the metadata."
                 "This may cause issues with historical data.",
                 RuntimeWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             match action:
                 case "add":
@@ -184,45 +183,46 @@ class GuildAuditLogEntry(Model):
             match type(target):
                 case discord.Member:
                     from spanner.api.models.discord_ import Member
+
                     metadata["target"] = Member.from_member(target).model_dump()
                 case discord.User:
                     from spanner.api.models.discord_ import User
+
                     metadata["target"] = User.from_user(target).model_dump()
                 case discord.Guild:
                     from spanner.api.models.discord_ import PartialGuild
+
                     metadata["target"] = PartialGuild.from_guild(target).model_dump()
                 case discord.Role:
                     from spanner.api.models.discord_ import Role
+
                     metadata["target"] = Role.from_role(target).model_dump()
                 case discord.TextChannel:
                     from spanner.api.models.discord_ import ChannelInformation
+
                     metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.VoiceChannel:
                     from spanner.api.models.discord_ import ChannelInformation
+
                     metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.StageChannel:
                     from spanner.api.models.discord_ import ChannelInformation
+
                     metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.CategoryChannel:
                     from spanner.api.models.discord_ import ChannelInformation
+
                     metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.abc.Snowflake:
                     metadata["target"] = {"id": str(target.id)}
                 case _:
                     try:
                         metadata["target"] = json.loads(
-                            json.dumps(
-                                getattr(target, "to_dict", lambda: target)(),
-                                default=repr
-                            )
+                            json.dumps(getattr(target, "to_dict", lambda: target)(), default=repr)
                         )
                     except Exception as e:
                         metadata["target"] = repr(target)
-                        warnings.warn(
-                            f"Failed to convert target to JSON: {e!r}",
-                            RuntimeWarning,
-                            stacklevel=2
-                        )
+                        warnings.warn(f"Failed to convert target to JSON: {e!r}", RuntimeWarning, stacklevel=2)
 
         return await cls.create(
             guild_id=guild_id,
@@ -232,7 +232,7 @@ class GuildAuditLogEntry(Model):
             description=description,
             metadata=metadata,
             version=4 if target else 3,
-            using_db=using_db
+            using_db=using_db,
         )
 
 

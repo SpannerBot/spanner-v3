@@ -348,8 +348,8 @@ class StarboardCog(commands.Cog):
                     "new": {
                         "channel_id": config.channel_id,
                         "star_emoji": config.star_emoji,
-                    }
-                }
+                    },
+                },
             )
             await GuildAuditLogEntry.generate(
                 using_db=conn,
@@ -401,10 +401,7 @@ class StarboardCog(commands.Cog):
                 action="modify",
                 target=str(reaction.emoji),
                 description=f"Set the starboard emoji to {reaction.emoji}",
-                metadata={
-                    "old": config.star_emoji,
-                    "new": reaction.emoji
-                }
+                metadata={"old": config.star_emoji, "new": reaction.emoji},
             )
             await ctx.edit(content=f"Starboard emoji set to {reaction.emoji}")
             await m.clear_reactions()
@@ -523,8 +520,8 @@ class StarboardCog(commands.Cog):
                     "new": {
                         "mode": mode,
                         "minimum": value,
-                    }
-                }
+                    },
+                },
             )
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Starboard threshold set to {value} {mode.name.lower()}.")
 

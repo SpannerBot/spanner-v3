@@ -5,7 +5,6 @@ from collections import deque
 
 from tortoise.transactions import in_transaction
 
-
 sys.path.extend([".", ".."])
 
 import logging
@@ -83,7 +82,7 @@ class CustomBridgeBot(bridge.Bot):
         await super().close()
 
     async def clean_old_self_role_menus(self):
-        from spanner.share.database import SelfRoleMenu, GuildAuditLogEntry
+        from spanner.share.database import GuildAuditLogEntry, SelfRoleMenu
 
         await self.wait_until_ready()
         log.info("Starting cleanup of old, invalid self role menu messages")
@@ -97,7 +96,7 @@ class CustomBridgeBot(bridge.Bot):
                     "roles": menu.roles,
                     "name": menu.name,
                     "maximum": menu.maximum,
-                    "mode": menu.mode
+                    "mode": menu.mode,
                 }
                 guild = self.get_guild(menu.guild.id)
                 if not guild:
@@ -111,7 +110,7 @@ class CustomBridgeBot(bridge.Bot):
                         metadata={
                             "menu": menu_json,
                         },
-                        using_db=conn
+                        using_db=conn,
                     )
                     await menu.delete(using_db=conn)
                     continue
@@ -127,7 +126,7 @@ class CustomBridgeBot(bridge.Bot):
                         metadata={
                             "menu": menu_json,
                         },
-                        using_db=conn
+                        using_db=conn,
                     )
                     await menu.delete(using_db=conn)
                     continue
@@ -145,7 +144,7 @@ class CustomBridgeBot(bridge.Bot):
                             "menu": menu_json,
                             "exception": str(e),
                         },
-                        using_db=conn
+                        using_db=conn,
                     )
                     await menu.delete(using_db=conn)
                     continue
@@ -161,7 +160,7 @@ class CustomBridgeBot(bridge.Bot):
                         metadata={
                             "menu": menu_json,
                         },
-                        using_db=conn
+                        using_db=conn,
                     )
                     try:
                         await message.delete(delay=0.1)

@@ -1,6 +1,5 @@
 import fnmatch
 import typing
-import warnings
 
 import discord
 from discord.ext import bridge, commands
@@ -67,7 +66,7 @@ class SettingsCog(commands.Cog):
                     },
                     "new": {"id": str(channel.id), "name": channel.name},
                 },
-                using_db=tx
+                using_db=tx,
             )
 
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Set the log channel to {channel.mention}.")
@@ -103,7 +102,7 @@ class SettingsCog(commands.Cog):
                         },
                         "new": {
                             "enabled": log_feature.enabled,
-                        }
+                        },
                     },
                     using_db=tx,
                 )
