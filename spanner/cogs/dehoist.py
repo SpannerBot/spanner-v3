@@ -32,10 +32,10 @@ class Dehoist(commands.Cog):
                     target=member,
                     metadata={
                         "old": {
-                            "member": Member.from_member(member),
+                            "member": Member.from_member(member).model_dump(),
                         },
                         "new": {
-                            "member": new_m,
+                            "member": new_m.model_dump(),
                         },
                     },
                     using_db=conn

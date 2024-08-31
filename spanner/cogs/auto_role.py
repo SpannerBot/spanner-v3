@@ -70,6 +70,7 @@ class AutoRoleConfig(commands.Cog):
                 "auto_roles",
                 "action",
                 f"Added role {role.id} ({role.name}) to the auto roles.",
+                target=role,
                 metadata={
                     "action.historical": "added",
                     "role": {
@@ -143,6 +144,7 @@ class AutoRoleConfig(commands.Cog):
                 "auto_roles",
                 "remove",
                 f"Removed role {role.id} ({role.name}) from the auto roles.",
+                target=role,
                 metadata={
                     "action.historical": "removed",
                     "role": {
@@ -192,12 +194,13 @@ class AutoRoleConfig(commands.Cog):
     async def _add_auto_roles(self, member: discord.Member):
         auto_roles = await AutoRole.filter(guild_id=member.guild.id)
         if not auto_roles:
+            self.log.info("No autoroles for %r in %r", member, member.guild)
             return
         roles = [member.guild.get_role(role.role_id) for role in auto_roles]
         roles = list(filter(None, roles))
         roles = list(filter(lambda r: r < member.guild.me.top_role, roles))
         roles = list(sorted(roles, reverse=True))
-        await member.add_roles(*roles, reason="Auto roles")
+        await member.add_roles(*roles, reason="Auto roles", atomic=False)
         await GuildAuditLogEntry.generate(
             member.guild.id,
             self.bot.user,
@@ -219,6 +222,7 @@ class AutoRoleConfig(commands.Cog):
         if member.bot:
             return
         if member.pending:
+            self.log.info("Member %r joined %r, but is pending. Holding off on assigning auto roles.", member, member.guild)
             return  # assign later
         await self._add_auto_roles(member)
 

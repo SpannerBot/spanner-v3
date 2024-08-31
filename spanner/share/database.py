@@ -173,37 +173,39 @@ class GuildAuditLogEntry(Model):
                     metadata["action.historical"] = "removed"
                 case "update":
                     metadata["action.historical"] = "updated"
-                case "modified":
+                case "modify":
                     metadata["action.historical"] = "modified"
                 case "create":
                     metadata["action.historical"] = "created"
+                case "delete":
+                    metadata["action.historical"] = "deleted"
 
         if target:
             match type(target):
                 case discord.Member:
                     from spanner.api.models.discord_ import Member
-                    metadata["target"] = Member.from_member(target)
+                    metadata["target"] = Member.from_member(target).model_dump()
                 case discord.User:
                     from spanner.api.models.discord_ import User
-                    metadata["target"] = User.from_user(target)
+                    metadata["target"] = User.from_user(target).model_dump()
                 case discord.Guild:
                     from spanner.api.models.discord_ import PartialGuild
-                    metadata["target"] = PartialGuild.from_guild(target)
+                    metadata["target"] = PartialGuild.from_guild(target).model_dump()
                 case discord.Role:
                     from spanner.api.models.discord_ import Role
-                    metadata["target"] = Role.from_role(target)
+                    metadata["target"] = Role.from_role(target).model_dump()
                 case discord.TextChannel:
                     from spanner.api.models.discord_ import ChannelInformation
-                    metadata["target"] = ChannelInformation.from_channel(target)
+                    metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.VoiceChannel:
                     from spanner.api.models.discord_ import ChannelInformation
-                    metadata["target"] = ChannelInformation.from_channel(target)
+                    metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.StageChannel:
                     from spanner.api.models.discord_ import ChannelInformation
-                    metadata["target"] = ChannelInformation.from_channel(target)
+                    metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.CategoryChannel:
                     from spanner.api.models.discord_ import ChannelInformation
-                    metadata["target"] = ChannelInformation.from_channel(target)
+                    metadata["target"] = ChannelInformation.from_channel(target).model_dump()
                 case discord.abc.Snowflake:
                     metadata["target"] = {"id": str(target.id)}
                 case _:
