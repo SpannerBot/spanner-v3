@@ -120,7 +120,7 @@ class UserInfo(commands.Cog):
             f"**Timed out until:** {discord.utils.format_dt(member.communication_disabled_until, 'F')}"
             if member.communication_disabled_until
             else None,
-            f"**Roles:** {len(member.roles)}",
+            f"**Roles:** {len(member.roles)}" if member.guild else None,
         ]
 
         flags = []

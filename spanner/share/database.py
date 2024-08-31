@@ -234,7 +234,6 @@ class GuildAuditLogEntry(Model):
         )
 
 
-
 GuildAuditLogEntryPydantic = pydantic_model_creator(GuildAuditLogEntry, name="GuildAuditLogEntry")
 
 
