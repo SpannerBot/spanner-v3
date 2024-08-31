@@ -186,7 +186,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
         support = bot.get_application_command("support")
         return await ctx.respond(
             f"\u2757 There was an error running your command (`{error!r}`). The developer has been notified."
-            f" If you want help, try running </support:{support.user_id}>.",
+            f" If you want help, try running </support:{support.qualified_id}>.",
             ephemeral=True,
         )
 
