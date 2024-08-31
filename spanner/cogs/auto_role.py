@@ -43,7 +43,7 @@ class AutoRoleConfig(commands.Cog):
 
             dangerous = []
             for key, value in dict(role.permissions):
-                if any(fnmatch(key, perm) for perm in self.MODERATOR_PERMISSIONS) and value is True:
+                if any((fnmatch(key, perm_name) for perm_name in self.MODERATOR_PERMISSIONS)) and value is True:
                     dangerous.append(key)
 
             if dangerous:
