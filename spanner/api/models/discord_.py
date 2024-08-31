@@ -126,8 +126,9 @@ class ChannelInformation(BaseModel):
     def from_channel(cls, channel: discord.abc.GuildChannel):
         """Creates a BasicChannelInformation object from a discord.abc.GuildChannel object."""
         extra = {}
-        if isinstance(channel, (discord.TextChannel, discord.VoiceChannel)):
+        if hasattr(channel, "topic"):
             extra["topic"] = channel.topic
+        if hasattr(channel, "is_nsfw"):
             extra["nsfw"] = channel.is_nsfw()
         return cls(
             id=str(channel.id),
