@@ -3,6 +3,8 @@ import sys
 import time
 from collections import deque
 
+from tortoise.transactions import in_transaction
+
 
 sys.path.extend([".", ".."])
 
@@ -80,6 +82,93 @@ class CustomBridgeBot(bridge.Bot):
         self.update_latency.stop()
         await super().close()
 
+    async def clean_old_self_role_menus(self):
+        from spanner.share.database import SelfRoleMenu, GuildAuditLogEntry
+
+        await self.wait_until_ready()
+        log.info("Starting cleanup of old, invalid self role menu messages")
+        async with in_transaction() as conn:
+            for menu in await SelfRoleMenu.all().prefetch_related("guild"):
+                menu: SelfRoleMenu
+                menu_json = {
+                    "id": str(menu.id),
+                    "channel": menu.channel,
+                    "message": menu.message,
+                    "roles": menu.roles,
+                    "name": menu.name,
+                    "maximum": menu.maximum,
+                    "mode": menu.mode
+                }
+                guild = self.get_guild(menu.guild.id)
+                if not guild:
+                    log.warning("Cleaning up self-role menu %r - guild not found.", menu)
+                    await GuildAuditLogEntry.generate(
+                        menu.guild.id,
+                        self.user,
+                        "self-roles",
+                        "remove",
+                        "The guild for this menu was not found.",
+                        metadata={
+                            "menu": menu_json,
+                        },
+                        using_db=conn
+                    )
+                    await menu.delete(using_db=conn)
+                    continue
+                channel = self.get_channel(menu.channel)
+                if not channel:
+                    log.warning("Cleaning up self-role menu %r - channel not found.", menu)
+                    await GuildAuditLogEntry.generate(
+                        menu.guild.id,
+                        self.user,
+                        "self-roles",
+                        "remove",
+                        "The channel for this menu was not found.",
+                        metadata={
+                            "menu": menu_json,
+                        },
+                        using_db=conn
+                    )
+                    await menu.delete(using_db=conn)
+                    continue
+                try:
+                    message = await channel.fetch_message(menu.message)
+                except (discord.NotFound, discord.Forbidden) as e:
+                    log.warning("Cleaning up self-role menu %r - message not found, or forbidden.", menu)
+                    await GuildAuditLogEntry.generate(
+                        menu.guild.id,
+                        self.user,
+                        "self-roles",
+                        "remove",
+                        "The message for this menu was not found, or I was forbidden from fetching it.",
+                        metadata={
+                            "menu": menu_json,
+                            "exception": str(e),
+                        },
+                        using_db=conn
+                    )
+                    await menu.delete(using_db=conn)
+                    continue
+                if not any((channel.guild.get_role(x) for x in menu.roles)):
+                    log.warning("Cleaning up self-role menu %r - no more valid roles.", menu)
+                    await menu.delete(using_db=conn)
+                    await GuildAuditLogEntry.generate(
+                        menu.guild.id,
+                        self.user,
+                        "self-roles",
+                        "remove",
+                        "All of the roles for this menu do not exist anymore. The related message was deleted.",
+                        metadata={
+                            "menu": menu_json,
+                        },
+                        using_db=conn
+                    )
+                    try:
+                        await message.delete(delay=0.1)
+                    except discord.HTTPException:
+                        pass
+        log.info("Finished cleanup of old, invalid self role menu messages")
+
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         from spanner.share.database import SelfRoleMenu
 
@@ -95,6 +184,9 @@ class CustomBridgeBot(bridge.Bot):
                     self.web = asyncio.create_task(self.web_server.serve())
                 self.epoch = time.time()
                 self.update_latency.start()
+                self.loop.create_task(self.clean_old_self_role_menus()).add_done_callback(
+                    lambda _: log.info("Cleanup task complete")
+                )
                 await super().start(token, reconnect=reconnect)
             finally:
                 await Tortoise.close_connections()
