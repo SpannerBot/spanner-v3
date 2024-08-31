@@ -30,9 +30,9 @@ class AutoRoleConfig(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         async with in_transaction() as conn:
-            if await AutoRole.get_or_none(role_id=role.id, using_db=conn):
+            if await AutoRole.get_or_none(role_id=role.id):
                 return await ctx.respond(f"\N{CROSS MARK} {role.mention} is already an auto role.")
-            elif (await AutoRole.filter(guild_id=ctx.guild_id, using_db=conn).count()) >= 25:
+            elif (await AutoRole.filter(guild_id=ctx.guild_id).count()) >= 25:
                 return await ctx.respond("\N{CROSS MARK} You can only have up to 25 auto roles.")
             elif role.managed:
                 return await ctx.respond("\N{CROSS MARK} You cannot add managed roles as auto roles.")
@@ -92,7 +92,7 @@ class AutoRoleConfig(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         async with in_transaction() as conn:
-            auto_roles: list[AutoRole] = await AutoRole.filter(guild_id=ctx.guild_id, using_db=conn)
+            auto_roles: list[AutoRole] = await AutoRole.filter(guild_id=ctx.guild_id)
             if not auto_roles:
                 return await ctx.respond("No auto roles have been configured for this server.")
 
@@ -133,7 +133,7 @@ class AutoRoleConfig(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         async with in_transaction() as conn:
-            auto_role: AutoRole = await AutoRole.get_or_none(role_id=role.id, using_db=conn)
+            auto_role: AutoRole = await AutoRole.get_or_none(role_id=role.id)
             if not auto_role:
                 return await ctx.respond(f"\N{CROSS MARK} {role.mention} is not an auto role.")
             await auto_role.delete(using_db=conn)
@@ -165,14 +165,14 @@ class AutoRoleConfig(commands.Cog):
         await ctx.defer(ephemeral=True)
 
         async with in_transaction() as conn:
-            auto_roles: list[AutoRole] = await AutoRole.filter(guild_id=ctx.guild_id, using_db=conn)
+            auto_roles: list[AutoRole] = await AutoRole.filter(guild_id=ctx.guild_id)
             if not auto_roles:
                 return await ctx.respond("No auto roles have been configured for this server.")
 
             msg, ok = await ConfirmView(ctx.user, "This action is irreversible!").ask(ctx, False)
             if not ok:
                 return await msg.edit(content="\N{CROSS MARK} Aborted.")
-            await AutoRole.filter(guild_id=ctx.guild_id, using_db=conn).delete()
+            await AutoRole.filter(guild_id=ctx.guild_id).delete()
             await GuildAuditLogEntry.generate(
                 ctx.guild_id,
                 ctx.user,
@@ -196,6 +196,7 @@ class AutoRoleConfig(commands.Cog):
         roles = [member.guild.get_role(role.role_id) for role in auto_roles]
         roles = list(filter(None, roles))
         roles = list(filter(lambda r: r < member.guild.me.top_role, roles))
+        roles = list(sorted(roles, reverse=True))
         await member.add_roles(*roles, reason="Auto roles")
         await GuildAuditLogEntry.generate(
             member.guild.id,
