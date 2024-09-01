@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -43,11 +44,13 @@ if "token" not in CONFIG_SPANNER:
     sys.exit(1)
 
 CONFIG_LOGGING = CONFIG["logging"]
+LOGGING_FORMAT = CONFIG_LOGGING.get("format", "%(asctime)s: %(name)s: %(levelname)s: %(message)s")
+handler = RichHandler(logging.INFO, rich_tracebacks=True, markup=True, show_time=False, show_path=False)
 logging.basicConfig(
     level=CONFIG_LOGGING.get("level", "INFO"),
-    format=CONFIG_LOGGING.get("format", "%(asctime)s: %(name)s: %(levelname)s: %(message)s"),
+    format=LOGGING_FORMAT,
     datefmt=CONFIG_LOGGING.get("datefmt", "%Y-%m-%d %H:%M:%S"),
-    handlers=[RichHandler(logging.INFO, rich_tracebacks=True, markup=True, show_time=False, show_path=False)],
+    handlers=[handler],
 )
 logging.getLogger("discord.gateway").setLevel(logging.WARNING)
 if "file" in CONFIG_LOGGING:
@@ -59,7 +62,7 @@ if "file" in CONFIG_LOGGING:
     if "level" in CONFIG_LOGGING["file"]:
         handler.setLevel(CONFIG["logging"]["file"]["level"])
     handler.setFormatter(
-        logging.Formatter(CONFIG_LOGGING.get("format", "%(asctime)s:%(name)s %(levelname)s: %(message)s"))
+        logging.Formatter(LOGGING_FORMAT)
     )
     logging.getLogger().addHandler(handler)
 
@@ -214,12 +217,15 @@ async def ping(ctx: bridge.Context):
 def run():
     data_config = load_config()
 
+    with open("config.uvicorn.json") as fd:
+        uvicorn_logging_config = json.load(fd)
     config = uvicorn.Config(
         app,
         host=data_config["web"].get("host", "0.0.0.0"),
         port=data_config["web"].get("port", 1237),
         forwarded_allow_ips=data_config["web"].get("forwarded_allow_ips", "*"),
         headers=[("X-Spanner-Version", __sha__)],
+        log_config=uvicorn_logging_config,
     )
     server = uvicorn.Server(config)
     app.server = server
