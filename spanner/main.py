@@ -46,6 +46,11 @@ if "token" not in CONFIG_SPANNER:
 CONFIG_LOGGING = CONFIG["logging"]
 LOGGING_FORMAT = CONFIG_LOGGING.get("format", "%(asctime)s: %(name)s: %(levelname)s: %(message)s")
 handler = RichHandler(logging.INFO, rich_tracebacks=True, markup=True, show_time=False, show_path=False)
+try:
+    if not os.isatty(sys.stdout.fileno()):
+        handler = logging.StreamHandler(sys.stdout)
+except Exception:
+    handler = logging.StreamHandler(sys.stdout)
 logging.basicConfig(
     level=CONFIG_LOGGING.get("level", "INFO"),
     format=LOGGING_FORMAT,
