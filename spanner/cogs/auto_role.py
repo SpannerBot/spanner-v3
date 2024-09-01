@@ -215,6 +215,7 @@ class AutoRoleConfig(commands.Cog):
                 "auto_roles",
                 "error",
                 f"Failed to auto assign roles to {member.id} ({member})",
+                target=member,
                 metadata={
                     "action.historical": "failed",
                     "member": {
@@ -230,10 +231,11 @@ class AutoRoleConfig(commands.Cog):
                 member.guild.id,
                 self.bot.user,
                 "auto_roles",
-                "action",
+                "assign",
                 f"Auto assigned roles to {member.id} ({member})",
+                target=member,
                 metadata={
-                    "action.historical": "auto_assigned",
+                    "action.historical": "assigned roles",
                     "member": {
                         "id": str(member.id),
                         "name": str(member),
