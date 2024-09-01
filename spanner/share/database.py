@@ -150,7 +150,7 @@ class GuildAuditLogEntry(Model):
             author = discord.Object(id=author)
         metadata.setdefault("author", {})
         metadata["author"]["id"] = str(author.id)
-        if isinstance(author, (discord.User, discord.Member)):
+        if isinstance(author, (discord.User, discord.ClientUser, discord.Member)):
             metadata["author"]["nick"] = author.nick
             metadata["author"]["username"] = author.name
             metadata["author"]["display_name"] = author.display_name
