@@ -65,6 +65,8 @@ class UserInfo(commands.Cog):
 
     async def get_member_info(self, member: discord.Member) -> dict[str, discord.Embed]:
         user: discord.User = await discord.utils.get_or_fetch(self.bot, "user", member.id)
+        if not member.guild:
+            return await self.get_user_info(user)
 
         activities = []
         for current_activity in member.activities:

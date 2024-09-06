@@ -211,17 +211,6 @@ class SettingsCog(commands.Cog):
         await self._set_log_feature(ctx.guild_id, feature, False, user=ctx.user)
         await ctx.respond(f"\N{WHITE HEAVY CHECK MARK} Disabled the feature `{feature}`.")
 
-    @settings.command(name="audit-log")
-    async def get_audit_log(self, ctx: discord.ApplicationContext):
-        """Fetches the spanner audit log for this server."""
-        cfg = load_config()
-        base_url = cfg["web"].get("base_url", "http://%s:%s" % (cfg["web"]["host"], cfg["web"]["port"]))
-        await ctx.respond(
-            f"Visit {hyperlink('%sapi/guilds/%s/audit-logs/html' % (base_url, ctx.guild.id))} to see this server's "
-            f"audit log.",
-            ephemeral=True,
-        )
-
     @settings.command(name="nickname-filtering")
     async def manage_nickname_filtering(
         self,
